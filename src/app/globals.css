@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-manrope: 'Manrope', sans-serif;
+  }
+
+  body {
+    @apply bg-surface text-on-surface font-manrope antialiased;
+    scroll-behavior: smooth;
+  }
+
+  /* No-Line Philosophy: Remove default borders from interactive elements if needed */
+  * {
+    @apply border-transparent transition-all duration-300;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight text-on-surface;
+  }
+
+  ::selection {
+    @apply bg-primary/10 text-primary;
+  }
+}
+
+@layer components {
+  /* Signature Glass Effect for Sticky Headers/Nav */
+  .glass-nav {
+    @apply bg-surface-lowest/80 backdrop-blur-xl;
+  }
+
+  /* Premium Linear Gradient for Hero/CTAs */
+  .gradient-primary {
+    @apply bg-primary-gradient border-none;
+  }
+
+  /* Ambient Lift - Tonal Layering */
+  .elevated-card {
+    @apply bg-surface-lowest shadow-ambient border-none;
+  }
+
+  /* Ghost Border fallback for accessibility */
+  .ghost-border {
+    @apply border border-outline-variant/15;
+  }
+}
+
+/* Custom Premium Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-surface;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-surface-high rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-surface-highest;
+}
+
