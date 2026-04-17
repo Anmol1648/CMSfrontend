@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Manrope, Inter } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/layouts/Header";
-import { Sidebar } from "@/components/layouts/Sidebar";
 import { SplashProvider } from "@/components/ui/SplashProvider";
+import { ToastProvider } from "@/components/ui/ToastProvider";
+import { StoreProvider } from "@/components/providers/StoreProvider";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -18,7 +19,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CMS | College Management System",
+  title: "Academic Architect | College Management System",
   description: "A premium, architectural-style College Management System by Lizone Design.",
 };
 
@@ -28,22 +29,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block" />
       </head>
       <body className={`${manrope.variable} ${inter.variable} font-manrope bg-surface selection:bg-primary/10 selection:text-primary no-scrollbar`}>
-        <SplashProvider>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <div className="flex-1 flex flex-col pl-64">
-              <Header />
-              <main className="flex-1 pt-24 px-12 pb-20">
+        <StoreProvider>
+          <QueryProvider>
+            <SplashProvider>
+              <ToastProvider>
                 {children}
-              </main>
-            </div>
-          </div>
-        </SplashProvider>
+              </ToastProvider>
+            </SplashProvider>
+          </QueryProvider>
+        </StoreProvider>
       </body>
     </html>
   );
