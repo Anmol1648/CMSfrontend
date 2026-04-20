@@ -4,6 +4,9 @@ import { cn } from "@/lib/utils";
 
 import { useModal } from "@/components/ui/ModalProvider";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { usePermissions } from "@/lib/hooks/usePermissions";
+import { useSelector } from "react-redux";
+import { RootState } from "@/lib/store/store";
 
 const NavItem = ({ icon, label, href = "#", active: manualActive }: { icon: string; label: string; href?: string; active?: boolean }) => {
   const pathname = usePathname();
@@ -33,6 +36,7 @@ const NavItem = ({ icon, label, href = "#", active: manualActive }: { icon: stri
 export const Sidebar = () => {
   const { openModal, closeModal } = useModal();
   const { handleLogout, handleLogoutAll } = useAuth();
+  const menus = useSelector((state: RootState) => state.auth.menus);
 
   const handleLogoutClick = () => {
     openModal("Logout", {
@@ -56,25 +60,29 @@ export const Sidebar = () => {
       </div>
 
       <nav className="flex-1 space-y-1 pr-2">
-        <NavItem icon="dashboard" label="Dashboard" href="/" />
-        <NavItem icon="school" label="Students" />
-        <NavItem icon="auto_stories" label="Academics" />
-        <NavItem icon="account_balance_wallet" label="Financials" />
-        <NavItem icon="analytics" label="Reports" />
-        <NavItem icon="groups" label="Faculty" />
+        {/* <NavItem icon="dashboard" label="Dashboard" href="/" /> */}
+
+        {menus.map((menu: any) => (
+          <NavItem
+            key={menu.id}
+            icon={menu.icon || "folder"}
+            label={menu.label}
+            href={menu.route || "#"}
+          />
+        ))}
       </nav>
 
       <div className="mt-auto pt-8 space-y-1 border-t border-outline-variant/30 pr-2">
-        <button className="w-full flex items-center justify-center gap-2 py-3 mb-6 bg-primary-container text-white rounded-xl shadow-premium hover:opacity-90 active:scale-98 transition-all font-semibold">
+        {/* <button className="w-full flex items-center justify-center gap-2 py-3 mb-6 bg-primary-container text-white rounded-xl shadow-premium hover:opacity-90 active:scale-98 transition-all font-semibold">
           <span className="material-symbols-outlined text-sm">add</span>
           <span className="text-sm">New Project</span>
-        </button>
+        </button> */}
 
-        <NavItem icon="settings" label="Settings" href="/settings" />
-        <NavItem icon="contact_support" label="Support" />
+        {/* <NavItem icon="settings" label="Settings" href="/settings" />
+        <NavItem icon="contact_support" label="Support" /> */}
 
         <div className="mt-6 pt-6 border-t border-outline-variant/30 px-4">
-          <button 
+          <button
             onClick={handleLogoutClick}
             className="flex items-center gap-3 text-on-surface-variant/40 hover:text-error transition-colors cursor-pointer group w-full text-left"
           >

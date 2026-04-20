@@ -19,6 +19,11 @@ interface MultiSelectProps {
 export const MultiSelect = ({ label, options, defaultValues = [], onChange, className }: MultiSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValues, setSelectedValues] = useState<string[]>(defaultValues);
+
+  useEffect(() => {
+    // Sync external async default value changes
+    setSelectedValues(defaultValues);
+  }, [JSON.stringify(defaultValues)]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

@@ -16,6 +16,8 @@ const getInitialState = (): AuthState => {
       user: null,
       accessToken: null,
       refreshToken: null,
+      permissions: [],
+      menus: [],
       isAuthenticated: false,
       isLoading: false,
     };
@@ -29,6 +31,8 @@ const getInitialState = (): AuthState => {
     user: user ? JSON.parse(user) : null,
     accessToken: accessToken || null,
     refreshToken: refreshToken || null,
+    permissions: [],
+    menus: [],
     isAuthenticated: !!accessToken,
     isLoading: false,
   };
@@ -46,6 +50,7 @@ const authSlice = createSlice({
       state.user = user;
       state.accessToken = accessToken;
       state.refreshToken = refreshToken;
+      // Note: Permissions will be set via a dedicated thunk or standalone action
       state.isAuthenticated = true;
       state.isLoading = false;
 
@@ -64,6 +69,8 @@ const authSlice = createSlice({
       state.user = null;
       state.accessToken = null;
       state.refreshToken = null;
+      state.permissions = [];
+      state.menus = [];
       state.isAuthenticated = false;
       state.isLoading = false;
 
@@ -77,11 +84,17 @@ const authSlice = createSlice({
       Cookies.remove('refreshToken');
     },
 
+    setPermissions: (state, action: PayloadAction<any[]>) => {
+      state.permissions = action.payload;
+    },
+    setMenus: (state, action: PayloadAction<any[]>) => {
+      state.menus = action.payload;
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
   },
 });
 
-export const { setCredentials, logout, setLoading } = authSlice.actions;
+export const { setCredentials, logout, setLoading, setPermissions, setMenus } = authSlice.actions;
 export default authSlice.reducer;

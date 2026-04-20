@@ -7,7 +7,10 @@ import { ConfirmDialog } from "./modals/ConfirmDialog";
 import { MfaSetupModal } from "./modals/MfaSetupModal";
 import { LogoutDialog } from "./modals/LogoutDialog";
 import { MfaDisableModal } from "./modals/MfaDisableModal";
-
+import { CreateRoleModal } from "./modals/CreateRoleModal";
+import { CreateMenuModal } from "./modals/CreateMenuModal";
+import { CreatePermissionModal } from "./modals/CreatePermissionModal";
+import { RoleAssignmentsModal } from "./modals/RoleAssignmentsModal";
 
 export type ModalComponent<T = any> = React.ComponentType<T & { close: () => void }>;
 
@@ -34,7 +37,7 @@ const MODAL_REGISTRY: Record<string, { component: ModalComponent, title?: string
     title: "System Diagnostics",
     width: "max-w-2xl",
   },
-  "ConfirmAction": {
+  "Confirm": {
     component: ConfirmDialog as any,
     title: "Confirm Action",
     width: "max-w-md",
@@ -53,6 +56,26 @@ const MODAL_REGISTRY: Record<string, { component: ModalComponent, title?: string
     component: MfaDisableModal as any,
     title: "Disable Security",
     width: "max-w-sm",
+  },
+  "CreateRole": {
+    component: CreateRoleModal as any,
+    title: "Create Administrative Role",
+    width: "max-w-md",
+  },
+  "CreateMenu": {
+    component: CreateMenuModal as any,
+    title: "Add System Menu",
+    width: "max-w-xl",
+  },
+  "CreatePermission": {
+    component: CreatePermissionModal as any,
+    title: "Add Logic Permission",
+    width: "max-w-md",
+  },
+  "RoleAssignments": {
+    component: RoleAssignmentsModal as any,
+    title: "Role Assignments",
+    width: "max-w-xl",
   },
 };
 
@@ -88,10 +111,10 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ModalContext.Provider value={{ openModal, closeModal }}>
       {children}
-      
+
       {ActiveComponentData && ActiveComponent && (
-        <Modal 
-          isOpen={modalState.isOpen} 
+        <Modal
+          isOpen={modalState.isOpen}
           onClose={closeModal}
           title={ActiveComponentData.title}
           width={ActiveComponentData.width}

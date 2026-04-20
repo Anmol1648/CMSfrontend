@@ -19,6 +19,12 @@ interface CustomSelectProps {
 export const CustomSelect = ({ label, options, defaultValue, onChange, className }: CustomSelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState(defaultValue || (options.length > 0 ? options[0].value : ""));
+
+  useEffect(() => {
+    if (defaultValue !== undefined) {
+      setSelectedValue(defaultValue);
+    }
+  }, [defaultValue]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find((opt) => opt.value === selectedValue);

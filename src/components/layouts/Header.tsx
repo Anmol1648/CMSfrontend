@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { useModal } from "@/components/ui/ModalProvider";
 import { useProfile } from "@/lib/hooks/useProfile";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 export const Header = () => {
   const router = useRouter();
@@ -61,13 +62,14 @@ export const Header = () => {
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>
         </button>
         
-        <button
-          onClick={handleLogoutClick}
-          className="flex items-center gap-2 p-2 text-on-surface-variant hover:text-error transition-all group"
-          title="Logout"
-        >
-          <span className="material-symbols-outlined transition-transform group-hover:rotate-180">logout</span>
-        </button>
+        <Tooltip content="Logout" position="bottom">
+          <button
+            onClick={handleLogoutClick}
+            className="flex items-center gap-2 p-2 text-on-surface-variant hover:text-error transition-all group"
+          >
+            <span className="material-symbols-outlined transition-transform group-hover:rotate-180">logout</span>
+          </button>
+        </Tooltip>
 
 
         <Link href="/settings" className="flex items-center gap-3 pl-4 border-l border-outline-variant/30 hover:bg-surface-container-high/20 transition-all rounded-lg p-1 group/profile">

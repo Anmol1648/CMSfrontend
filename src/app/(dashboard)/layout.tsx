@@ -10,12 +10,40 @@ import { Header } from "@/components/layouts/Header";
 import { Sidebar } from "@/components/layouts/Sidebar";
 import { ModalProvider } from "@/components/ui/ModalProvider";
 import { DrawerProvider } from "@/components/ui/DrawerProvider";
+import { useEffect } from "react";
+import { useAppDispatch } from "@/lib/store/hooks";
+import { setPermissions, setMenus } from "@/lib/store/slices/authSlice";
+import { rbacApi } from "@/lib/api/endpoints/rbac.endpoints";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    rbacApi.getMyPermissions()
+      .then((res) => {
+        if (res && Array.isArray(res)) {
+          dispatch(setPermissions(res));
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load generic permissions:", err);
+      });
+
+    rbacApi.getMyMenus()
+      .then((res) => {
+        if (res && Array.isArray(res)) {
+          dispatch(setMenus(res));
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load dynamic menus:", err);
+      });
+  }, [dispatch]);
+
   return (
     <DrawerProvider>
       <ModalProvider>

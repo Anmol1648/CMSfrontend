@@ -8,6 +8,8 @@ export interface AuthState {
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
+  permissions: any[];
+  menus: any[];
   isAuthenticated: boolean;
   isLoading: boolean;
 }
