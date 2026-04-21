@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { Drawer } from "./Drawer";
 import { DemoDrawerComponent } from "./drawers/DemoDrawer";
+import { TenantDetailDrawer } from "./drawers/TenantDetailDrawer";
 
 export type DrawerComponent<T = any> = React.ComponentType<T & { close: () => void }>;
 
@@ -28,7 +29,11 @@ const DRAWER_REGISTRY: Record<string, { component: DrawerComponent, title?: stri
     title: "Quick Profile",
     width: "w-[500px]",
   },
-  // Add new drawers to this registry object
+  "TenantDetail": {
+    component: TenantDetailDrawer as any,
+    title: "Tenant Details",
+    width: "w-[520px]",
+  },
 };
 
 export const DrawerProvider = ({ children }: { children: ReactNode }) => {

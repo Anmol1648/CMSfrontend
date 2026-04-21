@@ -11,6 +11,7 @@ import { CreateRoleModal } from "./modals/CreateRoleModal";
 import { CreateMenuModal } from "./modals/CreateMenuModal";
 import { CreatePermissionModal } from "./modals/CreatePermissionModal";
 import { RoleAssignmentsModal } from "./modals/RoleAssignmentsModal";
+import { OnboardTenantModal } from "./modals/OnboardTenantModal";
 
 export type ModalComponent<T = any> = React.ComponentType<T & { close: () => void }>;
 
@@ -76,6 +77,11 @@ const MODAL_REGISTRY: Record<string, { component: ModalComponent, title?: string
     component: RoleAssignmentsModal as any,
     title: "Role Assignments",
     width: "max-w-xl",
+  },
+  "OnboardTenant": {
+    component: OnboardTenantModal as any,
+    title: "Onboard New College",
+    width: "max-w-md",
   },
 };
 

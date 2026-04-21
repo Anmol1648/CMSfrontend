@@ -45,8 +45,8 @@ export default function DashboardLayout({
   }, [dispatch]);
 
   return (
-    <DrawerProvider>
-      <ModalProvider>
+    <ModalProvider>
+      <DrawerProvider>
         <div className="flex min-h-screen">
           <Sidebar />
           <div className="flex-1 flex flex-col pl-64">
@@ -54,7 +54,7 @@ export default function DashboardLayout({
             <main className="flex-1 pt-24 px-12 pb-20">{children}</main>
           </div>
         </div>
-      </ModalProvider>
-    </DrawerProvider>
+      </DrawerProvider>
+    </ModalProvider>
   );
 }

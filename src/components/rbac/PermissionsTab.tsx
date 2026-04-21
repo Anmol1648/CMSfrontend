@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { rbacApi } from "@/lib/api/endpoints/rbac.endpoints";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useModal } from "@/components/ui/ModalProvider";
+import { useToast } from "@/components/ui/ToastProvider";
 import { DataTable } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
@@ -15,6 +16,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 export const PermissionsTab = () => {
   const { can } = usePermissions();
   const { openModal } = useModal();
+  const { showToast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: permissions = [], isLoading } = useQuery({
@@ -24,8 +26,15 @@ export const PermissionsTab = () => {
 
   const deleteMutation = useMutation({
     mutationFn: rbacApi.deletePermission,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["permissions"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["permissions"] });
+      showToast("Permission deleted successfully", "success");
+    },
+    onError: (error: any) => {
+      showToast(error?.response?.data?.message || "Failed to delete permission", "error");
+    }
   });
+
 
   const handleDelete = (perm: any) => {
     openModal("Confirm", {

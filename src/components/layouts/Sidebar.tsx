@@ -62,14 +62,31 @@ export const Sidebar = () => {
       <nav className="flex-1 space-y-1 pr-2">
         {/* <NavItem icon="dashboard" label="Dashboard" href="/" /> */}
 
-        {menus.map((menu: any) => (
-          <NavItem
-            key={menu.id}
-            icon={menu.icon || "folder"}
-            label={menu.label}
-            href={menu.route || "#"}
-          />
-        ))}
+        {/* ─── Super Admin Section ───────────────────────────────── */}
+
+        {/* <div className="mb-4">
+          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-on-surface-variant/30 px-4 mb-2 mt-2">
+            Super Admin
+          </p>
+          <NavItem icon="domain_add" label="Tenant Management" href="/super-admin/tenants" />
+        </div> */}
+
+        {/* ─── Dynamic Menus ────────────────────────────────────── */}
+        {menus.length > 0 && (
+          <div className="pt-2 border-t border-outline-variant/10">
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-on-surface-variant/30 px-4 mb-2 mt-2">
+              Modules
+            </p>
+            {menus.map((menu: any) => (
+              <NavItem
+                key={menu.id}
+                icon={menu.icon || "folder"}
+                label={menu.label}
+                href={menu.route || "#"}
+              />
+            ))}
+          </div>
+        )}
       </nav>
 
       <div className="mt-auto pt-8 space-y-1 border-t border-outline-variant/30 pr-2">
