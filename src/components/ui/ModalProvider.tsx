@@ -12,6 +12,8 @@ import { CreateMenuModal } from "./modals/CreateMenuModal";
 import { CreatePermissionModal } from "./modals/CreatePermissionModal";
 import { RoleAssignmentsModal } from "./modals/RoleAssignmentsModal";
 import { OnboardTenantModal } from "./modals/OnboardTenantModal";
+import { WidgetEditorModal } from "./modals/WidgetEditorModal";
+import { AssignWidgetModal } from "./modals/AssignWidgetModal";
 
 export type ModalComponent<T = any> = React.ComponentType<T & { close: () => void }>;
 
@@ -81,6 +83,16 @@ const MODAL_REGISTRY: Record<string, { component: ModalComponent, title?: string
   "OnboardTenant": {
     component: OnboardTenantModal as any,
     title: "Onboard New College",
+    width: "max-w-md",
+  },
+  "WidgetEditor": {
+    component: WidgetEditorModal as any,
+    title: "Widget Configuration",
+    width: "max-w-3xl",
+  },
+  "AssignWidget": {
+    component: AssignWidgetModal as any,
+    title: "Role Widget Mapping",
     width: "max-w-md",
   },
 };
