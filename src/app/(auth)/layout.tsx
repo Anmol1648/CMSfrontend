@@ -5,7 +5,7 @@
  * The school is found from this page's address (or the backend's default school).
  */
 import { useQuery } from "@tanstack/react-query";
-import { schoolApi } from "@/lib/api/school";
+import { logoSrc, schoolApi } from "@/lib/api/school";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const school = useQuery({ queryKey: ["public-school"], queryFn: schoolApi.publicInfo, staleTime: Infinity });
@@ -27,10 +27,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <div className="relative z-10 flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/10 flex items-center justify-center rounded-xl border border-white/10">
-            <span className="material-symbols-outlined text-white text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-              school
-            </span>
+          <div className="w-10 h-10 bg-white flex items-center justify-center rounded-xl border border-white/10 overflow-hidden">
+            {school.data?.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoSrc(school.data.logoUrl)!} alt="" className="w-full h-full object-contain" />
+            ) : (
+              <span className="material-symbols-outlined text-primary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                school
+              </span>
+            )}
           </div>
           <h2 className="text-white font-bold text-lg tracking-tight leading-tight">{name}</h2>
         </div>

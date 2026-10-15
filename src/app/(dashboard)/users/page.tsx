@@ -16,7 +16,8 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { AdminUser, rolesApi, usersApi, UserListQuery } from "@/lib/api/admin";
 import type { UserKind } from "@/lib/api/auth";
-import { ApiError, errorMessage } from "@/lib/api/client";
+import { ApiError, downloadFile, errorMessage } from "@/lib/api/client";
+import { useToast } from "@/components/ui/ToastProvider";
 
 const PAGE_SIZE = 25;
 
@@ -122,6 +123,8 @@ function UsersList() {
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState<{ user: AdminUser; temporaryPassword: string; emailed: boolean } | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search), 300);
@@ -139,7 +142,32 @@ function UsersList() {
       <PageHeader
         title="Users"
         description="Everyone who can sign in: their roles, status and sign-in details."
-        actions={can("user.create") && <Button onClick={() => setCreating(true)}>New user</Button>}
+        actions={
+          <div className="flex items-center gap-3">
+            <Button
+              variant="secondary"
+              disabled={exporting}
+              onClick={async () => {
+                setExporting(true);
+                try {
+                  await downloadFile("/users/export", { sort: "displayName", ...(debounced.trim() ? { search: debounced.trim() } : {}), ...(kind ? { "filter[kind]": kind } : {}), ...(status ? { "filter[status]": status } : {}), ...(role ? { "filter[role]": role } : {}) }, "users.xlsx");
+                } catch (err) {
+                  showToast(errorMessage(err), "error");
+                } finally {
+                  setExporting(false);
+                }
+              }}
+            >
+              {exporting ? "Exporting…" : "Export"}
+            </Button>
+            {can("user.create") && (
+              <Link href="/users/import" className="px-6 py-2.5 font-medium rounded-md bg-surface-high text-primary hover:bg-surface-highest transition-all">
+                Import
+              </Link>
+            )}
+            {can("user.create") && <Button onClick={() => setCreating(true)}>New user</Button>}
+          </div>
+        }
       />
 
       <Card padding="none" className="overflow-hidden">

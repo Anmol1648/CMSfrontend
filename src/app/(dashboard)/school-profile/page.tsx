@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { FormAlert, Select, SubmitButton } from "@/components/forms";
 import { PageHeader } from "@/components/layout/AppShell";
 import { RecordHistory } from "@/components/admin/RecordHistory";
+import { SchoolLogoCard } from "@/components/admin/SchoolLogoCard";
 import { schoolApi, SchoolProfile, SchoolProfileUpdate } from "@/lib/api/school";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -144,6 +145,8 @@ export default function SchoolProfilePage() {
           </FormAlert>
         )}
         {error && <FormAlert>{error}</FormAlert>}
+
+        <SchoolLogoCard profile={profile.data} canEdit={canEdit} />
 
         <Card className="space-y-6">
           <h2 className="text-lg font-bold text-primary">School</h2>

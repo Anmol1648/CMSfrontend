@@ -9,6 +9,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { logoSrc } from "@/lib/api/school";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 
@@ -132,6 +133,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen">
       <aside className="h-screen w-64 fixed left-0 top-0 overflow-y-auto bg-surface-container-low flex flex-col py-8 px-4 z-50 shadow-[1px_0_0_0_rgba(0,0,0,0.05)]">
         <div className="mb-10 px-4">
+          {me?.school?.logoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoSrc(me.school.logoUrl)!} alt="" className="w-12 h-12 object-contain mb-3" />
+          )}
           <h1 className="text-xl font-black tracking-tight text-primary leading-tight">{me?.school?.name ?? "School ERP"}</h1>
           <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/60 font-bold mt-1">School management</p>
         </div>

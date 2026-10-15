@@ -27,7 +27,7 @@ export type LoginResult = SignedIn | { mfaRequired: true; mfaToken: string };
 export interface Me {
   user: UserSummary;
   roles: { slug: string; name: string }[];
-  school: { code: string; name: string; legalName: string } | null;
+  school: { code: string; name: string; legalName: string; logoUrl: string | null } | null;
   mustChangePassword: boolean;
 }
 

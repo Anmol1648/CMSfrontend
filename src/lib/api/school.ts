@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, API_BASE_URL, uploadFile } from './client';
 
 /** Calls to /api/school-profile and /api/public/school. */
 
@@ -6,6 +6,7 @@ export interface SchoolProfile {
   tenantId: string;
   legalName: string;
   shortName: string | null;
+  logoFileId: string | null;
   addressLine1: string | null;
   addressLine2: string | null;
   city: string | null;
@@ -28,7 +29,7 @@ export interface SchoolProfile {
   tenant: { code: string; name: string; status: string };
 }
 
-export type SchoolProfileUpdate = Partial<Omit<SchoolProfile, 'tenantId' | 'tenant' | 'updatedAt'>> & { updatedAt?: string };
+export type SchoolProfileUpdate = Partial<Omit<SchoolProfile, 'tenantId' | 'tenant' | 'updatedAt' | 'logoFileId'>> & { updatedAt?: string };
 
 export interface PublicSchool {
   code: string;
@@ -43,4 +44,9 @@ export const schoolApi = {
   publicInfo: () => api.get<PublicSchool>('/public/school'),
   profile: () => api.get<SchoolProfile>('/school-profile'),
   updateProfile: (changes: SchoolProfileUpdate) => api.patch<SchoolProfile>('/school-profile', changes),
+  uploadLogo: (file: File) => uploadFile<SchoolProfile>('/school-profile/logo', 'logo', file),
+  removeLogo: () => api.delete<SchoolProfile>('/school-profile/logo'),
 };
+
+/** Full address of a logo path returned by the API (relative to the API base). */
+export const logoSrc = (relative: string | null | undefined) => (relative ? `${API_BASE_URL}/${relative}` : null);

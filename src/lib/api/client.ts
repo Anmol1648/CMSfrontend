@@ -156,5 +156,43 @@ export const api = {
   delete: <T>(url: string, config?: AxiosRequestConfig) => unwrap<T>(http.delete(url, config)),
 };
 
+/** Sends one file as multipart/form-data and returns `data` from the envelope. */
+export const uploadFile = <T>(url: string, field: string, file: File) => {
+  const form = new FormData();
+  form.append(field, file);
+  return unwrap<T>(http.post(url, form, { headers: { "Content-Type": "multipart/form-data" }, timeout: 120_000 }));
+};
+
+/** Downloads a file from an authenticated endpoint and saves it (name from Content-Disposition). */
+export const downloadFile = async (url: string, params?: Record<string, string | number>, fallbackName = "download.xlsx") => {
+  let res;
+  try {
+    res = await http.get<Blob>(url, { params, responseType: "blob", timeout: 120_000 });
+  } catch (err) {
+    // Error bodies arrive as a Blob too; read the JSON message out of it.
+    const ax = err as AxiosError;
+    const blob = (ax as unknown as { response?: { data?: Blob; status?: number } }).response?.data;
+    if (blob instanceof Blob) {
+      try {
+        const body = JSON.parse(await blob.text()) as Envelope<unknown>;
+        throw new ApiError(body.error?.message || "Download failed", ax.response?.status ?? 0, body.error?.code || "ERROR", body.error?.details || []);
+      } catch (inner) {
+        if (inner instanceof ApiError) throw inner;
+      }
+    }
+    throw toApiError(err);
+  }
+  const disposition = String(res.headers["content-disposition"] ?? "");
+  const name = disposition.match(/filename="?([^"]+)"?/)?.[1] ?? fallbackName;
+  const href = URL.createObjectURL(res.data);
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(href), 10_000);
+};
+
 /** Turns any thrown value into a message for a toast. */
 export const errorMessage = (err: unknown) => (err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
