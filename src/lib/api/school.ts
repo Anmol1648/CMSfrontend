@@ -25,11 +25,16 @@ export interface SchoolProfile {
   dateFormat: string;
   currency: string;
   academicYearStartMonth: number;
+  loginBackgroundFileId: string | null;
+  loginBackgroundFocus: LoginFocus;
+  loginOverlay: number;
+  loginQuote: string | null;
+  loginQuoteAuthor: string | null;
   updatedAt: string;
   tenant: { code: string; name: string; status: string };
 }
 
-export type SchoolProfileUpdate = Partial<Omit<SchoolProfile, 'tenantId' | 'tenant' | 'updatedAt' | 'logoFileId'>> & { updatedAt?: string };
+export type SchoolProfileUpdate = Partial<Omit<SchoolProfile, 'tenantId' | 'tenant' | 'updatedAt' | 'logoFileId' | 'loginBackgroundFileId'>> & { updatedAt?: string };
 
 export interface PublicSchool {
   code: string;
@@ -38,14 +43,28 @@ export interface PublicSchool {
   logoUrl: string | null;
   dateFormat: string;
   timeZone: string;
+  login: LoginBranding;
 }
+
+export type LoginFocus = 'center' | 'top' | 'bottom' | 'left' | 'right';
+
+/** How the sign-in page's left panel looks. */
+export interface LoginBranding {
+  backgroundUrl: string | null;
+  backgroundFocus: LoginFocus;
+  overlay: number;
+  quote: string | null;
+  quoteAuthor: string | null;
+}
+
+export type SchoolImage = 'logo' | 'login-background';
 
 export const schoolApi = {
   publicInfo: () => api.get<PublicSchool>('/public/school'),
   profile: () => api.get<SchoolProfile>('/school-profile'),
   updateProfile: (changes: SchoolProfileUpdate) => api.patch<SchoolProfile>('/school-profile', changes),
-  uploadLogo: (file: File) => uploadFile<SchoolProfile>('/school-profile/logo', 'logo', file),
-  removeLogo: () => api.delete<SchoolProfile>('/school-profile/logo'),
+  uploadImage: (slot: SchoolImage, file: File) => uploadFile<SchoolProfile>(`/school-profile/${slot}`, 'image', file),
+  removeImage: (slot: SchoolImage) => api.delete<SchoolProfile>(`/school-profile/${slot}`),
 };
 
 // The sign-in page's school name and logo are public; remembering them in this browser lets the

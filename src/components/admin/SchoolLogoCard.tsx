@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { FormAlert } from "@/components/forms";
 import { logoSrc, schoolApi, SchoolProfile } from "@/lib/api/school";
 import { errorMessage } from "@/lib/api/client";
+import { resizeImage } from "@/lib/images";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useToast } from "@/components/ui/ToastProvider";
 
@@ -59,14 +60,14 @@ export function SchoolLogoCard({ profile, canEdit }: { profile: SchoolProfile; c
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) run(() => schoolApi.uploadLogo(f), "Logo saved");
+                if (f) run(async () => schoolApi.uploadImage("logo", await resizeImage(f, 512, { keepTransparency: true })), "Logo saved");
               }}
             />
             <Button type="button" variant="secondary" disabled={busy} onClick={() => input.current?.click()}>
               {busy ? "Uploading…" : src ? "Replace logo" : "Upload logo"}
             </Button>
             {src && (
-              <Button type="button" variant="secondary" className="text-error" disabled={busy} onClick={() => run(schoolApi.removeLogo, "Logo removed")}>
+              <Button type="button" variant="secondary" className="text-error" disabled={busy} onClick={() => run(() => schoolApi.removeImage("logo"), "Logo removed")}>
                 Remove
               </Button>
             )}

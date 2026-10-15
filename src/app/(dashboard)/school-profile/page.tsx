@@ -9,6 +9,7 @@ import { FormAlert, Select, SubmitButton } from "@/components/forms";
 import { PageHeader } from "@/components/layout/AppShell";
 import { RecordHistory } from "@/components/admin/RecordHistory";
 import { SchoolLogoCard } from "@/components/admin/SchoolLogoCard";
+import { SignInPageCard } from "@/components/admin/SignInPageCard";
 import { schoolApi, SchoolProfile, SchoolProfileUpdate } from "@/lib/api/school";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -19,8 +20,9 @@ type FormValues = Record<string, string>;
 const TEXT_FIELDS = [
   "legalName", "shortName", "board", "affiliationNo", "udiseCode", "addressLine1", "addressLine2", "city", "district",
   "state", "pincode", "country", "phone", "email", "website", "timeZone", "dateFormat", "currency",
+  "loginBackgroundFocus", "loginQuote", "loginQuoteAuthor",
 ] as const;
-const NUMBER_FIELDS = ["establishedYear", "academicYearStartMonth"] as const;
+const NUMBER_FIELDS = ["establishedYear", "academicYearStartMonth", "loginOverlay"] as const;
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const DATE_FORMATS = ["DD-MM-YYYY", "DD/MM/YYYY", "MM-DD-YYYY", "YYYY-MM-DD"];
@@ -147,6 +149,16 @@ export default function SchoolProfilePage() {
         {error && <FormAlert>{error}</FormAlert>}
 
         <SchoolLogoCard profile={profile.data} canEdit={canEdit} />
+
+        <SignInPageCard
+          profile={profile.data}
+          canEdit={canEdit}
+          values={{ loginBackgroundFocus: values.loginBackgroundFocus, loginOverlay: values.loginOverlay, loginQuote: values.loginQuote, loginQuoteAuthor: values.loginQuoteAuthor }}
+          set={set}
+          errors={fieldErrors}
+          disabled={busy}
+          name={{ short: values.shortName, legal: values.legalName }}
+        />
 
         <Card className="space-y-6">
           <h2 className="text-lg font-bold text-primary">School</h2>
