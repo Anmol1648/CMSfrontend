@@ -9,12 +9,17 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { useQueryClient } from "@tanstack/react-query";
 import { authApi, Me, SignedIn } from "@/lib/api/auth";
 import { renewSession, setAccessToken, setSessionEndedHandler } from "@/lib/api/client";
+import { Access, accessApi } from "@/lib/api/admin";
 
 type Status = "loading" | "signedOut" | "signedIn";
 
 interface AuthContextValue {
   status: Status;
   me: Me | null;
+  /** What I may do and my sidebar (null until the password has been changed). */
+  access: Access | null;
+  /** True if I hold the permission ("resource.action"). */
+  can: (permission: string) => boolean;
   /** True until the user chooses their own password. */
   mustChangePassword: boolean;
   /** Ended because the session expired or was signed out elsewhere (shown on the sign-in page). */
@@ -23,6 +28,7 @@ interface AuthContextValue {
   /** After a password change: use the new token and reload the user. */
   adoptNewToken: (accessToken: string) => Promise<void>;
   reloadMe: () => Promise<void>;
+  reloadAccess: () => Promise<void>;
   signOut: (everywhere?: boolean) => Promise<void>;
 }
 
@@ -32,10 +38,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<Status>("loading");
   const [me, setMe] = useState<Me | null>(null);
+  const [access, setAccess] = useState<Access | null>(null);
   const [sessionExpired, setSessionExpired] = useState(false);
 
   const loadMe = useCallback(async () => {
     const profile = await authApi.me();
+    // Until the password is changed the server allows nothing else, so access is loaded afterwards.
+    setAccess(profile.mustChangePassword ? null : await accessApi.mine());
     setMe(profile);
     setStatus("signedIn");
   }, []);
@@ -44,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     (expired: boolean) => {
       setAccessToken(null);
       setMe(null);
+      setAccess(null);
       setSessionExpired(expired);
       setStatus("signedOut");
       queryClient.clear();
@@ -95,18 +105,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [toSignedOut]
   );
 
+  const reloadAccess = useCallback(async () => {
+    setAccess(await accessApi.mine());
+  }, []);
+
+  const can = useCallback((permission: string) => !!access?.permissions[permission], [access]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
       me,
+      access,
+      can,
       mustChangePassword: me?.mustChangePassword ?? false,
       sessionExpired,
       completeSignIn,
       adoptNewToken,
       reloadMe: loadMe,
+      reloadAccess,
       signOut,
     }),
-    [status, me, sessionExpired, completeSignIn, adoptNewToken, loadMe, signOut]
+    [status, me, access, can, sessionExpired, completeSignIn, adoptNewToken, loadMe, reloadAccess, signOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

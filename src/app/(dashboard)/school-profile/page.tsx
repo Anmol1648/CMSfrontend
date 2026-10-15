@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { FormAlert, SubmitButton } from "@/components/forms";
+import { FormAlert, Select, SubmitButton } from "@/components/forms";
 import { PageHeader } from "@/components/layout/AppShell";
 import { schoolApi, SchoolProfile, SchoolProfileUpdate } from "@/lib/api/school";
 import { ApiError, errorMessage } from "@/lib/api/client";
@@ -41,31 +41,11 @@ const diff = (original: FormValues, current: FormValues): SchoolProfileUpdate =>
   return out as SchoolProfileUpdate;
 };
 
-function Select({ label, value, onChange, options, error, disabled }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; error?: string; disabled?: boolean }) {
-  return (
-    <label className="flex flex-col gap-2 w-full">
-      <span className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest ml-1">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        className={`w-full bg-surface-container-low rounded-xl border-none outline-none py-3.5 px-4 text-sm text-primary font-bold focus:ring-2 focus:ring-primary/10 ${error ? "ring-2 ring-error/50" : ""}`}
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      {error && <span className="text-[10px] font-bold text-error uppercase tracking-wider ml-1">{error}</span>}
-    </label>
-  );
-}
-
 export default function SchoolProfilePage() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  const { reloadMe } = useAuth();
+  const { reloadMe, reloadAccess, can } = useAuth();
+  const canEdit = can("school_profile.update");
   const profile = useQuery({ queryKey: ["school-profile"], queryFn: schoolApi.profile });
 
   const original = useMemo(() => (profile.data ? toForm(profile.data) : null), [profile.data]);
@@ -92,7 +72,7 @@ export default function SchoolProfilePage() {
   const dirty = Object.keys(changes).length > 0;
   const set = (k: string) => (v: string) => setValues((cur) => ({ ...cur!, [k]: v }));
   const field = (k: string, label: string, extra: Partial<React.ComponentProps<typeof Input>> = {}) => (
-    <Input label={label} value={values[k]} error={fieldErrors[k]} onChange={(e) => set(k)(e.target.value)} disabled={busy} {...extra} />
+    <Input label={label} value={values[k]} error={fieldErrors[k]} onChange={(e) => set(k)(e.target.value)} disabled={busy} readOnly={!canEdit} {...extra} />
   );
 
   const save = async (e: React.FormEvent) => {
@@ -106,7 +86,7 @@ export default function SchoolProfilePage() {
       const saved = await schoolApi.updateProfile({ ...changes, updatedAt: profile.data!.updatedAt });
       queryClient.setQueryData(["school-profile"], saved);
       showToast("School profile saved", "success");
-      if ("legalName" in changes || "shortName" in changes) await reloadMe();
+      if ("legalName" in changes || "shortName" in changes) await Promise.all([reloadMe(), reloadAccess()]);
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) setConflict(true);
       else if (err instanceof ApiError && err.status === 403) setError("You can view the school profile but not change it.");
@@ -127,7 +107,7 @@ export default function SchoolProfilePage() {
         title="School Profile"
         description="Shown on headers, reports, receipts and ID cards."
         actions={
-          <div className="flex gap-3">
+          canEdit && (<div className="flex gap-3">
             <Button type="button" variant="secondary" disabled={!dirty || busy} onClick={() => setValues(original)}>
               Discard changes
             </Button>
@@ -136,9 +116,14 @@ export default function SchoolProfilePage() {
                 Save
               </SubmitButton>
             </div>
-          </div>
+          </div>)
         }
       />
+      {!canEdit && (
+        <div className="max-w-5xl mb-6">
+          <FormAlert tone="info">You can view the school profile. Changing it needs the “Edit the school’s name, address, board and formats” permission.</FormAlert>
+        </div>
+      )}
 
       <div className="space-y-6 max-w-5xl">
         {conflict && (
@@ -196,10 +181,10 @@ export default function SchoolProfilePage() {
               onChange={set("academicYearStartMonth")}
               options={MONTHS.map((m, i) => ({ value: String(i + 1), label: m }))}
               error={fieldErrors.academicYearStartMonth}
-              disabled={busy}
+              disabled={busy || !canEdit}
             />
-            <Select label="Date format" value={values.dateFormat} onChange={set("dateFormat")} options={DATE_FORMATS.map((d) => ({ value: d, label: d }))} error={fieldErrors.dateFormat} disabled={busy} />
-            <Select label="Time zone" value={values.timeZone} onChange={set("timeZone")} options={tzOptions.map((t) => ({ value: t, label: t }))} error={fieldErrors.timeZone} disabled={busy} />
+            <Select label="Date format" value={values.dateFormat} onChange={set("dateFormat")} options={DATE_FORMATS.map((d) => ({ value: d, label: d }))} error={fieldErrors.dateFormat} disabled={busy || !canEdit} />
+            <Select label="Time zone" value={values.timeZone} onChange={set("timeZone")} options={tzOptions.map((t) => ({ value: t, label: t }))} error={fieldErrors.timeZone} disabled={busy || !canEdit} />
             {field("currency", "Currency (3-letter code)", { maxLength: 3 })}
           </div>
         </Card>

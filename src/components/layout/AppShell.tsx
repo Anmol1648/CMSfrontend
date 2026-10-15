@@ -2,7 +2,7 @@
 
 /**
  * Signed-in layout: sidebar, header (school + user menu) and the page.
- * Navigation is a fixed list for now; with roles & permissions (F4) it comes from the server.
+ * The sidebar comes from the server: only pages the person's permissions allow (/api/me/access).
  */
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -17,11 +17,6 @@ interface NavItem {
   href: string;
   icon: string;
 }
-
-const NAV: { section: string; items: NavItem[] }[] = [
-  { section: "", items: [{ label: "Home", href: "/", icon: "home" }] },
-  { section: "Setup", items: [{ label: "School Profile", href: "/school-profile", icon: "account_balance" }] },
-];
 
 function NavLink({ item }: { item: NavItem }) {
   const pathname = usePathname();
@@ -131,7 +126,8 @@ function UserMenu() {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { me } = useAuth();
+  const { me, access } = useAuth();
+  const menu = access?.menu ?? [];
   return (
     <div className="flex min-h-screen">
       <aside className="h-screen w-64 fixed left-0 top-0 overflow-y-auto bg-surface-container-low flex flex-col py-8 px-4 z-50 shadow-[1px_0_0_0_rgba(0,0,0,0.05)]">
@@ -140,13 +136,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/60 font-bold mt-1">School management</p>
         </div>
         <nav className="flex-1 space-y-1 pr-2" aria-label="Main">
-          {NAV.map((group) => (
-            <div key={group.section || "main"} className="mb-3">
-              {group.section && (
-                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-on-surface-variant/40 px-4 mb-2 mt-3">{group.section}</p>
+          {menu.map((group) => (
+            <div key={group.key} className="mb-3">
+              {group.label && (
+                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-on-surface-variant/40 px-4 mb-2 mt-3">{group.label}</p>
               )}
               {group.items.map((item) => (
-                <NavLink key={item.href} item={item} />
+                <NavLink key={item.key} item={item} />
               ))}
             </div>
           ))}

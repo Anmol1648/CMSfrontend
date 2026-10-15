@@ -77,6 +77,84 @@ export function FormAlert({ tone = "error", children }: { tone?: "error" | "info
   );
 }
 
+/** Labelled dropdown in the same style as Input. */
+export function Select({
+  label,
+  value,
+  onChange,
+  options,
+  error,
+  disabled,
+  className,
+}: {
+  label?: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  error?: string;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <label className={cn("flex flex-col gap-2 w-full", className)}>
+      {label && <span className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest ml-1">{label}</span>}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className={cn(
+          "w-full bg-surface-container-low rounded-xl border-none outline-none py-3.5 px-4 text-sm text-primary font-bold focus:ring-2 focus:ring-primary/10 disabled:opacity-60",
+          error && "ring-2 ring-error/50"
+        )}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {error && <span className="text-[10px] font-bold text-error uppercase tracking-wider ml-1">{error}</span>}
+    </label>
+  );
+}
+
+/** Checkbox with a label and optional hint line. */
+export function Checkbox({
+  checked,
+  onChange,
+  label,
+  hint,
+  disabled,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: React.ReactNode;
+  hint?: React.ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <label className={cn("flex items-start gap-3 select-none", disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer")}>
+      <input type="checkbox" className="mt-0.5 w-4 h-4 accent-[#1A365D]" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      <span className="flex flex-col">
+        <span className="text-sm font-semibold text-on-surface">{label}</span>
+        {hint && <span className="text-xs text-on-surface-variant/70 mt-0.5">{hint}</span>}
+      </span>
+    </label>
+  );
+}
+
+/** Small coloured label (status, role, flags). */
+export function Pill({ tone = "neutral", children }: { tone?: "neutral" | "success" | "warning" | "danger" | "primary"; children: React.ReactNode }) {
+  const tones = {
+    neutral: "bg-surface-container text-on-surface-variant",
+    success: "bg-emerald-50 text-emerald-700",
+    warning: "bg-amber-50 text-amber-800",
+    danger: "bg-error-container/50 text-error",
+    primary: "bg-primary/10 text-primary",
+  };
+  return <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider", tones[tone])}>{children}</span>;
+}
+
 /** Label + value line for read-only details. */
 export function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   return (
