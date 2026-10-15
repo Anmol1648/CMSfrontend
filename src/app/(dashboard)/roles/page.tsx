@@ -72,6 +72,7 @@ function NewRoleDialog({ open, onClose }: { open: boolean; onClose: () => void }
 
 function RolesList() {
   const { can } = useAuth();
+  const router = useRouter();
   const roles = useQuery({ queryKey: ["roles"], queryFn: rolesApi.list });
   const [creating, setCreating] = useState(false);
 
@@ -79,7 +80,7 @@ function RolesList() {
     <>
       <PageHeader
         title="Roles & Permissions"
-        description="A role is a set of permissions. Give people roles on the Users screen."
+        description="A role is a set of permissions. Click a role to choose what it may do; give people roles on the Users screen."
         actions={can("role.manage") && <Button onClick={() => setCreating(true)}>New role</Button>}
       />
       {roles.isError && <FormAlert>{errorMessage(roles.error)}</FormAlert>}
@@ -90,11 +91,16 @@ function RolesList() {
               <th className="px-6 py-3 font-bold">Role</th>
               <th className="px-6 py-3 font-bold">Permissions</th>
               <th className="px-6 py-3 font-bold">People</th>
+              <th className="px-6 py-3" />
             </tr>
           </thead>
           <tbody>
             {roles.data?.map((r) => (
-              <tr key={r.id} className="border-t border-outline-variant/10 hover:bg-surface-container-low/60">
+              <tr
+                key={r.id}
+                onClick={() => router.push(`/roles/${r.id}`)}
+                className="border-t border-outline-variant/10 hover:bg-surface-container-low/60 cursor-pointer"
+              >
                 <td className="px-6 py-4">
                   <Link href={`/roles/${r.id}`} className="font-bold text-primary hover:underline">
                     {r.name}
@@ -106,12 +112,18 @@ function RolesList() {
                 <td className="px-6 py-4">{r.permissionCount}</td>
                 <td className="px-6 py-4">
                   {r.userCount > 0 ? (
-                    <Link href={`/users?role=${r.slug}`} className="text-primary hover:underline">
+                    <Link href={`/users?role=${r.slug}`} onClick={(e) => e.stopPropagation()} className="text-primary hover:underline">
                       {r.userCount}
                     </Link>
                   ) : (
                     0
                   )}
+                </td>
+                <td className="px-6 py-4 text-right">
+                  <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-primary">
+                    {r.isSystem || !can("role.manage") ? "View" : "Permissions"}
+                    <span className="material-symbols-outlined text-base">chevron_right</span>
+                  </span>
                 </td>
               </tr>
             ))}
