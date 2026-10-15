@@ -4,16 +4,21 @@
  * Sign-in pages: the school's name on the left, the form on the right.
  * The school is found from this page's address (or the backend's default school).
  */
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { logoSrc, readCachedBranding, saveCachedBranding, schoolApi } from "@/lib/api/school";
+import { logoSrc, PublicSchool, readCachedBranding, saveCachedBranding, schoolApi } from "@/lib/api/school";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const school = useQuery({ queryKey: ["public-school"], queryFn: schoolApi.publicInfo, staleTime: Infinity, placeholderData: readCachedBranding });
+  const school = useQuery({ queryKey: ["public-school"], queryFn: schoolApi.publicInfo, staleTime: Infinity });
+  // The remembered branding is read only after the page has loaded in the browser: the server can't
+  // see it, and the first browser render must match the server's HTML.
+  const [remembered, setRemembered] = useState<PublicSchool | undefined>(undefined);
+  useEffect(() => setRemembered(readCachedBranding()), []);
   useEffect(() => {
-    if (school.data && !school.isPlaceholderData) saveCachedBranding(school.data);
-  }, [school.data, school.isPlaceholderData]);
-  const name = school.data?.name ?? (school.isError ? "School ERP" : "");
+    if (school.data) saveCachedBranding(school.data);
+  }, [school.data]);
+  const branding = school.data ?? remembered;
+  const name = branding?.name ?? (school.isError ? "School ERP" : "");
 
   return (
     <div className="min-h-screen flex">
@@ -32,9 +37,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         <div className="relative z-10 flex items-center gap-3">
           <div className="w-10 h-10 bg-white flex items-center justify-center rounded-xl border border-white/10 overflow-hidden">
-            {school.data?.logoUrl ? (
+            {branding?.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoSrc(school.data.logoUrl)!} alt="" className="w-full h-full object-contain" />
+              <img src={logoSrc(branding.logoUrl)!} alt="" className="w-full h-full object-contain" />
             ) : (
               <span className="material-symbols-outlined text-primary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>
                 school
@@ -48,8 +53,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <h1 className="text-white text-5xl xl:text-[3.5rem] font-extrabold leading-[1.1] tracking-tight">
             {name || " "}
           </h1>
-          {school.data && school.data.legalName !== school.data.name && (
-            <p className="text-white/50 text-sm font-medium mt-6 max-w-[360px] leading-relaxed">{school.data.legalName}</p>
+          {branding && branding.legalName !== branding.name && (
+            <p className="text-white/50 text-sm font-medium mt-6 max-w-[360px] leading-relaxed">{branding.legalName}</p>
           )}
         </div>
 
