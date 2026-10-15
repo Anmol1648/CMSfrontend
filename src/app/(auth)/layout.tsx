@@ -4,11 +4,15 @@
  * Sign-in pages: the school's name on the left, the form on the right.
  * The school is found from this page's address (or the backend's default school).
  */
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { logoSrc, schoolApi } from "@/lib/api/school";
+import { logoSrc, readCachedBranding, saveCachedBranding, schoolApi } from "@/lib/api/school";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const school = useQuery({ queryKey: ["public-school"], queryFn: schoolApi.publicInfo, staleTime: Infinity });
+  const school = useQuery({ queryKey: ["public-school"], queryFn: schoolApi.publicInfo, staleTime: Infinity, placeholderData: readCachedBranding });
+  useEffect(() => {
+    if (school.data && !school.isPlaceholderData) saveCachedBranding(school.data);
+  }, [school.data, school.isPlaceholderData]);
   const name = school.data?.name ?? (school.isError ? "School ERP" : "");
 
   return (

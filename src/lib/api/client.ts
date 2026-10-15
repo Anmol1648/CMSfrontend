@@ -122,6 +122,33 @@ export const renewSession = <T extends TokenBundle = TokenBundle>(): Promise<T> 
   return renewing as Promise<T>;
 };
 
+/**
+ * Page load: renews the session and gets "who am I" + "my access" in one request
+ * (/auth/refresh?with=profile), instead of three requests one after another.
+ */
+let restoring: Promise<unknown> | null = null;
+
+export const restoreSession = <T>(): Promise<T> => {
+  // One request even if asked twice at once (React runs start-up effects twice in development).
+  restoring ??= (async () => {
+    const call = () => http.post<Envelope<T & TokenBundle>>("/auth/refresh", undefined, { params: { with: "profile" } });
+    let res;
+    try {
+      res = await call();
+    } catch (err) {
+      const e = toApiError(err);
+      if (e.status !== 409) throw e; // another tab renewed at the same moment: try once more
+      res = await call();
+    }
+    const data = res.data.data!;
+    setAccessToken(data.accessToken);
+    return data;
+  })().finally(() => {
+    restoring = null;
+  });
+  return restoring as Promise<T>;
+};
+
 const NO_RENEW = ['/auth/login', '/auth/refresh', '/auth/mfa/verify', '/auth/forgot-password', '/auth/reset-password'];
 
 http.interceptors.response.use(

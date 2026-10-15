@@ -8,7 +8,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { authApi, Me, SignedIn } from "@/lib/api/auth";
-import { renewSession, setAccessToken, setSessionEndedHandler } from "@/lib/api/client";
+import { restoreSession, setAccessToken, setSessionEndedHandler } from "@/lib/api/client";
 import { Access, accessApi } from "@/lib/api/admin";
 
 type Status = "loading" | "signedOut" | "signedIn";
@@ -56,24 +56,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAccess(null);
       setSessionExpired(expired);
       setStatus("signedOut");
-      queryClient.clear();
+      // Forget everything that belonged to the signed-in person, but keep the public school
+      // branding (the sign-in page is showing it).
+      queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== "public-school" });
     },
     [queryClient]
   );
 
-  // Restore the session on page load.
+  // Restore the session on page load: one request returns the session, who I am and my access.
   useEffect(() => {
     let cancelled = false;
     setSessionEndedHandler(() => toSignedOut(true));
-    renewSession()
-      .then(() => (cancelled ? undefined : loadMe()))
+    restoreSession<{ me: Me; access: Access | null }>()
+      .then((r) => {
+        if (cancelled) return;
+        setMe(r.me);
+        setAccess(r.access);
+        setStatus("signedIn");
+      })
       .catch(() => {
         if (!cancelled) toSignedOut(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [loadMe, toSignedOut]);
+  }, [toSignedOut]);
 
   const completeSignIn = useCallback(
     async (result: SignedIn) => {

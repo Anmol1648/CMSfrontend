@@ -48,5 +48,26 @@ export const schoolApi = {
   removeLogo: () => api.delete<SchoolProfile>('/school-profile/logo'),
 };
 
+// The sign-in page's school name and logo are public; remembering them in this browser lets the
+// page show them at once instead of after the first request.
+const BRANDING_KEY = "school-branding";
+
+export const readCachedBranding = (): PublicSchool | undefined => {
+  try {
+    const raw = typeof window !== "undefined" ? window.localStorage.getItem(BRANDING_KEY) : null;
+    return raw ? (JSON.parse(raw) as PublicSchool) : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+export const saveCachedBranding = (b: PublicSchool) => {
+  try {
+    window.localStorage.setItem(BRANDING_KEY, JSON.stringify(b));
+  } catch {
+    // private mode / storage blocked: just don't remember it
+  }
+};
+
 /** Full address of a logo path returned by the API (relative to the API base). */
 export const logoSrc = (relative: string | null | undefined) => (relative ? `${API_BASE_URL}/${relative}` : null);
