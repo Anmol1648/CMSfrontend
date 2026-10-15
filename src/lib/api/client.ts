@@ -1,0 +1,160 @@
+/**
+ * The one HTTP client.
+ * - The access token lives in memory only (never localStorage); the refresh token is an httpOnly
+ *   cookie the browser sends to /api/auth automatically (withCredentials).
+ * - On a 401 it renews the session once (shared by all waiting requests) and retries.
+ * - Every failure becomes an ApiError with the backend's code, message and field details.
+ */
+import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
+
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+
+export interface FieldIssue {
+  field: string;
+  message: string;
+}
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public code: string,
+    public details: FieldIssue[] = [],
+    public requestId?: string
+  ) {
+    super(message);
+  }
+
+  /** Field errors keyed by field name, for forms. */
+  fieldErrors(): Record<string, string> {
+    return Object.fromEntries(this.details.map((d) => [d.field, d.message]));
+  }
+}
+
+interface Envelope<T> {
+  status: 'success' | 'error';
+  data?: T;
+  message?: string;
+  error?: { code: string; message: string; details?: FieldIssue[] };
+  requestId?: string;
+}
+
+export interface TokenBundle {
+  accessToken: string;
+  expiresIn: number;
+}
+
+// ─── Access token (memory only) ──────────────────────────────────────────────
+
+let accessToken: string | null = null;
+let onSessionEnded: (() => void) | null = null;
+
+export const setAccessToken = (token: string | null) => {
+  accessToken = token;
+};
+export const hasAccessToken = () => accessToken !== null;
+
+/** Called when the session can't be renewed (signed out elsewhere, expired). */
+export const setSessionEndedHandler = (handler: () => void) => {
+  onSessionEnded = handler;
+};
+
+const http = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  timeout: 30_000,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+  return config;
+});
+
+const toApiError = (err: unknown): ApiError => {
+  if (err instanceof ApiError) return err;
+  const ax = err as AxiosError<Envelope<unknown>>;
+  if (ax.response) {
+    const body = ax.response.data;
+    return new ApiError(
+      body?.error?.message || `Request failed (${ax.response.status})`,
+      ax.response.status,
+      body?.error?.code || 'ERROR',
+      body?.error?.details || [],
+      body?.requestId
+    );
+  }
+  if (ax.code === 'ECONNABORTED') return new ApiError('The server took too long to answer. Please try again.', 0, 'TIMEOUT');
+  return new ApiError("Can't reach the server. Check your connection and try again.", 0, 'NETWORK_ERROR');
+};
+
+// ─── Session renewal (one at a time) ─────────────────────────────────────────
+
+let renewing: Promise<TokenBundle> | null = null;
+
+const postRenew = async (): Promise<TokenBundle> => {
+  try {
+    const res = await http.post<Envelope<TokenBundle>>('/auth/refresh', undefined, { headers: { Authorization: '' } });
+    return res.data.data!;
+  } catch (err) {
+    const e = toApiError(err);
+    // Another tab renewed at the same moment: the cookie is new now, so try once more.
+    if (e.status === 409) {
+      const res = await http.post<Envelope<TokenBundle>>('/auth/refresh', undefined, { headers: { Authorization: '' } });
+      return res.data.data!;
+    }
+    throw e;
+  }
+};
+
+/** Renews the session using the refresh cookie; shared by everyone who asks at the same time. */
+export const renewSession = <T extends TokenBundle = TokenBundle>(): Promise<T> => {
+  if (!renewing) {
+    renewing = postRenew()
+      .then((bundle) => {
+        setAccessToken(bundle.accessToken);
+        return bundle;
+      })
+      .finally(() => {
+        renewing = null;
+      });
+  }
+  return renewing as Promise<T>;
+};
+
+const NO_RENEW = ['/auth/login', '/auth/refresh', '/auth/mfa/verify', '/auth/forgot-password', '/auth/reset-password'];
+
+http.interceptors.response.use(
+  (res) => res,
+  async (err: AxiosError) => {
+    const config = err.config as (InternalAxiosRequestConfig & { _retried?: boolean }) | undefined;
+    const url = config?.url || '';
+    if (err.response?.status === 401 && config && !config._retried && !NO_RENEW.some((p) => url.startsWith(p))) {
+      config._retried = true;
+      try {
+        await renewSession();
+      } catch {
+        setAccessToken(null);
+        onSessionEnded?.();
+        throw toApiError(err);
+      }
+      return http(config);
+    }
+    throw toApiError(err);
+  }
+);
+
+// ─── Typed helpers: return `data` from the envelope ──────────────────────────
+
+const unwrap = async <T>(p: Promise<{ data: Envelope<T> }>) => (await p).data.data as T;
+
+export const api = {
+  get: <T>(url: string, config?: AxiosRequestConfig) => unwrap<T>(http.get(url, config)),
+  post: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => unwrap<T>(http.post(url, body, config)),
+  patch: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => unwrap<T>(http.patch(url, body, config)),
+  put: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => unwrap<T>(http.put(url, body, config)),
+  delete: <T>(url: string, config?: AxiosRequestConfig) => unwrap<T>(http.delete(url, config)),
+};
+
+/** Turns any thrown value into a message for a toast. */
+export const errorMessage = (err: unknown) => (err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
