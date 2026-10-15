@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Checkbox, FormAlert, Pill, Select, SubmitButton } from "@/components/forms";
 import { PageHeader } from "@/components/layout/AppShell";
 import { SCOPE_LABELS } from "@/components/admin/labels";
+import { RecordHistory } from "@/components/admin/RecordHistory";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { DataScope, rolesApi } from "@/lib/api/admin";
@@ -186,6 +187,8 @@ function RoleDetail({ id }: { id: string }) {
             </ul>
           </Card>
         ))}
+
+        <RecordHistory entity="role" id={r.id} />
 
         {editable && (
           <Card className="flex items-center justify-between">

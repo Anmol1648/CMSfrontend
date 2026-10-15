@@ -12,6 +12,7 @@ import { Checkbox, Detail, FormAlert, Pill, SubmitButton } from "@/components/fo
 import { PageHeader } from "@/components/layout/AppShell";
 import { OneTimePasswordDialog } from "@/components/admin/OneTimePasswordDialog";
 import { KIND_LABELS, formatDateTime } from "@/components/admin/labels";
+import { RecordHistory } from "@/components/admin/RecordHistory";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { AdminUser, rolesApi, usersApi } from "@/lib/api/admin";
@@ -247,6 +248,8 @@ function UserDetail({ id }: { id: string }) {
               {isMe && <p className="text-xs text-on-surface-variant/70">This is your own account. Change your password and devices in My account.</p>}
             </Card>
           )}
+
+          <RecordHistory entity="user" id={u.id} />
         </div>
       </div>
 

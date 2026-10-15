@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { FormAlert, Select, SubmitButton } from "@/components/forms";
 import { PageHeader } from "@/components/layout/AppShell";
+import { RecordHistory } from "@/components/admin/RecordHistory";
 import { schoolApi, SchoolProfile, SchoolProfileUpdate } from "@/lib/api/school";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -188,6 +189,8 @@ export default function SchoolProfilePage() {
             {field("currency", "Currency (3-letter code)", { maxLength: 3 })}
           </div>
         </Card>
+
+        <RecordHistory entity="school_profile" id={profile.data.tenantId} />
       </div>
     </form>
   );
