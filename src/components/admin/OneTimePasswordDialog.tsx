@@ -50,7 +50,7 @@ export function OneTimePasswordDialog({
             <span className="text-primary font-bold text-lg tracking-wider">{password}</span>
           </div>
         </div>
-        {emailed && <FormAlert tone="success">These details were also emailed to them.</FormAlert>}
+        {emailed && <FormAlert tone="success">These details are also being emailed to them.</FormAlert>}
         <FormAlert tone="warning">This password is shown only now. If it is lost, reset it again.</FormAlert>
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={copy}>

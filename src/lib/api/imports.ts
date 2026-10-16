@@ -51,7 +51,8 @@ export const importsApi = {
   columns: (kind: string) => api.get<ImportColumnInfo[]>(`/imports/${kind}/columns`),
   template: (kind: string) => downloadFile(`/imports/${kind}/template`, undefined, `${kind}-import-template.xlsx`),
   check: (kind: string, file: File) => uploadFile<CheckResult>(`/imports/${kind}/check`, 'file', file),
-  run: (jobId: string) => api.post<RunResult>(`/imports/jobs/${jobId}/run`),
+  // Each row is a new account (password hashing, checks), so a big file takes a while.
+  run: (jobId: string) => api.post<RunResult>(`/imports/jobs/${jobId}/run`, undefined, { timeout: 15 * 60_000 }),
   problems: (jobId: string) => downloadFile(`/imports/jobs/${jobId}/problems`, undefined, 'import-problems.xlsx'),
   recent: (kind: string) => api.get<ImportJob[]>('/imports/jobs', { params: { kind } }),
 };

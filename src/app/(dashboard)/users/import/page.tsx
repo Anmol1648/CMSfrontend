@@ -21,6 +21,7 @@ export default function ImportUsersPage() {
         kind="users"
         noun="users"
         resultTitle="Sign-in details"
+        done={{ href: "/users", label: "See the users" }}
         resultWarning="The one-time passwords are shown only now. Download them and hand them over; people with an email address were also sent theirs."
       />
     </RequirePermission>

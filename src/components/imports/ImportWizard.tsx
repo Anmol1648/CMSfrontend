@@ -6,6 +6,7 @@
  *   3. see each row's problems  4. import the good rows  5. result (+ download).
  */
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -104,6 +105,7 @@ export function ImportWizard({
   noun,
   resultTitle,
   resultWarning,
+  done,
 }: {
   kind: string;
   /** e.g. "users" */
@@ -111,6 +113,8 @@ export function ImportWizard({
   resultTitle: string;
   /** Shown above the result, e.g. "The one-time passwords are shown only now." */
   resultWarning?: string;
+  /** Where to go after importing, e.g. { href: "/users", label: "See the users" }. */
+  done?: { href: string; label: string };
 }) {
   const queryClient = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -201,7 +205,14 @@ export function ImportWizard({
               Download the skipped rows’ problems
             </Button>
           )}
-          <Button onClick={reset}>Import another file</Button>
+          {done && (
+            <Link href={done.href} className="inline-flex items-center px-6 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:opacity-90">
+              {done.label}
+            </Link>
+          )}
+          <Button variant={done ? "secondary" : "primary"} onClick={reset}>
+            Import another file
+          </Button>
         </div>
       </div>
     );
@@ -336,7 +347,12 @@ export function ImportWizard({
         </Card>
       )}
 
-      <Modal isOpen={confirming} onClose={() => setConfirming(false)} title={`Import ${count(ready)}?`}>
+      <Modal isOpen={confirming} onClose={() => !busy && setConfirming(false)} title={`Import ${count(ready)}?`}>
+        {error && (
+          <div className="mb-4">
+            <FormAlert>{error}</FormAlert>
+          </div>
+        )}
         <p className="text-sm text-on-surface-variant">
           {count(ready)} will be added now.{" "}
           {problems ? `${problems} row${problems === 1 ? " has" : "s have"} problems and will be skipped. ` : ""}Importing can&apos;t be undone in one step.
@@ -357,7 +373,7 @@ export function ImportWizard({
               })
             }
           >
-            {busy === "import" ? "Importing…" : "Import"}
+            {busy === "import" ? `Importing ${count(ready)}…` : "Import"}
           </Button>
         </div>
       </Modal>

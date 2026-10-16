@@ -31,5 +31,6 @@ export const emailTemplatesApi = {
   save: (key: string, w: Wording) => api.put<EmailTemplate>(`/email-templates/${key}`, w),
   reset: (key: string) => api.delete<EmailTemplate>(`/email-templates/${key}`),
   preview: (key: string, w?: Wording) => api.post<EmailPreview>(`/email-templates/${key}/preview`, w ?? {}),
-  sendTest: (key: string, w?: Wording) => api.post<{ to: string }>(`/email-templates/${key}/test`, w ?? {}),
+  // Waits for the mail server, which can be slow.
+  sendTest: (key: string, w?: Wording) => api.post<{ to: string }>(`/email-templates/${key}/test`, w ?? {}, { timeout: 120_000 }),
 };
