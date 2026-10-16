@@ -273,7 +273,17 @@ function ValuesPanel({ info }: { info: MasterInfo }) {
             </thead>
             <tbody>
               {rows.map((v, i) => (
-                <tr key={v.id} className="border-t border-outline-variant/10 hover:bg-surface-container-low/60">
+                <tr
+                  key={v.id}
+                  // The whole row opens the option (keyboard: Tab to it, Enter).
+                  onClick={info.canManage ? () => setEditing(v) : undefined}
+                  onKeyDown={info.canManage ? (e) => e.key === "Enter" && e.target === e.currentTarget && setEditing(v) : undefined}
+                  tabIndex={info.canManage ? 0 : undefined}
+                  className={cn(
+                    "border-t border-outline-variant/10 hover:bg-surface-container-low/60",
+                    info.canManage && "cursor-pointer focus:outline-none focus-visible:bg-surface-container-low"
+                  )}
+                >
                   {canMove && (
                     <td className="pl-5 py-2">
                       <div className="flex gap-1">
@@ -283,7 +293,10 @@ function ValuesPanel({ info }: { info: MasterInfo }) {
                             type="button"
                             aria-label={`Move ${v.name} ${d}`}
                             disabled={!!moving || (d === "up" ? i === 0 && page === 1 : i === rows.length - 1 && page === totalPages)}
-                            onClick={() => move(v, d)}
+                            onClick={(e) => {
+                              e.stopPropagation(); // reorder only, don't open the option
+                              move(v, d);
+                            }}
                             className="w-7 h-7 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30"
                           >
                             <span className="material-symbols-outlined text-lg">{d === "up" ? "arrow_upward" : "arrow_downward"}</span>
@@ -303,7 +316,13 @@ function ValuesPanel({ info }: { info: MasterInfo }) {
                   <td className="px-5 py-3">{v.isActive ? <Pill tone="success">Active</Pill> : <Pill>Inactive</Pill>}</td>
                   {info.canManage && (
                     <td className="px-5 py-3 text-right">
-                      <button type="button" onClick={() => setEditing(v)} className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditing(v);
+                        }}
+                        className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
                         Edit
                       </button>
                     </td>
