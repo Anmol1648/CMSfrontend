@@ -100,7 +100,9 @@ export function MasterChainSelect({
           error={i === chain.length - 1 ? error : undefined}
           disabled={disabled}
           autoPickSingle={i === 0}
-          onChange={(id) => onChange([...value.slice(0, i), id])}
+          // Changing a level clears the ones below; filling an empty level (e.g. the single country
+          // picked automatically on a saved address) keeps them.
+          onChange={(id) => onChange(value[i] ? [...value.slice(0, i), id] : [...value.slice(0, i), id, ...value.slice(i + 1)])}
         />
       ))}
     </>

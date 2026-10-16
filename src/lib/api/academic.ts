@@ -120,6 +120,10 @@ export const academicApi = {
   copyYear: (id: string, fromYearId: string, what: { sections: boolean; subjects: boolean }) =>
     api.post<{ sections: number; subjects: number }>(`/academic/years/${id}/copy`, { fromYearId, ...what }),
 
+  /** Dropdowns (any signed-in user). */
+  classOptions: () => api.get<{ id: string; name: string; shortName: string | null; hasStreams: boolean }[]>('/academic/classes/options'),
+  sectionOptions: (yearId: string, classId?: string) =>
+    api.get<{ id: string; name: string; classId: string; label: string }[]>('/academic/sections/options', { params: { year: yearId, ...(classId ? { class: classId } : {}) } }),
   classes: (yearId?: string) => api.get<SchoolClass[]>('/academic/classes', { params: yearId ? { year: yearId } : {} }),
   createClass: (input: ClassInput) => api.post<SchoolClass>('/academic/classes', input),
   updateClass: (id: string, input: ClassInput) => api.patch<SchoolClass>(`/academic/classes/${id}`, input),

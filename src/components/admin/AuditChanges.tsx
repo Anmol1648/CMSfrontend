@@ -24,6 +24,16 @@ export const ACTION_LABELS: Record<string, string> = {
   copy: "Set-up copied",
   import: "Imported from Excel",
   export: "Exported to Excel",
+  admit: "Admitted",
+  placed: "Placed in a section",
+  section_change: "Section changed",
+  renumber: "Roll numbers renumbered",
+  guardian_added: "Parent / guardian added",
+  family_linked: "Linked to a sibling's family",
+  document_added: "Document added",
+  document_removed: "Document removed",
+  demo_data: "Demo data added",
+  demo_cleared: "Demo data removed",
 };
 
 export const ENTITY_LABELS: Record<string, string> = {
@@ -38,6 +48,8 @@ export const ENTITY_LABELS: Record<string, string> = {
   class: "Class",
   section: "Section",
   subject: "Subject",
+  student: "Student",
+  guardian: "Parent / guardian",
 };
 
 export const actionLabel = (a: string) => ACTION_LABELS[a] ?? a.replace(/_/g, " ");

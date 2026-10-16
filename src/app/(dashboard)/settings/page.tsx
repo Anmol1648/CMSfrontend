@@ -55,6 +55,12 @@ function SettingControl({ s, value, onChange, disabled, error }: { s: SettingIte
           )}
         </div>
       );
+    case "text":
+      return (
+        <div className="w-80">
+          <Input value={String(value ?? "")} error={error} onChange={(e) => onChange(e.target.value)} disabled={disabled} maxLength={200} />
+        </div>
+      );
     case "select":
       return (
         <div className="w-64">
