@@ -20,6 +20,10 @@ export const ACTION_LABELS: Record<string, string> = {
   role_change: "Roles changed",
   permission_change: "Permissions changed",
   setting_change: "Settings changed",
+  subjects_change: "Subjects changed",
+  copy: "Set-up copied",
+  import: "Imported from Excel",
+  export: "Exported to Excel",
 };
 
 export const ENTITY_LABELS: Record<string, string> = {
@@ -30,6 +34,10 @@ export const ENTITY_LABELS: Record<string, string> = {
   user_session: "Sign-in session",
   email_template: "Email template",
   master_value: "Master list option",
+  academic_year: "Academic year",
+  class: "Class",
+  section: "Section",
+  subject: "Subject",
 };
 
 export const actionLabel = (a: string) => ACTION_LABELS[a] ?? a.replace(/_/g, " ");
