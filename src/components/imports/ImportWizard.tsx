@@ -114,6 +114,8 @@ export function ImportWizard({
 }) {
   const queryClient = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
+  /** "1 user", "3 users" */
+  const count = (n: number) => `${n} ${n === 1 ? noun.replace(/s$/, "") : noun}`;
   const [file, setFile] = useState<File | null>(null);
   const [checked, setChecked] = useState<CheckResult | null>(null);
   const [result, setResult] = useState<RunResult | null>(null);
@@ -153,7 +155,7 @@ export function ImportWizard({
     return (
       <div className="space-y-6 max-w-5xl">
         <FormAlert tone={result.job.importedRows ? "success" : "warning"}>
-          {result.job.importedRows} {noun} imported{result.job.problemCount ? `, ${result.job.problemCount} problem${result.job.problemCount === 1 ? "" : "s"} skipped` : ""}.
+          {count(result.job.importedRows)} imported{result.job.problemCount ? `, ${result.job.problemCount} problem${result.job.problemCount === 1 ? "" : "s"} skipped` : ""}.
         </FormAlert>
         {result.problems.map((p) => (
           <FormAlert key={p}>{p}</FormAlert>
@@ -302,7 +304,7 @@ export function ImportWizard({
               )}
               <div className="flex gap-3">
                 <Button disabled={!ready || !!busy} onClick={() => setConfirming(true)}>
-                  Import {ready} {noun}
+                  Import {count(ready)}
                 </Button>
                 {problems > 0 && (
                   <Button variant="secondary" disabled={!!busy} onClick={() => run("report", () => importsApi.problems(checked.job.id))}>
@@ -334,9 +336,10 @@ export function ImportWizard({
         </Card>
       )}
 
-      <Modal isOpen={confirming} onClose={() => setConfirming(false)} title={`Import ${ready} ${noun}?`}>
+      <Modal isOpen={confirming} onClose={() => setConfirming(false)} title={`Import ${count(ready)}?`}>
         <p className="text-sm text-on-surface-variant">
-          {problems ? `${problems} row${problems === 1 ? " has" : "s have"} problems and will be skipped. ` : ""}This can&apos;t be undone in one step.
+          {count(ready)} will be added now.{" "}
+          {problems ? `${problems} row${problems === 1 ? " has" : "s have"} problems and will be skipped. ` : ""}Importing can&apos;t be undone in one step.
         </p>
         <div className="flex justify-end gap-3 mt-6">
           <Button variant="secondary" onClick={() => setConfirming(false)} disabled={!!busy}>

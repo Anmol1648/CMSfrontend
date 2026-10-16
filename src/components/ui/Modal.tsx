@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 export interface ModalProps {
@@ -35,23 +36,27 @@ export const Modal = ({
   };
 
   useEffect(() => {
-    // Disable scroll on body when modal is open
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => { document.body.style.overflow = 'unset'; };
-  }, [isOpen]);
+    if (!isOpen) return;
+    // No page scrolling behind the dialog; Esc closes it.
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [isOpen, onClose]);
 
   if (!render) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none">
-      {/* Backdrop */}
+  // Rendered at the end of <body>: a parent with an animation or transform would otherwise trap the
+  // "fixed" overlay inside it and leave parts of the screen (the top bar) uncovered.
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none" role="dialog" aria-modal="true" aria-label={title}>
+      {/* Backdrop: a light dim, so the page stays recognisable behind the dialog */}
       <div
         className={cn(
-          "absolute inset-0 bg-[#0B1C30]/40 backdrop-blur-md pointer-events-auto transition-opacity duration-300",
+          "absolute inset-0 bg-slate-900/40 pointer-events-auto transition-opacity duration-200",
           isOpen ? "opacity-100" : "opacity-0"
         )}
         onClick={onClose}
@@ -60,7 +65,7 @@ export const Modal = ({
       {/* Modal Content */}
       <div
         className={cn(
-          "relative bg-surface-lowest rounded-3xl shadow-premium overflow-hidden flex flex-col pointer-events-auto transition-all duration-300 transform w-full",
+          "relative bg-surface-lowest rounded-3xl shadow-[0_24px_64px_-12px_rgba(15,23,42,0.35)] ring-1 ring-black/5 overflow-hidden flex flex-col pointer-events-auto transition-all duration-200 transform w-full",
           width,
           height !== "auto" && height,
           isOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-4",
@@ -88,6 +93,7 @@ export const Modal = ({
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
