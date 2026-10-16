@@ -12,6 +12,7 @@ import { Checkbox, FormAlert, Pill, Select, SubmitButton } from "@/components/fo
 import { PageHeader } from "@/components/layout/AppShell";
 import { RecordHistory } from "@/components/admin/RecordHistory";
 import { MasterChainSelect } from "@/components/masters/MasterSelect";
+import { MoveButtons, OrderHint } from "@/components/ui/MoveButtons";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { MasterInfo, mastersApi, MasterValue } from "@/lib/api/masters";
 import { ApiError, errorMessage } from "@/lib/api/client";
@@ -213,8 +214,17 @@ function ValuesPanel({ info }: { info: MasterInfo }) {
             <h2 className="text-lg font-bold text-primary">{info.plural}</h2>
             <p className="text-sm text-on-surface-variant/70">
               {info.description ? `${info.description} ` : ""}
-              {info.ordering === "manual" ? "Shown in the order set here." : "Shown in alphabetical order."}
+              {info.ordering === "name" ? "Shown in alphabetical order." : ""}
             </p>
+            {info.ordering === "manual" && (
+              <div className="pt-1">
+                <OrderHint>
+                  {info.canManage
+                    ? "Use ↑ ↓ to set the order these options appear in forms. The number is each option's place."
+                    : "Forms list these options in this order."}
+                </OrderHint>
+              </div>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => mastersApi.export(info.key, { search: debounced, status, parent }).catch((err) => showToast(errorMessage(err), "error"))}>
@@ -258,7 +268,7 @@ function ValuesPanel({ info }: { info: MasterInfo }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
-                {canMove && <th className="pl-5 py-3 w-20 font-bold">Order</th>}
+                {canMove && <th className="pl-5 py-3 w-28 font-bold">Order</th>}
                 <th className="px-5 py-3 font-bold">Name</th>
                 {info.code !== "none" && <th className="px-5 py-3 font-bold">Code</th>}
                 {parentChain.length > 0 && <th className="px-5 py-3 font-bold">Belongs to</th>}
@@ -286,23 +296,14 @@ function ValuesPanel({ info }: { info: MasterInfo }) {
                 >
                   {canMove && (
                     <td className="pl-5 py-2">
-                      <div className="flex gap-1">
-                        {(["up", "down"] as const).map((d) => (
-                          <button
-                            key={d}
-                            type="button"
-                            aria-label={`Move ${v.name} ${d}`}
-                            disabled={!!moving || (d === "up" ? i === 0 && page === 1 : i === rows.length - 1 && page === totalPages)}
-                            onClick={(e) => {
-                              e.stopPropagation(); // reorder only, don't open the option
-                              move(v, d);
-                            }}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high disabled:opacity-30"
-                          >
-                            <span className="material-symbols-outlined text-lg">{d === "up" ? "arrow_upward" : "arrow_downward"}</span>
-                          </button>
-                        ))}
-                      </div>
+                      <MoveButtons
+                        label={v.name}
+                        position={(page - 1) * PAGE_SIZE + i + 1}
+                        first={i === 0 && page === 1}
+                        last={i === rows.length - 1 && page === totalPages}
+                        disabled={!!moving}
+                        onMove={(d) => move(v, d)}
+                      />
                     </td>
                   )}
                   <td className="px-5 py-3 font-semibold text-on-surface">{v.name}</td>

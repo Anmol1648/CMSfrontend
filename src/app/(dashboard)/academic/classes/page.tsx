@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { MoveButtons } from "@/components/ui/MoveButtons";
+import { MoveButtons, OrderHint } from "@/components/ui/MoveButtons";
 import { Checkbox, FormAlert, Select, SubmitButton } from "@/components/forms";
 import { PageHeader } from "@/components/layout/AppShell";
 import { RecordHistory } from "@/components/admin/RecordHistory";
@@ -256,11 +256,12 @@ function Classes() {
         </Card>
 
         {classes.isError && <FormAlert>{errorMessage(classes.error)}</FormAlert>}
+        {canManage && list.length > 1 && <OrderHint>Use ↑ ↓ to set the order classes appear in lists, forms and reports.</OrderHint>}
         <Card padding="none" className="overflow-hidden">
           {list.map((c, i) => (
             <div key={c.id} className="flex flex-col md:flex-row md:items-center gap-3 px-5 py-4 border-t first:border-t-0 border-outline-variant/10">
               <div className="flex items-center gap-3 md:w-80 shrink-0">
-                {canManage && <MoveButtons label={c.name} first={i === 0} last={i === list.length - 1} disabled={moving} onMove={(d) => moveClass(c.id, d)} />}
+                {canManage && <MoveButtons label={c.name} position={i + 1} first={i === 0} last={i === list.length - 1} disabled={moving} onMove={(d) => moveClass(c.id, d)} />}
                 <button type="button" disabled={!canManage} onClick={() => setEditingClass(c)} className="text-left disabled:cursor-default">
                   <p className={cn("font-bold", c.isActive ? "text-primary" : "text-on-surface-variant line-through")}>{c.name}</p>
                   <p className="text-xs text-on-surface-variant/70 space-x-2">

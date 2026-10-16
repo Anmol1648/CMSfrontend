@@ -1,14 +1,34 @@
 "use client";
 
-/** ↑ ↓ buttons to reorder an item by hand; clicks don't reach the row underneath. */
-export function MoveButtons({ label, first, last, disabled, onMove }: { label: string; first: boolean; last: boolean; disabled?: boolean; onMove: (direction: "up" | "down") => void }) {
+/**
+ * ↑ ↓ buttons to reorder an item by hand, with its position (1, 2, 3…) in front.
+ * Clicks don't reach the row underneath (rows open the item).
+ */
+export function MoveButtons({
+  label,
+  position,
+  first,
+  last,
+  disabled,
+  onMove,
+}: {
+  label: string;
+  /** 1-based place in the list, shown before the arrows. */
+  position?: number;
+  first: boolean;
+  last: boolean;
+  disabled?: boolean;
+  onMove: (direction: "up" | "down") => void;
+}) {
   return (
-    <div className="flex gap-1">
+    <div className="flex items-center gap-1">
+      {position !== undefined && <span className="w-6 text-right text-xs font-bold tabular-nums text-on-surface-variant/60 mr-1">{position}</span>}
       {(["up", "down"] as const).map((d) => (
         <button
           key={d}
           type="button"
           aria-label={`Move ${label} ${d}`}
+          title={d === "up" ? "Move up one place" : "Move down one place"}
           disabled={disabled || (d === "up" ? first : last)}
           onClick={(e) => {
             e.stopPropagation();
@@ -20,5 +40,15 @@ export function MoveButtons({ label, first, last, disabled, onMove }: { label: s
         </button>
       ))}
     </div>
+  );
+}
+
+/** The one-line explanation shown above a list that is ordered by hand. */
+export function OrderHint({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="flex items-center gap-1.5 text-xs text-on-surface-variant/70">
+      <span className="material-symbols-outlined text-base">swap_vert</span>
+      {children}
+    </p>
   );
 }

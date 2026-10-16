@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { MoveButtons } from "@/components/ui/MoveButtons";
+import { MoveButtons, OrderHint } from "@/components/ui/MoveButtons";
 import { Checkbox, FormAlert, Pill, Select, SubmitButton } from "@/components/forms";
 import { PageHeader } from "@/components/layout/AppShell";
 import { RecordHistory } from "@/components/admin/RecordHistory";
@@ -150,7 +150,10 @@ function SubjectList({ canManage }: { canManage: boolean }) {
     <>
       <Card padding="none" className="overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-outline-variant/20">
-          <p className="text-sm text-on-surface-variant/70">Every subject the school teaches, in the order used on report cards.</p>
+          <div className="space-y-1">
+            <p className="text-sm text-on-surface-variant/70">Every subject the school teaches.</p>
+            {canManage && <OrderHint>Use ↑ ↓ to set the order subjects appear in lists and on report cards.</OrderHint>}
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => academicApi.exportSubjects().catch((err) => showToast(errorMessage(err), "error"))}>
               Export
@@ -172,7 +175,7 @@ function SubjectList({ canManage }: { canManage: boolean }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
-                {canManage && <th className="pl-5 py-3 w-20 font-bold">Order</th>}
+                {canManage && <th className="pl-5 py-3 w-28 font-bold">Order</th>}
                 <th className="px-5 py-3 font-bold">Subject</th>
                 <th className="px-5 py-3 font-bold">Code</th>
                 <th className="px-5 py-3 font-bold">Type</th>
@@ -186,7 +189,7 @@ function SubjectList({ canManage }: { canManage: boolean }) {
                 <tr key={s.id} onClick={canManage ? () => setEditing(s) : undefined} className={cn("border-t border-outline-variant/10 hover:bg-surface-container-low/60", canManage && "cursor-pointer")}>
                   {canManage && (
                     <td className="pl-5 py-2">
-                      <MoveButtons label={s.name} first={i === 0} last={i === list.length - 1} disabled={moving} onMove={(d) => move(s.id, d)} />
+                      <MoveButtons label={s.name} position={i + 1} first={i === 0} last={i === list.length - 1} disabled={moving} onMove={(d) => move(s.id, d)} />
                     </td>
                   )}
                   <td className="px-5 py-3 font-semibold text-on-surface">{s.name}</td>
@@ -319,11 +322,12 @@ function ClassSubjects({ canManage }: { canManage: boolean }) {
         </div>
         {error && <FormAlert>{error}</FormAlert>}
         {year && year.status === "closed" && <FormAlert tone="info">{year.name} is closed: its subjects can be seen but not changed.</FormAlert>}
+        {editable && chosen.length > 1 && <OrderHint>Use ↑ ↓ to set the order of this class&apos;s subjects (timetable, marks entry, report card), then Save.</OrderHint>}
 
         <ol className="divide-y divide-outline-variant/10 border border-outline-variant/20 rounded-xl">
           {chosen.map((c, i) => (
             <li key={c.subjectId} className="flex items-center gap-3 px-4 py-2.5">
-              {editable && <MoveButtons label={nameOf(c.subjectId)} first={i === 0} last={i === chosen.length - 1} onMove={(d) => move(i, d)} />}
+              {editable && <MoveButtons label={nameOf(c.subjectId)} position={i + 1} first={i === 0} last={i === chosen.length - 1} onMove={(d) => move(i, d)} />}
               <span className="flex-1 font-semibold text-on-surface">{nameOf(c.subjectId)}</span>
               {editable ? (
                 <>
