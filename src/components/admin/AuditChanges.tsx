@@ -28,6 +28,8 @@ export const ENTITY_LABELS: Record<string, string> = {
   school_profile: "School profile",
   settings: "System settings",
   user_session: "Sign-in session",
+  email_template: "Email template",
+  master_value: "Master list option",
 };
 
 export const actionLabel = (a: string) => ACTION_LABELS[a] ?? a.replace(/_/g, " ");

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { logoSrc, PublicSchool, readCachedBranding, saveCachedBranding, schoolApi } from "@/lib/api/school";
 import { LoginBrandPanel } from "@/components/branding/LoginBrandPanel";
+import { ApiError } from "@/lib/api/client";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const school = useQuery({ queryKey: ["public-school"], queryFn: schoolApi.publicInfo, staleTime: Infinity });
@@ -38,7 +39,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="w-full max-w-[420px] space-y-8">
           {school.isError && (
             <p className="text-xs font-semibold text-error">
-              No school is set up for this address yet. Ask the administrator to set DEFAULT_TENANT_CODE on the server.
+              {school.error instanceof ApiError && school.error.status === 404
+                ? "This school isn't set up yet. Please contact the school office."
+                : "Can't reach the school's server right now. Please try again in a moment."}
             </p>
           )}
           {children}
