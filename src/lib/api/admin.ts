@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, uploadFile } from './client';
 import type { UserKind } from './auth';
 
 /** Access, users and roles (cmsbackend/src/modules/rbac + users). */
@@ -41,6 +41,7 @@ export interface AdminUser {
   updatedAt: string;
   roles: RoleRef[];
   isSuperAdmin: boolean;
+  avatarUrl: string | null;
 }
 
 export interface Paged<T> {
@@ -114,6 +115,8 @@ export const usersApi = {
   resetPassword: (id: string) => api.post<{ temporaryPassword: string }>(`/users/${id}/reset-password`),
   unlock: (id: string) => api.post<AdminUser>(`/users/${id}/unlock`),
   resetMfa: (id: string) => api.post<AdminUser>(`/users/${id}/reset-mfa`),
+  uploadPhoto: (id: string, file: File) => uploadFile<{ avatarUrl: string }>(`/users/${id}/avatar`, 'image', file),
+  removePhoto: (id: string) => api.delete<{ avatarUrl: null }>(`/users/${id}/avatar`),
 };
 
 export const rolesApi = {

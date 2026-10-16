@@ -1,4 +1,4 @@
-import { api, TokenBundle } from './client';
+import { api, TokenBundle, uploadFile } from './client';
 
 /** Calls to /api/auth (see cmsbackend/src/modules/auth). */
 
@@ -14,6 +14,8 @@ export interface UserSummary {
   mfaEnabled: boolean;
   mustChangePassword: boolean;
   lastLoginAt: string | null;
+  /** Relative to the API base; load with authedImageUrl (see UserPhoto). */
+  avatarUrl: string | null;
 }
 
 export interface SignedIn extends TokenBundle {
@@ -24,9 +26,20 @@ export interface SignedIn extends TokenBundle {
 
 export type LoginResult = SignedIn | { mfaRequired: true; mfaToken: string };
 
+export type SelfEditField = 'photo' | 'name' | 'email' | 'mobile';
+
+export interface MyDetailsInput {
+  displayName?: string;
+  email?: string;
+  mobile?: string;
+  currentPassword?: string;
+}
+
 export interface Me {
   user: UserSummary;
   roles: { slug: string; name: string }[];
+  /** What My account lets this person change (System Settings → Accounts). */
+  selfEdit: SelfEditField[];
   school: { code: string; name: string; legalName: string; logoUrl: string | null } | null;
   mustChangePassword: boolean;
 }
@@ -52,6 +65,9 @@ export const authApi = {
     api.post<LoginResult>('/auth/login', { identifier, password, rememberMe }),
   verifyMfa: (mfaToken: string, code: string) => api.post<SignedIn>('/auth/mfa/verify', { mfaToken, code }),
   me: () => api.get<Me>('/auth/me'),
+  updateMe: (input: MyDetailsInput) => api.patch<UserSummary>('/auth/me', input),
+  uploadMyPhoto: (file: File) => uploadFile<{ avatarUrl: string }>('/auth/me/avatar', 'image', file),
+  removeMyPhoto: () => api.delete<{ avatarUrl: null }>('/auth/me/avatar'),
   logout: () => api.post<object>('/auth/logout'),
   logoutAll: () => api.post<{ sessions: number }>('/auth/logout-all'),
   changePassword: (currentPassword: string, newPassword: string) =>

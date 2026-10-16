@@ -221,5 +221,20 @@ export const downloadFile = async (url: string, params?: Record<string, string |
   setTimeout(() => URL.revokeObjectURL(href), 10_000);
 };
 
+/**
+ * An image from an authenticated endpoint (e.g. a profile photo) as an object URL for <img>.
+ * Paths carry ?v=<file id>, so each URL is fetched once and kept for the life of the page.
+ */
+const imageUrls = new Map<string, Promise<string>>();
+export const authedImageUrl = (path: string) => {
+  let url = imageUrls.get(path);
+  if (!url) {
+    url = http.get<Blob>(path, { responseType: "blob" }).then((res) => URL.createObjectURL(res.data));
+    url.catch(() => imageUrls.delete(path));
+    imageUrls.set(path, url);
+  }
+  return url;
+};
+
 /** Turns any thrown value into a message for a toast. */
 export const errorMessage = (err: unknown) => (err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');

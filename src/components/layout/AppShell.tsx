@@ -4,6 +4,7 @@
  * Signed-in layout: sidebar, header (school + user menu) and the page.
  * The sidebar comes from the server: only pages the person's permissions allow (/api/me/access).
  */
+import { UserPhoto } from "@/components/account/UserPhoto";
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -55,12 +56,6 @@ function UserMenu() {
   }, []);
 
   const name = me?.user.displayName ?? "";
-  const initials = name
-    .split(/\s+/)
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 
   const doSignOut = async (everywhere: boolean) => {
     await signOut(everywhere);
@@ -81,7 +76,7 @@ function UserMenu() {
             {me?.roles.map((r) => r.name).join(", ") || me?.user.kind}
           </p>
         </div>
-        <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center text-sm font-black">{initials}</div>
+        <UserPhoto name={name} avatarUrl={me?.user.avatarUrl} />
       </button>
 
       {open && (

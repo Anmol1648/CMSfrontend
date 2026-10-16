@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/layout/AppShell";
 import { OneTimePasswordDialog } from "@/components/admin/OneTimePasswordDialog";
 import { KIND_LABELS, formatDateTime } from "@/components/admin/labels";
 import { RecordHistory } from "@/components/admin/RecordHistory";
+import { PhotoEditor } from "@/components/account/UserPhoto";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { AdminUser, rolesApi, usersApi } from "@/lib/api/admin";
@@ -22,7 +23,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 type Confirm = { title: string; body: string; action: string; danger?: boolean; run: () => Promise<void> };
 
 function UserDetail({ id }: { id: string }) {
-  const { can, access, me, reloadAccess } = useAuth();
+  const { can, access, me, reloadAccess, reloadMe } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const user = useQuery({ queryKey: ["user", id], queryFn: () => usersApi.get(id) });
@@ -52,6 +53,12 @@ function UserDetail({ id }: { id: string }) {
   const protectedTarget = u.isSuperAdmin && !access?.isSuperAdmin;
   const canEdit = can("user.update") && !protectedTarget;
   const canReset = can("user.reset_password") && !protectedTarget;
+
+  const afterPhoto = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["user", id] });
+    await queryClient.invalidateQueries({ queryKey: ["users"] });
+    if (isMe) await reloadMe();
+  };
 
   const refresh = async (updated?: AdminUser) => {
     if (updated) queryClient.setQueryData(["user", id], updated);
@@ -126,6 +133,21 @@ function UserDetail({ id }: { id: string }) {
 
           <Card className="space-y-5">
             <h2 className="text-lg font-bold text-primary">Details</h2>
+            <PhotoEditor
+              name={u.displayName}
+              avatarUrl={u.avatarUrl}
+              canEdit={canEdit}
+              onUpload={async (f) => {
+                await usersApi.uploadPhoto(id, f);
+                await afterPhoto();
+                showToast("Photo saved", "success");
+              }}
+              onRemove={async () => {
+                await usersApi.removePhoto(id);
+                await afterPhoto();
+                showToast("Photo removed", "success");
+              }}
+            />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Input label="Name" value={form.displayName} error={fieldErrors.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} readOnly={!canEdit} disabled={busy} />
               <Input label="Username" value={u.username} readOnly />

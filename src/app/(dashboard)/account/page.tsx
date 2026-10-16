@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -9,7 +9,8 @@ import { Detail, FormAlert, PasswordField, SubmitButton } from "@/components/for
 import { PageHeader } from "@/components/layout/AppShell";
 import { ChangePasswordForm } from "@/components/account/ChangePasswordForm";
 import { authApi, DeviceSession, MfaSetup } from "@/lib/api/auth";
-import { errorMessage } from "@/lib/api/client";
+import { ApiError, errorMessage } from "@/lib/api/client";
+import { PhotoEditor } from "@/components/account/UserPhoto";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useToast } from "@/components/ui/ToastProvider";
 
@@ -185,6 +186,125 @@ function Devices() {
   );
 }
 
+const KIND: Record<string, string> = { admin: "Administrator", staff: "Staff", student: "Student", guardian: "Parent / guardian" };
+
+function MyDetails() {
+  const { me, reloadMe } = useAuth();
+  const { showToast } = useToast();
+  const u = me!.user;
+  const allowed = new Set(me!.selfEdit);
+  const original = { displayName: u.displayName, email: u.email ?? "", mobile: u.mobile ?? "" };
+  const [form, setForm] = useState(original);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const changed = (Object.keys(form) as (keyof typeof form)[]).filter((k) => form[k].trim() !== original[k]);
+  const needsPassword = changed.includes("email") || changed.includes("mobile");
+  const anyEditable = allowed.has("name") || allowed.has("email") || allowed.has("mobile");
+  const locked = (["name", "email", "mobile"] as const).filter((f) => !allowed.has(f));
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    setFieldErrors({});
+    try {
+      await authApi.updateMe({ ...Object.fromEntries(changed.map((k) => [k, form[k].trim()])), ...(needsPassword ? { currentPassword } : {}) });
+      setCurrentPassword("");
+      await reloadMe();
+      showToast("Details saved", "success");
+    } catch (err) {
+      setError(errorMessage(err));
+      setFieldErrors(err instanceof ApiError ? err.fieldErrors() : {});
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // After a save, start from what was stored.
+  useEffect(() => {
+    setForm({ displayName: u.displayName, email: u.email ?? "", mobile: u.mobile ?? "" });
+  }, [u.displayName, u.email, u.mobile]);
+
+  return (
+    <Section title="Details">
+      <PhotoEditor
+        name={u.displayName}
+        avatarUrl={u.avatarUrl}
+        canEdit={allowed.has("photo")}
+        note="To change your photo, ask the school office."
+        onUpload={async (f) => {
+          await authApi.uploadMyPhoto(f);
+          await reloadMe();
+          showToast("Photo saved", "success");
+        }}
+        onRemove={async () => {
+          await authApi.removeMyPhoto();
+          await reloadMe();
+          showToast("Photo removed", "success");
+        }}
+      />
+
+      <form onSubmit={save} noValidate className="space-y-5">
+        {error && <FormAlert>{error}</FormAlert>}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {allowed.has("name") ? (
+            <Input label="Name" value={form.displayName} error={fieldErrors.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} disabled={busy} maxLength={120} />
+          ) : (
+            <Detail label="Name" value={u.displayName} />
+          )}
+          <Detail label="Username" value={u.username} />
+          {allowed.has("email") ? (
+            <Input label="Email" type="email" value={form.email} error={fieldErrors.email} onChange={(e) => setForm({ ...form, email: e.target.value })} disabled={busy} autoComplete="email" />
+          ) : (
+            <Detail label="Email" value={u.email} />
+          )}
+          {allowed.has("mobile") ? (
+            <Input label="Mobile" inputMode="tel" value={form.mobile} error={fieldErrors.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} disabled={busy} autoComplete="tel" />
+          ) : (
+            <Detail label="Mobile" value={u.mobile} />
+          )}
+          <Detail label="Type" value={KIND[u.kind] ?? u.kind} />
+          <Detail label="Roles" value={me!.roles.map((r) => r.name).join(", ") || "—"} />
+        </div>
+
+        {needsPassword && (
+          <div className="max-w-md">
+            <PasswordField
+              label="Current password (needed to change email or mobile)"
+              value={currentPassword}
+              error={fieldErrors.currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              autoComplete="current-password"
+              disabled={busy}
+            />
+          </div>
+        )}
+
+        {anyEditable && (
+          <div className="flex flex-wrap gap-3">
+            <div className="w-40">
+              <SubmitButton busy={busy} busyLabel="Saving…" disabled={!changed.length || (needsPassword && !currentPassword)} className="py-2.5">
+                Save details
+              </SubmitButton>
+            </div>
+            <Button type="button" variant="secondary" disabled={busy || !changed.length} onClick={() => { setForm(original); setFieldErrors({}); setError(null); }}>
+              Discard changes
+            </Button>
+          </div>
+        )}
+        {locked.length > 0 && (
+          <p className="text-xs text-on-surface-variant/60">
+            To change your {locked.map((f) => (f === "name" ? "name" : f === "email" ? "email" : "mobile")).join(", ").replace(/, ([^,]*)$/, " or $1")}, ask the school office.
+          </p>
+        )}
+      </form>
+    </Section>
+  );
+}
+
 export default function AccountPage() {
   const { me } = useAuth();
   const { showToast } = useToast();
@@ -195,17 +315,7 @@ export default function AccountPage() {
     <>
       <PageHeader title="My account" description="Your sign-in details, password, two-step sign-in and devices." />
       <div className="space-y-6 max-w-4xl">
-        <Section title="Details">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-            <Detail label="Name" value={u.displayName} />
-            <Detail label="Username" value={u.username} />
-            <Detail label="Type" value={u.kind} />
-            <Detail label="Email" value={u.email} />
-            <Detail label="Mobile" value={u.mobile} />
-            <Detail label="Roles" value={me.roles.map((r) => r.name).join(", ") || "—"} />
-          </div>
-          <p className="text-xs text-on-surface-variant/60">To change your name, email or mobile, ask the school office.</p>
-        </Section>
+        <MyDetails />
 
         <Section title="Password" description="Changing it signs you out on your other devices.">
           <div className="max-w-md">
