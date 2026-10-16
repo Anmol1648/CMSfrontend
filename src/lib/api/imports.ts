@@ -36,7 +36,19 @@ export interface RunResult {
   results: { row: number; values: Record<string, string> }[];
 }
 
+export interface ImportColumnInfo {
+  key: string;
+  header: string;
+  type: 'text' | 'email' | 'mobile' | 'number' | 'date' | 'choice' | 'list';
+  required: boolean;
+  help: string | null;
+  example: string | null;
+  max: number | null;
+  choices: { value: string; help: string | null }[] | null;
+}
+
 export const importsApi = {
+  columns: (kind: string) => api.get<ImportColumnInfo[]>(`/imports/${kind}/columns`),
   template: (kind: string) => downloadFile(`/imports/${kind}/template`, undefined, `${kind}-import-template.xlsx`),
   check: (kind: string, file: File) => uploadFile<CheckResult>(`/imports/${kind}/check`, 'file', file),
   run: (jobId: string) => api.post<RunResult>(`/imports/jobs/${jobId}/run`),

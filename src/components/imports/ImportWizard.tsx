@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { FormAlert, Pill } from "@/components/forms";
-import { CheckResult, importsApi, RunResult } from "@/lib/api/imports";
+import { CheckResult, ImportColumnInfo, importsApi, RunResult } from "@/lib/api/imports";
 import { errorMessage } from "@/lib/api/client";
 import { formatDateTime } from "@/components/admin/labels";
 
@@ -30,6 +30,60 @@ const saveCsv = (name: string, rows: Record<string, string>[]) => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(href), 10_000);
 };
+
+const TYPE_HINT: Partial<Record<ImportColumnInfo["type"], string>> = {
+  email: "An email address",
+  mobile: "A mobile number",
+  number: "A number",
+  date: "A date like 15-08-2012",
+};
+
+/** What goes in each column, with every allowed value and what it means (same as the template's sheets). */
+function ColumnGuide({ kind }: { kind: string }) {
+  const columns = useQuery({ queryKey: ["import-columns", kind], queryFn: () => importsApi.columns(kind) });
+  if (!columns.data) return null;
+  return (
+    <details open className="group rounded-xl border border-outline-variant/30">
+      <summary className="cursor-pointer select-none px-4 py-3 text-sm font-bold text-primary flex items-center gap-2">
+        <span className="material-symbols-outlined text-lg transition-transform group-open:rotate-90">chevron_right</span>
+        What goes in each column
+      </summary>
+      <div className="divide-y divide-outline-variant/20 border-t border-outline-variant/20">
+        {columns.data.map((c) => (
+          <div key={c.key} className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-2 px-4 py-3">
+            <div>
+              <p className="text-sm font-bold text-on-surface">{c.header}</p>
+              {c.required ? <Pill tone="warning">Required</Pill> : <span className="text-xs text-on-surface-variant/60">Optional</span>}
+            </div>
+            <div className="space-y-2 text-sm text-on-surface-variant">
+              {(c.help || TYPE_HINT[c.type]) && <p>{c.help ?? TYPE_HINT[c.type]}</p>}
+              {c.example && (
+                <p className="text-xs">
+                  Example: <code className="px-1.5 py-0.5 rounded bg-surface-container-low text-on-surface">{c.example}</code>
+                </p>
+              )}
+              {c.choices && (
+                <div className="space-y-1">
+                  <p className="text-xs font-bold uppercase tracking-widest text-on-surface-variant/60">
+                    {c.type === "list" ? "Use one or more, separated by commas" : "Use one of these"}
+                  </p>
+                  <ul className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-1">
+                    {c.choices.map((ch) => (
+                      <li key={ch.value}>
+                        <span className="font-bold text-on-surface">{ch.value}</span>
+                        {ch.help && <span className="text-on-surface-variant/70"> · {ch.help}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
 
 function Step({ n, title, children, done }: { n: number; title: string; children: React.ReactNode; done?: boolean }) {
   return (
@@ -157,8 +211,10 @@ export function ImportWizard({
 
       <Step n={1} title="Download the template">
         <p className="text-sm text-on-surface-variant">
-          It has the right columns (* = required), drop-down lists, and an Instructions sheet. Fill one row per {noun.replace(/s$/, "")}.
+          It has the right columns (* = required) and drop-down lists. Clicking a cell shows a tip, and the &ldquo;Allowed values&rdquo; sheet lists every
+          choice. Fill one row per {noun.replace(/s$/, "")}.
         </p>
+        <ColumnGuide kind={kind} />
         <Button variant="secondary" disabled={!!busy} onClick={() => run("template", () => importsApi.template(kind))}>
           {busy === "template" ? "Preparing…" : "Download template"}
         </Button>
