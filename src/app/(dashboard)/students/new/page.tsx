@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { academicApi } from "@/lib/api/academic";
 import { mastersApi } from "@/lib/api/masters";
 import { FamilyMatch, LoginCreated, Student, studentsApi } from "@/lib/api/students";
+import { admissionsApi } from "@/lib/api/admissions";
 import { ApiError, errorMessage } from "@/lib/api/client";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -29,6 +30,8 @@ function Admission() {
   const sensitive = can("student.view_sensitive");
   const config = useQuery({ queryKey: ["student-form-config"], queryFn: studentsApi.formConfig });
   const relations = useQuery({ queryKey: ["master-options", "relation", null, null], queryFn: () => mastersApi.options("relation") });
+  const enquiryId = useSearchParams().get("enquiry");
+  const prefill = useQuery({ queryKey: ["enquiry-admission", enquiryId], queryFn: () => admissionsApi.admissionPrefill(enquiryId!), enabled: !!enquiryId, retry: false });
 
   // Placement
   const [year, setYear] = useState("");
@@ -59,10 +62,25 @@ function Admission() {
 
   // Father (main contact) and mother to start with.
   useEffect(() => {
-    if (guardians.length || !relations.data) return;
+    if (guardians.length || !relations.data || (enquiryId && !prefill.isFetched)) return;
     const rel = (n: string) => relations.data.find((r) => r.name === n)?.id ?? "";
     setGuardians([emptyGuardian(rel("Father"), true), emptyGuardian(rel("Mother"))]);
-  }, [relations.data, guardians.length]);
+  }, [relations.data, guardians.length, enquiryId, prefill.isFetched]);
+
+  // Converting an enquiry: its class, child and parent fill the form once.
+  const prefilled = useRef(false);
+  useEffect(() => {
+    const p = prefill.data;
+    if (!p || !relations.data || prefilled.current) return;
+    prefilled.current = true;
+    setYear(p.academicYearId);
+    setClassId(p.classId);
+    const st = p.student;
+    setFields((f) => ({ ...f, firstName: st.firstName, lastName: st.lastName ?? "", dateOfBirth: st.dateOfBirth ?? "", genderId: st.genderId ?? "", previousSchool: st.previousSchool ?? "" }));
+    const main = { ...emptyGuardian(p.guardian.relationId ?? "", true), name: p.guardian.name, mobile: p.guardian.mobile, email: p.guardian.email ?? "" };
+    const mother = relations.data.find((r) => r.name === "Mother")?.id ?? "";
+    setGuardians(p.guardian.relationId && p.guardian.relationId === mother ? [main] : [main, emptyGuardian(mother)]);
+  }, [prefill.data, relations.data]);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,10 +111,16 @@ function Admission() {
         ...(sibling ? { familyId: sibling.id } : { guardians: filled.map(toGuardianInput) }),
         enrolment: { academicYearId: year, sectionId, ...(roll.trim() ? { rollNumber: Number(roll) } : {}), houseId: houseId || null, optionalSubjectIds: optional },
         ...(config.data?.studentLogin === "on_request" ? { createLogin } : {}),
+        ...(prefill.data ? { enquiryId: prefill.data.enquiryId } : {}),
       });
       setDone(r);
       await queryClient.invalidateQueries({ queryKey: ["students"] });
       await queryClient.invalidateQueries({ queryKey: ["next-admission-number"] });
+      if (prefill.data) {
+        await queryClient.invalidateQueries({ queryKey: ["enquiries"] });
+        await queryClient.invalidateQueries({ queryKey: ["enquiry", prefill.data.enquiryId] });
+        await queryClient.invalidateQueries({ queryKey: ["enquiry-summary"] });
+      }
     } catch (err) {
       setError(errorMessage(err));
       setFieldErrors(err instanceof ApiError ? err.fieldErrors() : {});
@@ -122,6 +146,13 @@ function Admission() {
       />
       <form onSubmit={submit} noValidate className="space-y-6 max-w-5xl">
         {error && <FormAlert>{error}</FormAlert>}
+        {prefill.data && (
+          <FormAlert tone="info">
+            Admitting from enquiry <b>{prefill.data.enquiryNo}</b>
+            {prefill.data.registrationNo ? ` (registration ${prefill.data.registrationNo})` : ""}. Check the details, choose the section and complete the form; the enquiry is marked admitted on saving.
+          </FormAlert>
+        )}
+        {prefill.isError && <FormAlert tone="warning">That enquiry can&apos;t be converted: {errorMessage(prefill.error)}</FormAlert>}
 
         <Section title="Class">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -285,7 +316,9 @@ function Admission() {
 export default function NewAdmissionPage() {
   return (
     <RequirePermission permission="student.create">
-      <Admission />
+      <Suspense>
+        <Admission />
+      </Suspense>
     </RequirePermission>
   );
 }

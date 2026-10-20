@@ -222,7 +222,7 @@ export const studentsApi = {
   formConfig: () => api.get<FormConfig>('/students/form-config'),
   nextAdmissionNumber: (sectionId?: string) => api.get<{ next: string; editable: boolean; pattern: string }>('/students/next-admission-number', { params: sectionId ? { section: sectionId } : {} }),
   searchFamilies: (q: string) => api.get<FamilyMatch[]>('/students/families', { params: { q } }),
-  admit: (input: { student: StudentFields; familyId?: string; guardians?: GuardianInput[]; enrolment: EnrolmentInput; createLogin?: boolean }) =>
+  admit: (input: { student: StudentFields; familyId?: string; guardians?: GuardianInput[]; enrolment: EnrolmentInput; createLogin?: boolean; enquiryId?: string }) =>
     api.post<{ student: Student; logins: LoginCreated[]; warning: string | null }>('/students', input, { timeout: 120_000 }),
   update: (id: string, input: StudentFields) => api.patch<Student>(s(id), input),
   setStatus: (id: string, input: { status: StudentStatus; date?: string; leavingReasonId?: string | null; note?: string | null }) => api.post<Student>(`${s(id)}/status`, input),

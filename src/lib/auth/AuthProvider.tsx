@@ -56,9 +56,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAccess(null);
       setSessionExpired(expired);
       setStatus("signedOut");
-      // Forget everything that belonged to the signed-in person, but keep the public school
-      // branding (the sign-in page is showing it).
-      queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== "public-school" });
+      // Forget everything that belonged to the signed-in person, but keep public data (keys
+      // "public-…": the school branding, the website enquiry form) that the page is showing.
+      queryClient.removeQueries({ predicate: (q) => !String(q.queryKey[0]).startsWith("public-") });
     },
     [queryClient]
   );
