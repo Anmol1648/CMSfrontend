@@ -26,8 +26,15 @@ export class ApiError extends Error {
   }
 
   /** Field errors keyed by field name, for forms. */
+  /** Field → message. A nested field ("student.aadhaar") is also given under its own name ("aadhaar"). */
   fieldErrors(): Record<string, string> {
-    return Object.fromEntries(this.details.map((d) => [d.field, d.message]));
+    const out: Record<string, string> = {};
+    for (const d of this.details) {
+      out[d.field] = d.message;
+      const own = d.field.split('.').slice(1).join('.');
+      if (own && !(own in out)) out[own] = d.message;
+    }
+    return out;
   }
 }
 

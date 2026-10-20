@@ -11,6 +11,7 @@ import { ChangePasswordForm } from "@/components/account/ChangePasswordForm";
 import { authApi, DeviceSession, MfaSetup } from "@/lib/api/auth";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { PhotoEditor } from "@/components/account/UserPhoto";
+import { MyStaffDetails } from "@/components/staff/MyStaffDetails";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useToast } from "@/components/ui/ToastProvider";
 
@@ -316,6 +317,7 @@ export default function AccountPage() {
       <PageHeader title="My account" description="Your sign-in details, password, two-step sign-in and devices." />
       <div className="space-y-6 max-w-4xl">
         <MyDetails />
+        <MyStaffDetails />
 
         <Section title="Password" description="Changing it signs you out on your other devices.">
           <div className="max-w-md">

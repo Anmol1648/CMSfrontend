@@ -34,6 +34,9 @@ export const ACTION_LABELS: Record<string, string> = {
   document_removed: "Document removed",
   demo_data: "Demo data added",
   demo_cleared: "Demo data removed",
+  qualifications_change: "Qualifications changed",
+  experience_change: "Experience changed",
+  teacher_assigned: "Subject teacher changed",
 };
 
 export const ENTITY_LABELS: Record<string, string> = {
@@ -50,6 +53,8 @@ export const ENTITY_LABELS: Record<string, string> = {
   subject: "Subject",
   student: "Student",
   guardian: "Parent / guardian",
+  staff: "Staff member",
+  teaching: "Subject teachers",
 };
 
 export const actionLabel = (a: string) => ACTION_LABELS[a] ?? a.replace(/_/g, " ");

@@ -34,7 +34,7 @@ export interface Section {
   stream: Ref | null;
   capacity: number | null;
   room: string | null;
-  classTeacher: { id: string; displayName: string; username: string } | null;
+  classTeacher: { id: string; name: string; code: string } | null;
   sortOrder: number;
   isActive: boolean;
 }
@@ -135,7 +135,7 @@ export const academicApi = {
   deleteSection: (id: string) => api.delete<{ id: string }>(`/academic/sections/${id}`),
   moveSection: (id: string, direction: Direction) => api.post<Section>(`/academic/sections/${id}/move`, { direction }),
   exportSections: (yearId: string) => downloadFile('/academic/sections/export', { year: yearId }, 'sections.xlsx'),
-  teacherOptions: () => api.get<{ id: string; displayName: string; username: string }[]>('/academic/teachers/options'),
+  teacherOptions: () => api.get<{ id: string; name: string; code: string }[]>('/academic/teachers/options'),
 
   subjects: () => api.get<Subject[]>('/academic/subjects'),
   subjectOptions: () => api.get<{ id: string; name: string; code: string | null; assessment: Subject['assessment'] }[]>('/academic/subjects/options'),

@@ -158,7 +158,7 @@ function SectionDialog({ cls, yearId, section, onClose, onSaved }: { cls: School
           onChange={setTeacherId}
           error={fieldErrors.classTeacherId}
           disabled={busy}
-          options={[{ value: "", label: teachers.isLoading ? "Loading…" : "Not chosen yet" }, ...(teachers.data ?? []).map((t) => ({ value: t.id, label: `${t.displayName} (@${t.username})` }))]}
+          options={[{ value: "", label: teachers.isLoading ? "Loading…" : "Not chosen yet" }, ...(teachers.data ?? []).map((t) => ({ value: t.id, label: `${t.name} (${t.code})` }))]}
         />
         <Checkbox label="Active" checked={isActive} onChange={setIsActive} disabled={busy} />
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
@@ -278,7 +278,7 @@ function Classes() {
                     type="button"
                     disabled={!canManage || !open}
                     onClick={() => setEditingSection({ cls: c, section: s })}
-                    title={[s.classTeacher ? `Class teacher: ${s.classTeacher.displayName}` : "No class teacher yet", s.room ? `Room ${s.room}` : null, s.capacity ? `Capacity ${s.capacity}` : null].filter(Boolean).join(" · ")}
+                    title={[s.classTeacher ? `Class teacher: ${s.classTeacher.name}` : "No class teacher yet", s.room ? `Room ${s.room}` : null, s.capacity ? `Capacity ${s.capacity}` : null].filter(Boolean).join(" · ")}
                     className={cn(
                       "px-3 py-1.5 rounded-xl text-sm border text-left disabled:cursor-default",
                       s.isActive ? "border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high" : "border-dashed border-outline-variant/40 text-on-surface-variant/60"
@@ -286,7 +286,7 @@ function Classes() {
                   >
                     <span className="font-bold text-primary">{s.name}</span>
                     {s.stream && <span className="text-on-surface-variant"> · {s.stream.name}</span>}
-                    <span className="block text-[11px] text-on-surface-variant/70">{s.classTeacher?.displayName ?? "No class teacher"}</span>
+                    <span className="block text-[11px] text-on-surface-variant/70">{s.classTeacher?.name ?? "No class teacher"}</span>
                   </button>
                 ))}
                 {!c.sections.length && <span className="text-sm text-on-surface-variant/60">No sections this year</span>}
