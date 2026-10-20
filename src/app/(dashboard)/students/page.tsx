@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { FormAlert, Pill, Select } from "@/components/forms";
 import { PageHeader } from "@/components/layout/AppShell";
+import { ParentLoginsButton } from "@/components/students/ParentLoginsButton";
 import { UserPhoto } from "@/components/account/UserPhoto";
 import { YearSelect } from "@/components/academic/YearSelect";
 import { MasterSelect } from "@/components/masters/MasterSelect";
@@ -80,6 +81,7 @@ function Students() {
             <Button variant="secondary" disabled={!year} onClick={() => studentsApi.export(query).catch((err) => showToast(errorMessage(err), "error"))}>
               Export
             </Button>
+            {can("student.update") && <ParentLoginsButton />}
             {can("student.import") && (
               <Link href="/students/import" className="px-6 py-2.5 font-medium rounded-md bg-surface-high text-primary hover:bg-surface-highest transition-all">
                 Import

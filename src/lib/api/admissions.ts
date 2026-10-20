@@ -1,5 +1,6 @@
 import { api, downloadFile } from './client';
 import type { Paged } from './admin';
+import type { Checkout } from './fees';
 
 /** Admission enquiries (cmsbackend/src/modules/admissions). */
 
@@ -60,6 +61,9 @@ export interface Enquiry extends EnquiryListItem {
   remarks: string | null;
   lostReason: Ref | null;
   registrationDate: string | null;
+  registrationFee: number | null;
+  registrationFeeMode: string | null;
+  registrationFeeRef: string | null;
   testDate: string | null;
   testScore: string | null;
   student: { id: string; admissionNo: string; name: string } | null;
@@ -70,6 +74,7 @@ export interface Enquiry extends EnquiryListItem {
 
 export interface EnquiryFormConfig {
   registration: boolean;
+  registrationFee: number;
   test: boolean;
   followUpDays: number;
   publicForm: boolean;
@@ -163,14 +168,14 @@ export const admissionsApi = {
   addFollowUp: (id: string, input: { date?: string; outcomeId?: string | null; note?: string | null; nextDate?: string | null; stageId?: string; lostReasonId?: string | null }) =>
     api.post<Enquiry>(`${e(id)}/follow-ups`, input),
   removeFollowUp: (id: string, followUpId: string) => api.delete<Enquiry>(`${e(id)}/follow-ups/${followUpId}`),
-  register: (id: string, input: { registrationDate?: string; stageId?: string }) => api.post<Enquiry>(`${e(id)}/register`, input),
+  register: (id: string, input: { registrationDate?: string; stageId?: string; fee?: { amount: number; mode: string; reference?: string | null } }) => api.post<Enquiry>(`${e(id)}/register`, input),
   setTest: (id: string, input: { testDate?: string | null; testScore?: string | null; testResult: TestResult; stageId?: string }) => api.put<Enquiry>(`${e(id)}/test`, input),
   admissionPrefill: (id: string) => api.get<AdmissionPrefill>(`${e(id)}/admission`),
   report: (q: { year?: string; from?: string; to?: string }) => api.get<AdmissionReport>('/admissions/reports', { params: Object.fromEntries(Object.entries(q).filter(([, v]) => v)) }),
 
   /** The website form (no login). */
-  publicForm: () => api.get<{ enabled: boolean; classes: Ref[]; academicYear: Ref | null }>('/public/enquiry'),
-  submitPublic: (input: Record<string, string | null>) => api.post<{ enquiryNo: string | null }>('/public/enquiry', input),
+  publicForm: () => api.get<{ enabled: boolean; classes: Ref[]; academicYear: Ref | null; registrationFee: { amount: number; convenienceFee: number } | null }>('/public/enquiry'),
+  submitPublic: (input: Record<string, string | null>) => api.post<{ enquiryNo: string | null; payment: Checkout | null }>('/public/enquiry', input, { timeout: 60_000 }),
 };
 
 export const TEST_RESULT: Record<TestResult, string> = { pending: 'Pending', passed: 'Passed', failed: 'Not cleared', not_needed: 'Not needed' };

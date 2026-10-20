@@ -19,6 +19,7 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { admissionsApi, Enquiry, EnquiryFormConfig, Stage, TEST_RESULT, TestResult } from "@/lib/api/admissions";
 import { ApiError, errorMessage } from "@/lib/api/client";
+import { COUNTER_MODES, PAYMENT_MODES, PaymentMode, rupees } from "@/lib/api/fees";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -99,6 +100,9 @@ function FollowUpForm({ e, config, onSaved }: { e: Enquiry; config: EnquiryFormC
 function RegistrationCard({ e, config, canManage, onSaved }: { e: Enquiry; config: EnquiryFormConfig; canManage: boolean; onSaved: (e: Enquiry) => void }) {
   const [date, setDate] = useState(today());
   const [stageId, setStageId] = useState("");
+  const [fee, setFee] = useState(config.registrationFee ? String(config.registrationFee) : "");
+  const [mode, setMode] = useState<Exclude<PaymentMode, "online">>("cash");
+  const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
   if (!config.registration && !e.registrationNo) return null;
@@ -109,6 +113,8 @@ function RegistrationCard({ e, config, canManage, onSaved }: { e: Enquiry; confi
         <div className="grid grid-cols-2 gap-4">
           <Detail label="Registration no" value={<span className="font-mono">{e.registrationNo}</span>} />
           <Detail label="Date" value={formatDay(e.registrationDate)} />
+          <Detail label="Registration fee" value={e.registrationFee ? `${rupees(e.registrationFee)} · ${PAYMENT_MODES[(e.registrationFeeMode ?? "cash") as PaymentMode]}` : "Not taken"} />
+          {e.registrationFeeRef && <Detail label="Reference" value={<span className="font-mono text-xs">{e.registrationFeeRef}</span>} />}
         </div>
       ) : canManage && e.status === "open" ? (
         <div className="space-y-4">
@@ -116,6 +122,9 @@ function RegistrationCard({ e, config, canManage, onSaved }: { e: Enquiry; confi
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input label="Registration date" type="date" max={today()} value={date} onChange={(ev) => setDate(ev.target.value)} />
             <StageSelect stages={config.stages.filter((s) => !s.lost)} value={stageId} onChange={setStageId} current={e.stage.id} />
+            <Input label="Registration fee received (₹)" type="number" min={0} value={fee} onChange={(ev) => setFee(ev.target.value)} placeholder="0 = none" />
+            <Select label="Paid by" value={mode} onChange={(v) => setMode(v as Exclude<PaymentMode, "online">)} options={COUNTER_MODES.map((m) => ({ value: m, label: PAYMENT_MODES[m] }))} />
+            {Number(fee) > 0 && mode !== "cash" && <Input label="Cheque / transaction no *" value={reference} onChange={(ev) => setReference(ev.target.value)} maxLength={60} />}
           </div>
           <div className="flex justify-end">
             <Button
@@ -123,7 +132,8 @@ function RegistrationCard({ e, config, canManage, onSaved }: { e: Enquiry; confi
               onClick={async () => {
                 setBusy(true);
                 try {
-                  const r = await admissionsApi.register(e.id, { registrationDate: date, ...(stageId ? { stageId } : {}) });
+                  const amount = Math.max(0, Math.round(Number(fee) || 0));
+                  const r = await admissionsApi.register(e.id, { registrationDate: date, ...(stageId ? { stageId } : {}), ...(amount ? { fee: { amount, mode, reference: reference.trim() || null } } : {}) });
                   showToast(`Registered as ${r.registrationNo}`, "success");
                   onSaved(r);
                 } catch (err) {

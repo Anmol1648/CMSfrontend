@@ -7,11 +7,19 @@ import { Input } from "@/components/ui/Input";
 import { TextArea } from "@/components/ui/TextArea";
 import { FormAlert, Select, SubmitButton } from "@/components/forms";
 import { admissionsApi } from "@/lib/api/admissions";
+import { Checkout, PaymentResult, rupees } from "@/lib/api/fees";
+import { schoolApi } from "@/lib/api/school";
+import { GatewayCheckout } from "@/components/fees/GatewayCheckout";
+import { Button } from "@/components/ui/Button";
 import { ApiError, errorMessage } from "@/lib/api/client";
 
 /** The school website's admission enquiry form (no login). Switched on in System Settings → Admissions. */
 export default function EnquirePage() {
   const form = useQuery({ queryKey: ["public-enquiry-form"], queryFn: admissionsApi.publicForm, retry: false });
+  const school = useQuery({ queryKey: ["public-school"], queryFn: schoolApi.publicInfo, staleTime: Infinity });
+  const [payment, setPayment] = useState<Checkout | null>(null);
+  const [paying, setPaying] = useState(false);
+  const [paid, setPaid] = useState<PaymentResult | null>(null);
   const [v, setV] = useState({ classId: "", studentFirstName: "", studentLastName: "", dateOfBirth: "", parentName: "", mobile: "", email: "", area: "", message: "", website: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +36,7 @@ export default function EnquirePage() {
       const body = Object.fromEntries(Object.entries(v).map(([k, val]) => [k, val.trim() || null]));
       const r = await admissionsApi.submitPublic({ ...body, website: v.website });
       setSent(r.enquiryNo);
+      setPayment(r.payment);
     } catch (err) {
       setError(errorMessage(err));
       setErrors(err instanceof ApiError ? err.fieldErrors() : {});
@@ -53,6 +62,37 @@ export default function EnquirePage() {
         <FormAlert tone="success">
           Your enquiry has reached the school{sent ? <> (number <b className="font-mono">{sent}</b>)</> : ""}. The admission office will call you on the mobile number you gave.
         </FormAlert>
+        {payment && !paid?.status && (
+          <div className="rounded-xl bg-surface-container-low p-4 space-y-3">
+            <p className="text-sm">
+              Register now by paying the registration fee of <b>{rupees(payment.amount)}</b> online (UPI, card or net banking). You can also pay it at the school.
+            </p>
+            <Button onClick={() => setPaying(true)}>Pay {rupees(payment.amount)}</Button>
+          </div>
+        )}
+        {paid?.status === "paid" && (
+          <FormAlert tone="success">
+            Registration fee received{paid.registrationNo ? <>: your registration number is <b className="font-mono">{paid.registrationNo}</b></> : ""}. Please keep it for the admission.
+          </FormAlert>
+        )}
+        {paid?.status === "failed" && (
+          <div className="space-y-3">
+            <FormAlert>The payment did not go through. No money was taken; you can try again.</FormAlert>
+            <Button onClick={() => { setPaid(null); setPaying(true); }}>Try again</Button>
+          </div>
+        )}
+        {payment && paying && (
+          <GatewayCheckout
+            checkout={payment}
+            schoolName={school.data?.name ?? "Registration fee"}
+            anonymous
+            onClose={() => setPaying(false)}
+            onDone={(r) => {
+              setPaying(false);
+              setPaid(r);
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -85,6 +125,9 @@ export default function EnquirePage() {
       <TextArea label="Anything you'd like to ask" rows={3} maxLength={1000} value={v.message} onChange={(e) => setV({ ...v, message: e.target.value })} error={errors.message} />
       {/* Hidden from people; bots fill it in. */}
       <input type="text" name="website" value={v.website} onChange={(e) => setV({ ...v, website: e.target.value })} tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
+      {form.data.registrationFee && (
+        <p className="text-xs text-on-surface-variant">After sending, you can register at once by paying the registration fee of {rupees(form.data.registrationFee.amount + form.data.registrationFee.convenienceFee)} online.</p>
+      )}
       <SubmitButton busy={busy} busyLabel="Sending…" disabled={!v.classId || !v.studentFirstName.trim() || !v.parentName.trim() || !v.mobile.trim()}>
         Send enquiry
       </SubmitButton>

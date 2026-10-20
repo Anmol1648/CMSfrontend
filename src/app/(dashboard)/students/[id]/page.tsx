@@ -664,9 +664,16 @@ function StudentPage({ id }: { id: string }) {
         title={s.name}
         description={`${s.admissionNo}${current ? ` · ${current.section.label} · roll ${current.rollNumber ?? "—"}` : ""}`}
         actions={
-          <Link href="/students" className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
-            All students
-          </Link>
+          <div className="flex items-center gap-4">
+            {(can("fee.collect") || can("fee.view")) && (
+              <Link href={`/fees/collect?student=${s.id}`} className="px-5 py-2.5 font-bold rounded-md bg-surface-high text-primary hover:bg-surface-highest transition-all">
+                Fees
+              </Link>
+            )}
+            <Link href="/students" className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
+              All students
+            </Link>
+          </div>
         }
       />
       <div className="space-y-6 max-w-6xl">

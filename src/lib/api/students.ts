@@ -231,6 +231,8 @@ export const studentsApi = {
   addGuardian: (id: string, input: GuardianInput) => api.post<Student>(`${s(id)}/guardians`, input),
   updateGuardian: (id: string, guardianId: string, input: Partial<GuardianInput>) => api.patch<Student>(`${s(id)}/guardians/${guardianId}`, input),
   removeGuardian: (id: string, guardianId: string) => api.delete<Student>(`${s(id)}/guardians/${guardianId}`),
+  parentLoginsBatch: () =>
+    api.post<{ created: { for: string; username: string; temporaryPassword: string; emailed: boolean }[]; skipped: { for: string; reason: string }[]; remaining: number }>('/students/parent-logins', undefined, { timeout: 120_000 }),
   parentLogin: (id: string, guardianId: string) => api.post<{ username: string; temporaryPassword: string; emailed: boolean }>(`${s(id)}/guardians/${guardianId}/login`),
   linkFamily: (id: string, familyId: string) => api.post<Student>(`${s(id)}/family`, { familyId }),
   uploadPhoto: (id: string, file: File) => uploadFile<{ photoUrl: string }>(`${s(id)}/photo`, 'image', file),
