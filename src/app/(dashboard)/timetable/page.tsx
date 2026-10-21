@@ -21,6 +21,7 @@ import { staffApi } from "@/lib/api/staff";
 import { Entry, timetableApi } from "@/lib/api/timetable";
 import { errorMessage } from "@/lib/api/client";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const STATUS = { draft: { label: "Draft", tone: "warning" as const }, published: { label: "Published", tone: "success" as const }, archived: { label: "Old", tone: "neutral" as const } };
 
@@ -90,6 +91,7 @@ function Timetables() {
   const { can } = useAuth();
   const manage = can("timetable.manage");
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
   const [year, setYear] = useState("");
   const [ttId, setTtId] = useState("");
@@ -184,12 +186,12 @@ function Timetables() {
             {manage && (
               <div className="ml-auto flex flex-wrap gap-2">
                 {draft && (
-                  <Button variant="secondary" disabled={!!busy} onClick={() => window.confirm("Generate this draft again? Locked periods stay; the rest are placed again.") && generate(o.id)}>
+                  <Button variant="secondary" disabled={!!busy} onClick={async () => (await confirm({ title: "Generate this draft again?", message: "Locked periods stay where they are; all the others are placed again.", confirmLabel: "Generate again" })) && generate(o.id)}>
                     Generate again
                   </Button>
                 )}
                 {draft && (
-                  <Button disabled={!!busy} onClick={() => window.confirm(`Publish "${o.name}"? Everyone will see it; the timetable published now becomes old.`) && run("publish", async () => { await timetableApi.publish(o.id); showToast("Published", "success"); })}>
+                  <Button disabled={!!busy} onClick={async () => (await confirm({ title: `Publish "${o.name}"?`, message: "Everyone sees it straight away; the timetable published now becomes old.", confirmLabel: "Publish" })) && run("publish", async () => { await timetableApi.publish(o.id); showToast("Published", "success"); })}>
                     Publish
                   </Button>
                 )}
@@ -199,7 +201,7 @@ function Timetables() {
                   </Button>
                 )}
                 {o.status !== "published" && (
-                  <Button variant="secondary" disabled={!!busy} onClick={() => window.confirm(`Delete "${o.name}"?`) && run("delete", async () => { await timetableApi.remove(o.id); setTtId(""); })}>
+                  <Button variant="secondary" disabled={!!busy} onClick={async () => (await confirm({ title: `Delete "${o.name}"?`, message: "This timetable and all its periods are deleted.", confirmLabel: "Delete", danger: true })) && run("delete", async () => { await timetableApi.remove(o.id); setTtId(""); })}>
                     Delete
                   </Button>
                 )}

@@ -17,6 +17,7 @@ import { academicApi } from "@/lib/api/academic";
 import { mastersApi } from "@/lib/api/masters";
 import { Concession, ConcessionInput, feesApi, rupees, StructureGrid } from "@/lib/api/fees";
 import { ApiError, errorMessage } from "@/lib/api/client";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const fmt = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
@@ -25,6 +26,7 @@ const fmt = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN"
 function Instalments({ year }: { year: string }) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const list = useQuery({ queryKey: ["fee-instalments", year], queryFn: () => feesApi.instalments(year) });
   const years = useQuery({ queryKey: ["academic-year-options"], queryFn: academicApi.yearOptions });
   const [name, setName] = useState("");
@@ -112,7 +114,7 @@ function Instalments({ year }: { year: string }) {
                     Edit
                   </button>
                   {!i.paidAgainst && (
-                    <button type="button" onClick={() => window.confirm(`Remove ${i.name}? Its amounts go with it.`) && act(async () => set(await feesApi.deleteInstalment(i.id)), "Removed")} className="text-xs font-bold uppercase tracking-widest text-error/70 hover:text-error">
+                    <button type="button" onClick={async () => (await confirm({ title: `Remove ${i.name}?`, message: "Its amounts for every class go with it.", confirmLabel: "Remove", danger: true })) && act(async () => set(await feesApi.deleteInstalment(i.id)), "Removed")} className="text-xs font-bold uppercase tracking-widest text-error/70 hover:text-error">
                       Remove
                     </button>
                   )}
@@ -442,6 +444,7 @@ function ConcessionForm({ year, initial, onDone }: { year: string; initial: Conc
 function Concessions({ year }: { year: string }) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const list = useQuery({ queryKey: ["fee-concessions", year], queryFn: () => feesApi.concessions(year) });
   const [editing, setEditing] = useState<Concession | "new" | null>(null);
   const describe = (l: Concession["lines"][number]) => `${l.feeHead?.name}: ${l.kind === "percent" ? `${l.value}%` : `${rupees(l.value)} per instalment`}`;
@@ -476,7 +479,7 @@ function Concessions({ year }: { year: string }) {
                     type="button"
                     onClick={async (e) => {
                       e.stopPropagation();
-                      if (!window.confirm(`Remove "${c.name}"?`)) return;
+                      if (!(await confirm({ title: `Remove "${c.name}"?`, message: "The concession is deleted for this year.", confirmLabel: "Remove", danger: true }))) return;
                       try {
                         await feesApi.deleteConcession(c.id);
                         await queryClient.invalidateQueries({ queryKey: ["fee-concessions", year] });

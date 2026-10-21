@@ -9,10 +9,12 @@ import { FormAlert, Select } from "@/components/forms";
 import { useToast } from "@/components/ui/ToastProvider";
 import { feesApi, rupees, StudentFees } from "@/lib/api/fees";
 import { ApiError, errorMessage } from "@/lib/api/client";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 /** A student's concessions and one-off changes (waive a fine, an extra charge), beside their dues. */
 export function StudentFeeExtras({ fees, onChange, canChange }: { fees: StudentFees; onChange: (f: StudentFees) => void; canChange: boolean }) {
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const concessions = useQuery({ queryKey: ["fee-concessions", fees.academicYearId], queryFn: () => feesApi.concessions(fees.academicYearId), enabled: canChange });
   const config = useQuery({ queryKey: ["fee-config"], queryFn: feesApi.config });
   const [give, setGive] = useState("");
@@ -60,7 +62,7 @@ export function StudentFeeExtras({ fees, onChange, canChange }: { fees: StudentF
               {g.note && <p className="text-xs text-on-surface-variant">{g.note}</p>}
             </div>
             {canChange && (
-              <button type="button" disabled={busy} onClick={() => window.confirm(`Take "${g.concession.name}" off this student?`) && run(() => feesApi.removeConcession(fees.student.id, g.id), "Concession taken off")} className="text-xs font-bold uppercase tracking-widest text-error/70 hover:text-error">
+              <button type="button" disabled={busy} onClick={async () => (await confirm({ title: `Take "${g.concession.name}" off this student?`, message: "Their dues go back up by the concession.", confirmLabel: "Remove", danger: true })) && run(() => feesApi.removeConcession(fees.student.id, g.id), "Concession taken off")} className="text-xs font-bold uppercase tracking-widest text-error/70 hover:text-error">
                 Remove
               </button>
             )}
@@ -136,7 +138,7 @@ export function StudentFeeExtras({ fees, onChange, canChange }: { fees: StudentF
                       {a.by ? ` · ${a.by}` : ""}
                     </p>
                   </div>
-                  <button type="button" disabled={busy} onClick={() => window.confirm("Undo this change?") && run(() => feesApi.removeAdjustment(fees.student.id, a.id), "Removed")} className="text-xs font-bold uppercase tracking-widest text-error/70 hover:text-error">
+                  <button type="button" disabled={busy} onClick={async () => (await confirm({ title: "Undo this change?", message: "The waiver or extra charge is removed from the dues.", confirmLabel: "Undo", danger: true })) && run(() => feesApi.removeAdjustment(fees.student.id, a.id), "Removed")} className="text-xs font-bold uppercase tracking-widest text-error/70 hover:text-error">
                     Undo
                   </button>
                 </div>

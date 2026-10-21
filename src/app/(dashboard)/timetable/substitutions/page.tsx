@@ -13,6 +13,7 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { staffApi } from "@/lib/api/staff";
 import { SubstitutionPeriod, timetableApi } from "@/lib/api/timetable";
 import { errorMessage } from "@/lib/api/client";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -80,6 +81,7 @@ function PeriodRow({ p, date, onChange }: { p: SubstitutionPeriod; date: string;
 function Day() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const [date, setDate] = useState(today());
   const [staffId, setStaffId] = useState("");
   const staff = useQuery({ queryKey: ["staff-options-teaching"], queryFn: () => staffApi.options(true) });
@@ -122,7 +124,7 @@ function Day() {
             <button
               type="button"
               onClick={async () => {
-                if (!window.confirm(`${a.teacher.name} is not absent after all? Their arrangement periods of this day are removed.`)) return;
+                if (!(await confirm({ title: `${a.teacher.name} is not absent?`, message: "Their arrangement periods of this day are removed.", confirmLabel: "Not absent", danger: true }))) return;
                 queryClient.setQueryData(["tt-subs", date], await timetableApi.clearAbsent(date, a.teacher.id));
               }}
               className="text-xs font-bold uppercase tracking-widest text-error/70 hover:text-error"

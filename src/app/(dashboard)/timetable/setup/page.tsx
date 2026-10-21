@@ -16,6 +16,7 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { LoadRow, Schedule, Slot, TeacherLoad, timetableApi } from "@/lib/api/timetable";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 type SlotInput = Omit<Slot, "periodNo">;
 
@@ -111,6 +112,7 @@ function ScheduleEditor({ year, initial, onDone }: { year: string; initial: Sche
 function Schedules({ year }: { year: string }) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const schedules = useQuery({ queryKey: ["tt-schedules", year], queryFn: () => timetableApi.schedules(year) });
   const days = useQuery({ queryKey: ["tt-days", year], queryFn: () => timetableApi.days(year) });
   const [editing, setEditing] = useState<Schedule | "new" | null>(null);
@@ -145,7 +147,7 @@ function Schedules({ year }: { year: string }) {
                   <button
                     type="button"
                     onClick={async () => {
-                      if (!window.confirm(`Remove ${s.name}?`)) return;
+                      if (!(await confirm({ title: `Remove the ${s.name} schedule?`, confirmLabel: "Remove", danger: true }))) return;
                       try {
                         await timetableApi.deleteSchedule(s.id);
                         refresh();

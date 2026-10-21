@@ -13,6 +13,7 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { GatewaySettings, paymentsApi, rupees } from "@/lib/api/fees";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 function KeysBox({ title, tone, keys, placeholder, value, onChange, errors }: {
   title: string;
@@ -40,6 +41,7 @@ function KeysBox({ title, tone, keys, placeholder, value, onChange, errors }: {
 function Gateway() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const gw = useQuery({ queryKey: ["payment-gateway"], queryFn: paymentsApi.gateway });
   const [provider, setProvider] = useState<"razorpay" | "mock">("razorpay");
   const [test, setTest] = useState({ keyId: "", keySecret: "", webhookSecret: "" });
@@ -125,7 +127,7 @@ function Gateway() {
                 <Button
                   variant={g.mode === "live" ? "primary" : "secondary"}
                   disabled={g.mode === "live" || !g.live.ready}
-                  onClick={() => (window.confirm("Switch to LIVE mode? From now on every payment (My Fees, the website form, QR codes) takes real money.") ? switchMode("live") : undefined)}
+                  onClick={async () => (await confirm({ title: "Switch to LIVE mode?", message: "From now on every payment (My Fees, the website form, QR codes) takes real money.", confirmLabel: "Use live mode", danger: true })) && switchMode("live")}
                 >
                   Use live mode
                 </Button>

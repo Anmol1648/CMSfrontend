@@ -21,6 +21,7 @@ import { admissionsApi, Enquiry, EnquiryFormConfig, Stage, TEST_RESULT, TestResu
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { COUNTER_MODES, PAYMENT_MODES, PaymentMode, rupees } from "@/lib/api/fees";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -214,6 +215,7 @@ function EnquiryPage() {
   const queryClient = useQueryClient();
   const { can } = useAuth();
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const canManage = can("enquiry.manage");
   const enquiry = useQuery({ queryKey: ["enquiry", id], queryFn: () => admissionsApi.get(id) });
   const config = useQuery({ queryKey: ["enquiry-form-config"], queryFn: admissionsApi.formConfig });
@@ -347,7 +349,7 @@ function EnquiryPage() {
                       <button
                         type="button"
                         onClick={async () => {
-                          if (!window.confirm("Remove this follow-up?")) return;
+                          if (!(await confirm({ title: "Remove this follow-up?", message: "The note and its next follow-up date are deleted.", confirmLabel: "Remove", danger: true }))) return;
                           try {
                             saved(await admissionsApi.removeFollowUp(e.id, f.id));
                           } catch (err) {
@@ -422,7 +424,7 @@ function EnquiryPage() {
               <button
                 type="button"
                 onClick={async () => {
-                  if (!window.confirm(`Delete enquiry ${e.enquiryNo}? Its follow-ups go with it.`)) return;
+                  if (!(await confirm({ title: `Delete enquiry ${e.enquiryNo}?`, message: "Its follow-ups are deleted with it. This can't be undone.", confirmLabel: "Delete", danger: true }))) return;
                   try {
                     await admissionsApi.remove(e.id);
                     queryClient.invalidateQueries({ queryKey: ["enquiries"] });
