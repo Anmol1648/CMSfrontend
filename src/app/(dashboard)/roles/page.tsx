@@ -14,6 +14,7 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { rolesApi } from "@/lib/api/admin";
 import { ApiError, errorMessage } from "@/lib/api/client";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 function NewRoleDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
@@ -129,7 +130,7 @@ function RolesList() {
             ))}
           </tbody>
         </table>
-        {roles.isLoading && <p className="p-6 text-sm text-on-surface-variant">Loading…</p>}
+        {roles.isLoading && <div className="p-6"><PageLoader compact /></div>}
       </Card>
       <NewRoleDialog open={creating} onClose={() => setCreating(false)} />
     </>

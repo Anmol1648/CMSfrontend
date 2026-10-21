@@ -8,6 +8,7 @@ import { auditApi } from "@/lib/api/audit";
 import { errorMessage } from "@/lib/api/client";
 import { AuditChanges, actionLabel } from "./AuditChanges";
 import { formatDateTime } from "./labels";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 /** "History" card on a record's page: the latest audit entries for it (needs audit.view). */
 export function RecordHistory({ entity, id, title = "History" }: { entity: string; id: string; title?: string }) {
@@ -24,7 +25,7 @@ export function RecordHistory({ entity, id, title = "History" }: { entity: strin
           Audit trail
         </Link>
       </div>
-      {history.isLoading && <p className="text-sm text-on-surface-variant">Loading…</p>}
+      {history.isLoading && <PageLoader />}
       {history.isError && <p className="text-sm text-error">{errorMessage(history.error)}</p>}
       {history.data?.length === 0 && <p className="text-sm text-on-surface-variant/70">No changes recorded yet.</p>}
       <ol className="space-y-4">

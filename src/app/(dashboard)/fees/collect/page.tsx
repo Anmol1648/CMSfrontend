@@ -19,6 +19,7 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { COUNTER_MODES, feesApi, PAYMENT_MODES, PaymentMode, Receipt, rupees } from "@/lib/api/fees";
 import { ApiError, errorMessage } from "@/lib/api/client";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 const today = () => new Date().toISOString().slice(0, 10);
 type CounterMode = Exclude<PaymentMode, "online">;
@@ -141,7 +142,7 @@ function Counter() {
 
       {!studentId && <FormAlert tone="info">Search for a student to see their fees.</FormAlert>}
       {fees.isError && <FormAlert>{errorMessage(fees.error)}</FormAlert>}
-      {studentId && fees.isLoading && <p className="text-sm text-on-surface-variant">Loading…</p>}
+      {studentId && fees.isLoading && <PageLoader />}
 
       {fees.data && s && (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">

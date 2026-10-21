@@ -15,6 +15,7 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { schoolApi } from "@/lib/api/school";
 import { Checkout, feesApi, MyFees, PAYMENT_MODES, PaymentResult, paymentsApi, rupees } from "@/lib/api/fees";
 import { errorMessage } from "@/lib/api/client";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 type Child = MyFees["children"][number];
 
@@ -132,7 +133,7 @@ function Mine() {
   const [result, setResult] = useState<PaymentResult | null>(null);
 
   if (fees.isError) return <FormAlert>{errorMessage(fees.error)}</FormAlert>;
-  if (!fees.data) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (!fees.data) return <PageLoader />;
   const f = fees.data;
 
   return (

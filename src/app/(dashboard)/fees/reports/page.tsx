@@ -11,6 +11,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { feesApi, PAYMENT_MODES, rupees } from "@/lib/api/fees";
 import { errorMessage } from "@/lib/api/client";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const fmt = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
@@ -114,7 +115,7 @@ function Classes() {
         </div>
       </Card>
       {report.isError && <FormAlert>{errorMessage(report.error)}</FormAlert>}
-      {report.isLoading && <p className="text-sm text-on-surface-variant">Working out every student&apos;s fees…</p>}
+      {report.isLoading && <PageLoader compact label="Working out every student’s fees…" />}
       {r && (
         <Card padding="none" className="overflow-hidden">
           <div className="overflow-x-auto">

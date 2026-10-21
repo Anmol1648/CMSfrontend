@@ -20,6 +20,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { admissionsApi, Enquiry, EnquiryFormConfig, Stage, TEST_RESULT, TestResult } from "@/lib/api/admissions";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { COUNTER_MODES, PAYMENT_MODES, PaymentMode, rupees } from "@/lib/api/fees";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -229,7 +230,7 @@ function EnquiryPage() {
   };
 
   if (enquiry.isError) return <FormAlert>{errorMessage(enquiry.error)}</FormAlert>;
-  if (!enquiry.data || !config.data) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (!enquiry.data || !config.data) return <PageLoader />;
   const e = enquiry.data;
   const cfg = config.data;
   const canConvert = can("enquiry.convert") && can("student.create") && e.status !== "lost" && !e.student;

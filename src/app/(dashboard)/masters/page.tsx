@@ -18,6 +18,7 @@ import { MasterInfo, mastersApi, MasterValue } from "@/lib/api/masters";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { useToast } from "@/components/ui/ToastProvider";
 import { cn } from "@/lib/utils";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 const PAGE_SIZE = 50;
 
@@ -411,7 +412,7 @@ function Masters() {
               </ul>
             </div>
           ))}
-          {catalogue.isLoading && <p className="p-5 text-sm text-on-surface-variant">Loading…</p>}
+          {catalogue.isLoading && <div className="p-5"><PageLoader compact /></div>}
         </Card>
         {/* key: a fresh panel (filters, page) for each list */}
         {selected && <ValuesPanel key={selected.key} info={selected} />}

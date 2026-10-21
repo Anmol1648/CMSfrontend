@@ -14,6 +14,7 @@ import { schoolApi, SchoolProfile, SchoolProfileUpdate } from "@/lib/api/school"
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useToast } from "@/components/ui/ToastProvider";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 type FormValues = Record<string, string>;
 
@@ -67,7 +68,7 @@ export default function SchoolProfilePage() {
     return (
       <>
         <PageHeader title="School Profile" />
-        {profile.isError ? <FormAlert>{errorMessage(profile.error)}</FormAlert> : <p className="text-sm text-on-surface-variant">Loading…</p>}
+        {profile.isError ? <FormAlert>{errorMessage(profile.error)}</FormAlert> : <PageLoader />}
       </>
     );
   }

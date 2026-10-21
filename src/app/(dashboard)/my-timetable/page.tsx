@@ -9,13 +9,14 @@ import { TimetableGrid } from "@/components/timetable/TimetableGrid";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { timetableApi } from "@/lib/api/timetable";
 import { errorMessage } from "@/lib/api/client";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 const fmt = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
 
 function Mine() {
   const mine = useQuery({ queryKey: ["my-timetable"], queryFn: timetableApi.mine });
   if (mine.isError) return <FormAlert>{errorMessage(mine.error)}</FormAlert>;
-  if (!mine.data) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (!mine.data) return <PageLoader />;
   const m = mine.data;
   const today = ((new Date().getDay() + 6) % 7) + 1;
   const todayIso = new Date().toISOString().slice(0, 10);

@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { paymentsApi, rupees } from "@/lib/api/fees";
 import { ApiError, errorMessage } from "@/lib/api/client";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 function Gateway() {
   const queryClient = useQueryClient();
@@ -28,7 +29,7 @@ function Gateway() {
     setProvider(gw.data.provider ?? "razorpay");
     setKeyId(gw.data.keyId ?? "");
   }, [gw.data]);
-  if (!gw.data) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (!gw.data) return <PageLoader />;
   const g = gw.data;
 
   const save = async () => {

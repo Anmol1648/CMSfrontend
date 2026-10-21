@@ -12,6 +12,7 @@ import { schoolApi } from "@/lib/api/school";
 import { GatewayCheckout } from "@/components/fees/GatewayCheckout";
 import { Button } from "@/components/ui/Button";
 import { ApiError, errorMessage } from "@/lib/api/client";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 /** The school website's admission enquiry form (no login). Switched on in System Settings → Admissions. */
 export default function EnquirePage() {
@@ -45,7 +46,7 @@ export default function EnquirePage() {
     }
   };
 
-  if (form.isLoading) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (form.isLoading) return <PageLoader />;
   if (form.isError || !form.data?.enabled) {
     return (
       <div className="space-y-4">

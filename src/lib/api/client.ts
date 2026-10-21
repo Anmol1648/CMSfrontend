@@ -6,6 +6,7 @@
  * - Every failure becomes an ApiError with the backend's code, message and field details.
  */
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
+import { activity } from './activity';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
@@ -182,23 +183,40 @@ http.interceptors.response.use(
 
 const unwrap = async <T>(p: Promise<{ data: Envelope<T> }>) => (await p).data.data as T;
 
+/**
+ * Every call shows in the top progress bar while it runs; a successful change (not a read, not
+ * signing in) tells the screens to reload what they show, so nobody has to refresh the page.
+ */
+const tracked = async <T>(method: 'get' | 'post' | 'put' | 'patch' | 'delete', url: string, run: () => Promise<T>): Promise<T> => {
+  activity.started();
+  try {
+    const result = await run();
+    if (method !== 'get' && !url.startsWith('/auth/')) activity.saved();
+    return result;
+  } finally {
+    activity.finished();
+  }
+};
+
 export const api = {
-  get: <T>(url: string, config?: AxiosRequestConfig) => unwrap<T>(http.get(url, config)),
-  post: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => unwrap<T>(http.post(url, body, config)),
-  patch: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => unwrap<T>(http.patch(url, body, config)),
-  put: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => unwrap<T>(http.put(url, body, config)),
-  delete: <T>(url: string, config?: AxiosRequestConfig) => unwrap<T>(http.delete(url, config)),
+  get: <T>(url: string, config?: AxiosRequestConfig) => tracked('get', url, () => unwrap<T>(http.get(url, config))),
+  post: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => tracked('post', url, () => unwrap<T>(http.post(url, body, config))),
+  patch: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => tracked('patch', url, () => unwrap<T>(http.patch(url, body, config))),
+  put: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => tracked('put', url, () => unwrap<T>(http.put(url, body, config))),
+  delete: <T>(url: string, config?: AxiosRequestConfig) => tracked('delete', url, () => unwrap<T>(http.delete(url, config))),
 };
 
 /** Sends one file as multipart/form-data and returns `data` from the envelope. */
 export const uploadFile = <T>(url: string, field: string, file: File) => {
   const form = new FormData();
   form.append(field, file);
-  return unwrap<T>(http.post(url, form, { headers: { "Content-Type": "multipart/form-data" }, timeout: 120_000 }));
+  return tracked("post", url, () => unwrap<T>(http.post(url, form, { headers: { "Content-Type": "multipart/form-data" }, timeout: 120_000 })));
 };
 
 /** Downloads a file from an authenticated endpoint and saves it (name from Content-Disposition). */
-export const downloadFile = async (url: string, params?: Record<string, string | number>, fallbackName = "download.xlsx") => {
+export const downloadFile = (url: string, params?: Record<string, string | number>, fallbackName = "download.xlsx") => tracked("get", url, () => download(url, params, fallbackName));
+
+const download = async (url: string, params: Record<string, string | number> | undefined, fallbackName: string) => {
   let res;
   try {
     res = await http.get<Blob>(url, { params, responseType: "blob", timeout: 120_000 });

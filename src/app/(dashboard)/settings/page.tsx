@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { settingsApi, SettingItem, SettingValue } from "@/lib/api/settings";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { useToast } from "@/components/ui/ToastProvider";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 /** A pending edit: a new value, or null = back to default. */
 type Pending = Record<string, SettingValue | null>;
@@ -145,7 +146,7 @@ function SettingsScreen() {
     }
   };
 
-  if (settings.isLoading) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (settings.isLoading) return <PageLoader />;
   if (settings.isError) return <FormAlert>{errorMessage(settings.error)}</FormAlert>;
 
   return (

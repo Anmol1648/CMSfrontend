@@ -19,6 +19,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { AdminUser, rolesApi, usersApi } from "@/lib/api/admin";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { useToast } from "@/components/ui/ToastProvider";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 type Confirm = { title: string; body: string; action: string; danger?: boolean; run: () => Promise<void> };
 
@@ -44,7 +45,7 @@ function UserDetail({ id }: { id: string }) {
     }
   }, [user.data]);
 
-  if (user.isLoading) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (user.isLoading) return <PageLoader />;
   if (user.isError || !user.data) return <FormAlert>{errorMessage(user.error)}</FormAlert>;
   const u = user.data;
 

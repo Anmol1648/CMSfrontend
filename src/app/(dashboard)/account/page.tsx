@@ -14,6 +14,7 @@ import { PhotoEditor } from "@/components/account/UserPhoto";
 import { MyStaffDetails } from "@/components/staff/MyStaffDetails";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useToast } from "@/components/ui/ToastProvider";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 const when = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
@@ -157,7 +158,7 @@ function Devices() {
 
   return (
     <Section title="My devices" description="Where you are signed in right now. Sign out any device you don't recognise.">
-      {sessions.isLoading && <p className="text-sm text-on-surface-variant">Loading…</p>}
+      {sessions.isLoading && <PageLoader />}
       {sessions.isError && <FormAlert>{errorMessage(sessions.error)}</FormAlert>}
       <ul className="divide-y divide-outline-variant/20">
         {sessions.data?.map((s) => (

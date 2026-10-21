@@ -26,6 +26,7 @@ import { ApiError, errorMessage } from "@/lib/api/client";
 import { resizeImage } from "@/lib/images";
 import { useToast } from "@/components/ui/ToastProvider";
 import { cn } from "@/lib/utils";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 const showDate = (d: string | null) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—");
 const age = (dob: string | null) => {
@@ -190,7 +191,7 @@ function Details({ s, onSaved }: { s: Student; onSaved: () => Promise<void> }) {
   const [admissionTypeId, setAdmissionTypeId] = useState(s.admissionType?.id ?? "");
   const { busy, error, fieldErrors, run } = useRun();
   const canEdit = can("student.update");
-  if (!config.data) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (!config.data) return <PageLoader />;
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
@@ -652,7 +653,7 @@ function StudentPage({ id }: { id: string }) {
   };
   useEffect(() => setTab("overview"), [id]);
 
-  if (student.isLoading) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (student.isLoading) return <PageLoader />;
   if (student.isError || !student.data) return <FormAlert>{errorMessage(student.error)}</FormAlert>;
   const s = student.data;
   const current = s.enrolments.find((e) => e.academicYear.isCurrent) ?? s.enrolments[0];

@@ -19,6 +19,7 @@ import { academicApi, SchoolClass, Section } from "@/lib/api/academic";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { useToast } from "@/components/ui/ToastProvider";
 import { cn } from "@/lib/utils";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 /** Runs a save; returns the error to show (and field errors), or null when it worked. */
 function useSave() {
@@ -299,7 +300,7 @@ function Classes() {
             </div>
           ))}
           {classes.data && !list.length && <p className="px-5 py-12 text-center text-on-surface-variant/70">No classes yet.</p>}
-          {classes.isLoading && <p className="px-5 py-6 text-sm text-on-surface-variant">Loading…</p>}
+          {classes.isLoading && <div className="px-5 py-6"><PageLoader compact /></div>}
         </Card>
         {list.length > 0 && (
           <p className="text-xs text-on-surface-variant/60">

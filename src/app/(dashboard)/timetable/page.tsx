@@ -20,6 +20,7 @@ import { academicApi } from "@/lib/api/academic";
 import { staffApi } from "@/lib/api/staff";
 import { Entry, timetableApi } from "@/lib/api/timetable";
 import { errorMessage } from "@/lib/api/client";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 const STATUS = { draft: { label: "Draft", tone: "warning" as const }, published: { label: "Published", tone: "success" as const }, archived: { label: "Old", tone: "neutral" as const } };
 
@@ -287,7 +288,7 @@ function Timetables() {
               </table>
             </div>
           ) : (
-            <p className="text-sm text-on-surface-variant">Loading…</p>
+            <PageLoader />
           )}
         </Modal>
       )}

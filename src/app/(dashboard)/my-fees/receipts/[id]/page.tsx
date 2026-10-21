@@ -9,12 +9,13 @@ import { ReceiptView } from "@/components/fees/ReceiptView";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { feesApi } from "@/lib/api/fees";
 import { errorMessage } from "@/lib/api/client";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 function MyReceipt() {
   const { id } = useParams<{ id: string }>();
   const receipt = useQuery({ queryKey: ["my-receipt", id], queryFn: () => feesApi.myReceipt(id) });
   if (receipt.isError) return <FormAlert>{errorMessage(receipt.error)}</FormAlert>;
-  if (!receipt.data) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (!receipt.data) return <PageLoader />;
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between no-print">

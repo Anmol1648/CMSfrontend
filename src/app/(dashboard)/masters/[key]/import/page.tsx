@@ -8,6 +8,7 @@ import { ImportWizard } from "@/components/imports/ImportWizard";
 import { FormAlert } from "@/components/forms";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { mastersApi } from "@/lib/api/masters";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 /** Excel import of one master list (Configuration → Masters → Import). */
 function ImportMaster({ masterKey }: { masterKey: string }) {
@@ -15,7 +16,7 @@ function ImportMaster({ masterKey }: { masterKey: string }) {
   const info = catalogue.data?.flatMap((g) => g.masters).find((m) => m.key === masterKey);
   const back = `/masters?list=${masterKey}`;
 
-  if (catalogue.isLoading) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (catalogue.isLoading) return <PageLoader />;
   if (!info) return <FormAlert>This list doesn&apos;t exist.</FormAlert>;
 
   return (

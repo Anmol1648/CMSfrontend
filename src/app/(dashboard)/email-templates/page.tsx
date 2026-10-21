@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { emailTemplatesApi, EmailTemplate } from "@/lib/api/emailTemplates";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { useToast } from "@/components/ui/ToastProvider";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 function Editor({ template }: { template: EmailTemplate }) {
   const { can } = useAuth();
@@ -252,7 +253,7 @@ function EmailTemplates() {
             ))}
           </ul>
         </Card>
-        {template.isLoading && <p className="text-sm text-on-surface-variant">Loading…</p>}
+        {template.isLoading && <PageLoader />}
         {template.data && <Editor template={template.data} />}
       </div>
     </>

@@ -20,6 +20,7 @@ import { mastersApi } from "@/lib/api/masters";
 import { FamilyMatch, LoginCreated, Student, studentsApi } from "@/lib/api/students";
 import { admissionsApi } from "@/lib/api/admissions";
 import { ApiError, errorMessage } from "@/lib/api/client";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -130,7 +131,7 @@ function Admission() {
     }
   };
 
-  if (!config.data) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (!config.data) return <PageLoader />;
   const cfg = config.data;
 
   return (

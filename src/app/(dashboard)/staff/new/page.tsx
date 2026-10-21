@@ -19,6 +19,7 @@ import { mastersApi } from "@/lib/api/masters";
 import { academicApi } from "@/lib/api/academic";
 import { Staff, staffApi } from "@/lib/api/staff";
 import { ApiError, errorMessage } from "@/lib/api/client";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 function AddStaff() {
   const router = useRouter();
@@ -72,7 +73,7 @@ function AddStaff() {
     }
   };
 
-  if (!config.data) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (!config.data) return <PageLoader />;
   const assignable = (roles.data ?? []).filter((r) => !r.isSystem);
 
   return (

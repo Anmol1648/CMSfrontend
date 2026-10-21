@@ -11,6 +11,7 @@ import { YearSelect } from "@/components/academic/YearSelect";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { admissionsApi, Tally } from "@/lib/api/admissions";
 import { errorMessage } from "@/lib/api/client";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 function Bar({ value, max, tone = "bg-primary" }: { value: number; max: number; tone?: string }) {
   return (
@@ -97,7 +98,7 @@ function Reports() {
       </Card>
       {report.isError && <FormAlert>{errorMessage(report.error)}</FormAlert>}
       {!r ? (
-        <p className="text-sm text-on-surface-variant">Loading…</p>
+        <PageLoader />
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

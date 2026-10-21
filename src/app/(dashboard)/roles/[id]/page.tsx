@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { DataScope, rolesApi } from "@/lib/api/admin";
 import { errorMessage } from "@/lib/api/client";
 import { useToast } from "@/components/ui/ToastProvider";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 type Grants = Record<string, DataScope>;
 
@@ -44,7 +45,7 @@ function RoleDetail({ id }: { id: string }) {
     }
   }, [role.data, original]);
 
-  if (role.isLoading || catalogue.isLoading) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (role.isLoading || catalogue.isLoading) return <PageLoader />;
   if (role.isError || !role.data) return <FormAlert>{errorMessage(role.error)}</FormAlert>;
   const r = role.data;
   const editable = can("role.manage") && !r.isSystem;

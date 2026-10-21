@@ -27,6 +27,7 @@ import { ApiError, errorMessage } from "@/lib/api/client";
 import { resizeImage } from "@/lib/images";
 import { useToast } from "@/components/ui/ToastProvider";
 import { cn } from "@/lib/utils";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 const showDate = (d: string | null) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—");
 
@@ -109,7 +110,7 @@ function Details({ s, reload }: { s: Staff; reload: () => Promise<void> }) {
   const [teaches, setTeaches] = useState<string[]>(s.teachableSubjectIds);
   const [reportsTo, setReportsTo] = useState(s.reportsTo?.id ?? "");
   const { busy, error, fieldErrors, run } = useRun();
-  if (!config.data) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (!config.data) return <PageLoader />;
   return (
     <form
       noValidate
@@ -370,7 +371,7 @@ function StaffProfile({ id }: { id: string }) {
     await queryClient.invalidateQueries({ queryKey: ["staff-member", id] });
     await queryClient.invalidateQueries({ queryKey: ["staff"] });
   };
-  if (staff.isLoading) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (staff.isLoading) return <PageLoader />;
   if (staff.isError || !staff.data) return <FormAlert>{errorMessage(staff.error)}</FormAlert>;
   const s = staff.data;
   const canEdit = can("staff.update");

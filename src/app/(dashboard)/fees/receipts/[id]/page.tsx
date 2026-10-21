@@ -14,6 +14,7 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { feesApi } from "@/lib/api/fees";
 import { errorMessage } from "@/lib/api/client";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 function ReceiptPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,7 +28,7 @@ function ReceiptPage() {
   const [busy, setBusy] = useState(false);
 
   if (receipt.isError) return <FormAlert>{errorMessage(receipt.error)}</FormAlert>;
-  if (!receipt.data) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (!receipt.data) return <PageLoader />;
   const r = receipt.data;
 
   return (

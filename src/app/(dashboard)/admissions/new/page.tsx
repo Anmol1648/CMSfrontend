@@ -12,6 +12,7 @@ import { EnquiryForm, EnquiryValues, emptyEnquiry, toEnquiryInput } from "@/comp
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { admissionsApi } from "@/lib/api/admissions";
 import { ApiError, errorMessage } from "@/lib/api/client";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 function NewEnquiry() {
   const router = useRouter();
@@ -48,7 +49,7 @@ function NewEnquiry() {
     }
   };
 
-  if (!values || !config.data) return <p className="text-sm text-on-surface-variant">Loading…</p>;
+  if (!values || !config.data) return <PageLoader />;
 
   return (
     <>
