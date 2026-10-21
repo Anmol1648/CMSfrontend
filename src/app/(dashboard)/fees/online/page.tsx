@@ -10,41 +10,72 @@ import { FormAlert, Pill, Select } from "@/components/forms";
 import { PageHeader } from "@/components/layout/AppShell";
 import { useToast } from "@/components/ui/ToastProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
-import { paymentsApi, rupees } from "@/lib/api/fees";
+import { GatewaySettings, paymentsApi, rupees } from "@/lib/api/fees";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { PageLoader } from "@/components/ui/PageLoader";
+
+function KeysBox({ title, tone, keys, placeholder, value, onChange, errors }: {
+  title: string;
+  tone: "test" | "live";
+  keys: GatewaySettings["test"];
+  placeholder: string;
+  value: { keyId: string; keySecret: string; webhookSecret: string };
+  onChange: (v: { keyId: string; keySecret: string; webhookSecret: string }) => void;
+  errors: Record<string, string>;
+}) {
+  const f = tone === "live" ? "liveKeyId" : "keyId";
+  return (
+    <div className={`rounded-xl border p-4 space-y-3 ${tone === "live" ? "border-emerald-300/60" : "border-amber-300/60"}`}>
+      <div className="flex items-center justify-between">
+        <p className={`text-xs font-black uppercase tracking-widest ${tone === "live" ? "text-emerald-700" : "text-amber-700"}`}>{title}</p>
+        {keys.ready ? <Pill tone="success">Keys saved</Pill> : <Pill>Not set</Pill>}
+      </div>
+      <Input label="Key id" placeholder={placeholder} value={value.keyId} onChange={(e) => onChange({ ...value, keyId: e.target.value })} error={errors[f]} />
+      <Input label={keys.hasKeySecret ? "Key secret (saved; type to replace)" : "Key secret"} type="password" value={value.keySecret} onChange={(e) => onChange({ ...value, keySecret: e.target.value })} autoComplete="off" />
+      <Input label={keys.hasWebhookSecret ? "Webhook secret (saved; type to replace)" : "Webhook secret"} type="password" value={value.webhookSecret} onChange={(e) => onChange({ ...value, webhookSecret: e.target.value })} autoComplete="off" />
+    </div>
+  );
+}
 
 function Gateway() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const gw = useQuery({ queryKey: ["payment-gateway"], queryFn: paymentsApi.gateway });
   const [provider, setProvider] = useState<"razorpay" | "mock">("razorpay");
-  const [keyId, setKeyId] = useState("");
-  const [keySecret, setKeySecret] = useState("");
-  const [webhookSecret, setWebhookSecret] = useState("");
+  const [test, setTest] = useState({ keyId: "", keySecret: "", webhookSecret: "" });
+  const [live, setLive] = useState({ keyId: "", keySecret: "", webhookSecret: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (!gw.data) return;
     setProvider(gw.data.provider ?? "razorpay");
-    setKeyId(gw.data.keyId ?? "");
+    setTest((t) => ({ ...t, keyId: gw.data.test.keyId ?? "" }));
+    setLive((l) => ({ ...l, keyId: gw.data.live.keyId ?? "" }));
   }, [gw.data]);
   if (!gw.data) return <PageLoader />;
   const g = gw.data;
 
-  const save = async () => {
-    setBusy(true);
+  const save = async (mode?: "test" | "live") => {
     setErrors({});
     try {
-      queryClient.setQueryData(["payment-gateway"], await paymentsApi.saveGateway({ provider, keyId: keyId.trim() || null, ...(keySecret ? { keySecret } : {}), ...(webhookSecret ? { webhookSecret } : {}) }));
-      setKeySecret("");
-      setWebhookSecret("");
-      showToast("Payment gateway saved", "success");
+      queryClient.setQueryData(
+        ["payment-gateway"],
+        await paymentsApi.saveGateway({
+          provider,
+          ...(mode ? { mode } : {}),
+          keyId: test.keyId.trim() || null,
+          ...(test.keySecret ? { keySecret: test.keySecret } : {}),
+          ...(test.webhookSecret ? { webhookSecret: test.webhookSecret } : {}),
+          ...(provider === "razorpay" ? { liveKeyId: live.keyId.trim() || null } : {}),
+          ...(live.keySecret ? { liveKeySecret: live.keySecret } : {}),
+          ...(live.webhookSecret ? { liveWebhookSecret: live.webhookSecret } : {}),
+        })
+      );
+      setTest((t) => ({ ...t, keySecret: "", webhookSecret: "" }));
+      setLive((l) => ({ ...l, keySecret: "", webhookSecret: "" }));
+      showToast(mode ? (mode === "live" ? "Live mode: payments now take real money" : "Test mode: no real money") : "Payment gateway saved", mode === "live" ? "warning" : "success");
     } catch (err) {
       showToast(errorMessage(err), "error");
       setErrors(err instanceof ApiError ? err.fieldErrors() : {});
-    } finally {
-      setBusy(false);
     }
   };
 
@@ -52,7 +83,10 @@ function Gateway() {
     <Card>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <h3 className="text-sm font-black uppercase tracking-widest text-primary">Payment gateway</h3>
-        {g.ready ? <Pill tone="success">Ready{g.provider === "mock" ? " (test gateway)" : ""}</Pill> : <Pill tone="warning">Not set up</Pill>}
+        <div className="flex items-center gap-2">
+          {g.provider === "razorpay" && (g.mode === "live" ? <Pill tone="success">LIVE · real money</Pill> : <Pill tone="warning">TEST MODE · no real money</Pill>)}
+          {g.ready ? <Pill tone="success">Ready</Pill> : <Pill tone="warning">Not set up</Pill>}
+        </div>
       </div>
       <div className="space-y-4">
         <Select
@@ -64,19 +98,36 @@ function Gateway() {
         {provider === "razorpay" ? (
           <>
             <p className="text-xs text-on-surface-variant">
-              From the Razorpay dashboard → Account &amp; Settings → API keys. Start with <b>Test mode</b> keys (rzp_test_…); switch to live keys once the school&apos;s account is approved. The key secret and webhook secret are stored encrypted and never shown again.
+              From the Razorpay dashboard → Account &amp; Settings → API keys (one set in Test mode, one in Live mode). Secrets are stored encrypted and never shown again. Keep both saved and switch between them below.
             </p>
-            <Input label="Key id" placeholder="rzp_test_…" value={keyId} onChange={(e) => setKeyId(e.target.value)} error={errors.keyId} />
-            <Input label={g.hasKeySecret ? "Key secret (saved; type to replace)" : "Key secret"} type="password" value={keySecret} onChange={(e) => setKeySecret(e.target.value)} autoComplete="off" />
-            <Input label={g.hasWebhookSecret ? "Webhook secret (saved; type to replace)" : "Webhook secret"} type="password" value={webhookSecret} onChange={(e) => setWebhookSecret(e.target.value)} autoComplete="off" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <KeysBox title="Test keys" tone="test" keys={g.test} placeholder="rzp_test_…" value={test} onChange={setTest} errors={errors} />
+              <KeysBox title="Live keys" tone="live" keys={g.live} placeholder="rzp_live_…" value={live} onChange={setLive} errors={errors} />
+            </div>
+            <div className="rounded-xl bg-surface-container-low p-4 space-y-3">
+              <p className="text-sm font-bold text-primary">Payments use: {g.mode === "live" ? "LIVE keys (real money)" : "TEST keys (no real money)"}</p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant={g.mode === "test" ? "primary" : "secondary"} disabled={g.mode === "test"} onClick={() => save("test")}>
+                  Use test mode
+                </Button>
+                <Button
+                  variant={g.mode === "live" ? "primary" : "secondary"}
+                  disabled={g.mode === "live" || (!g.live.ready && !(live.keyId && live.keySecret))}
+                  onClick={() => (window.confirm("Switch to LIVE mode? From now on every payment (My Fees, the website form, QR codes) takes real money.") ? save("live") : undefined)}
+                >
+                  Use live mode
+                </Button>
+              </div>
+              {errors.mode && <FormAlert>{errors.mode}</FormAlert>}
+            </div>
             <div className="rounded-xl bg-surface-container-low p-4 text-xs space-y-1">
-              <p className="font-bold">In Razorpay → Webhooks, add:</p>
+              <p className="font-bold">In Razorpay → Webhooks (in Test mode and in Live mode), add:</p>
               <p className="font-mono break-all">{g.webhookUrl}</p>
-              <p>Events: payment.captured, payment.failed, order.paid. Use the same webhook secret as above. The address must be reachable from the internet (the live server), so payments are confirmed even if the parent closes the browser.</p>
+              <p>Events: payment.captured, payment.failed, order.paid, qr_code.credited. Use each mode&apos;s webhook secret above. The address must be reachable from the internet (the hosted server), so payments are confirmed even if the payer closes the window.</p>
             </div>
           </>
         ) : (
-          <FormAlert tone="info">The test gateway shows a &quot;Pay&quot; / &quot;Decline&quot; window instead of Razorpay. Use it to try My Fees and the website registration fee. It is never available on the live system.</FormAlert>
+          <FormAlert tone="info">The test gateway shows a &quot;Pay&quot; / &quot;Decline&quot; window (and a pretend QR code) instead of Razorpay. Use it to try the flow. It is never available on the live system.</FormAlert>
         )}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-on-surface-variant/70">
@@ -86,9 +137,7 @@ function Gateway() {
             </Link>
             ).
           </p>
-          <Button onClick={save} disabled={busy}>
-            {busy ? "Saving…" : "Save"}
-          </Button>
+          <Button onClick={() => save()}>Save keys</Button>
         </div>
       </div>
     </Card>
@@ -166,6 +215,9 @@ function Payments() {
                 </td>
                 <td className="px-5 py-3">
                   <Pill tone={STATUS[p.status].tone}>{STATUS[p.status].label}</Pill>
+                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant/60 mt-1">
+                    {p.method === "qr" ? "UPI QR" : "Online"} · {p.mode === "live" ? "live" : "test"}
+                  </p>
                   {p.error && <p className="text-xs text-error mt-1 max-w-xs">{p.error}</p>}
                 </td>
                 <td className="px-5 py-3 text-right">

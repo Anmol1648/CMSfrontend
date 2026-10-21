@@ -11,6 +11,7 @@ import { FormAlert, Pill } from "@/components/forms";
 import { PageHeader } from "@/components/layout/AppShell";
 import { DuesTable } from "@/components/fees/DuesTable";
 import { GatewayCheckout } from "@/components/fees/GatewayCheckout";
+import { UpiQrPay } from "@/components/fees/UpiQrPay";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { schoolApi } from "@/lib/api/school";
 import { Checkout, feesApi, MyFees, PAYMENT_MODES, PaymentResult, paymentsApi, rupees } from "@/lib/api/fees";
@@ -21,7 +22,7 @@ type Child = MyFees["children"][number];
 
 const convenience = (amount: number, c: MyFees["online"]["convenience"]) => (!c || c.mode === "none" ? 0 : c.mode === "percent" ? Math.ceil((amount * c.value) / 100) : Math.ceil(c.value));
 
-function ChildFees({ child, online, onPay }: { child: Child; online: MyFees["online"]; onPay: (checkout: Checkout) => void }) {
+function ChildFees({ child, online, onPay, onQr }: { child: Child; online: MyFees["online"]; onPay: (checkout: Checkout) => void; onQr: (qr: PaymentResult) => void }) {
   const open = child.dues.instalments.filter((i) => i.balance > 0);
   const [selected, setSelected] = useState<string[]>(() => {
     const overdue = open.filter((i) => i.overdue).map((i) => i.id);
@@ -88,9 +89,27 @@ function ChildFees({ child, online, onPay }: { child: Child; online: MyFees["onl
                   {fee > 0 && ` + ${rupees(fee)} convenience fee`}
                 </p>
               </div>
-              <Button onClick={pay} disabled={busy || !selected.length || paying <= 0}>
-                {busy ? "Opening…" : `Pay ${rupees(paying + fee)} online`}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="secondary"
+                  disabled={busy || !selected.length || paying <= 0}
+                  title="A UPI QR code to scan with your phone"
+                  onClick={async () => {
+                    setError(null);
+                    try {
+                      onQr(await paymentsApi.qrForFees({ studentId: child.id, instalmentIds: selected, ...(paying < total ? { amount: paying } : {}) }));
+                    } catch (err) {
+                      setError(errorMessage(err));
+                    }
+                  }}
+                >
+                  <span className="material-symbols-outlined text-lg align-middle mr-1">qr_code_2</span>
+                  Scan a UPI QR
+                </Button>
+                <Button onClick={pay} disabled={busy || !selected.length || paying <= 0}>
+                  {busy ? "Opening…" : `Pay ${rupees(paying + fee)} online`}
+                </Button>
+              </div>
             </div>
             <p className="text-xs text-on-surface-variant/70">UPI, debit / credit card or net banking. Your card or bank details go only to the payment gateway, never to the school&apos;s system.</p>
           </div>
@@ -131,6 +150,7 @@ function Mine() {
   const school = useQuery({ queryKey: ["public-school"], queryFn: schoolApi.publicInfo, staleTime: Infinity });
   const [checkout, setCheckout] = useState<Checkout | null>(null);
   const [result, setResult] = useState<PaymentResult | null>(null);
+  const [qr, setQr] = useState<PaymentResult | null>(null);
 
   if (fees.isError) return <FormAlert>{errorMessage(fees.error)}</FormAlert>;
   if (!fees.data) return <PageLoader />;
@@ -142,7 +162,7 @@ function Mine() {
       {!f.children.length && <FormAlert tone="info">No fees to show. If this is wrong, please contact the school office.</FormAlert>}
       <div className="space-y-6">
         {f.children.map((c) => (
-          <ChildFees key={`${c.id}-${c.dues.totals.paid}`} child={c} online={f.online} onPay={setCheckout} />
+          <ChildFees key={`${c.id}-${c.dues.totals.paid}`} child={c} online={f.online} onPay={setCheckout} onQr={setQr} />
         ))}
       </div>
       {checkout && (
@@ -152,6 +172,18 @@ function Mine() {
           onClose={() => setCheckout(null)}
           onDone={async (r) => {
             setCheckout(null);
+            setResult(r);
+            await queryClient.invalidateQueries({ queryKey: ["my-fees"] });
+          }}
+        />
+      )}
+      {qr && (
+        <UpiQrPay
+          payment={qr}
+          title="Scan to pay"
+          onClose={() => setQr(null)}
+          onPaid={async (r) => {
+            setQr(null);
             setResult(r);
             await queryClient.invalidateQueries({ queryKey: ["my-fees"] });
           }}

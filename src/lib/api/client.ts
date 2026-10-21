@@ -187,19 +187,22 @@ const unwrap = async <T>(p: Promise<{ data: Envelope<T> }>) => (await p).data.da
  * Every call shows in the top progress bar while it runs; a successful change (not a read, not
  * signing in) tells the screens to reload what they show, so nobody has to refresh the page.
  */
-const tracked = async <T>(method: 'get' | 'post' | 'put' | 'patch' | 'delete', url: string, run: () => Promise<T>): Promise<T> => {
-  activity.started();
+const tracked = async <T>(method: 'get' | 'post' | 'put' | 'patch' | 'delete', url: string, run: () => Promise<T>, quiet = false): Promise<T> => {
+  if (!quiet) activity.started();
   try {
     const result = await run();
     if (method !== 'get' && !url.startsWith('/auth/')) activity.saved();
     return result;
   } finally {
-    activity.finished();
+    if (!quiet) activity.finished();
   }
 };
 
+/** A request config that doesn't show the top progress bar (background checks every few seconds). */
+export type ApiConfig = AxiosRequestConfig & { quiet?: boolean };
+
 export const api = {
-  get: <T>(url: string, config?: AxiosRequestConfig) => tracked('get', url, () => unwrap<T>(http.get(url, config))),
+  get: <T>(url: string, config?: ApiConfig) => tracked('get', url, () => unwrap<T>(http.get(url, config)), config?.quiet),
   post: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => tracked('post', url, () => unwrap<T>(http.post(url, body, config))),
   patch: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => tracked('patch', url, () => unwrap<T>(http.patch(url, body, config))),
   put: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => tracked('put', url, () => unwrap<T>(http.put(url, body, config))),

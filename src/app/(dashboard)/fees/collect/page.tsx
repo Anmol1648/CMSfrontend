@@ -15,9 +15,10 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { ReceiptView } from "@/components/fees/ReceiptView";
 import { DuesTable } from "@/components/fees/DuesTable";
 import { StudentFeeExtras } from "@/components/fees/StudentFeeExtras";
+import { UpiQrPay } from "@/components/fees/UpiQrPay";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { COUNTER_MODES, feesApi, PAYMENT_MODES, PaymentMode, Receipt, rupees } from "@/lib/api/fees";
+import { COUNTER_MODES, feesApi, PAYMENT_MODES, PaymentMode, PaymentResult, paymentsApi, Receipt, rupees } from "@/lib/api/fees";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { PageLoader } from "@/components/ui/PageLoader";
 
@@ -55,6 +56,7 @@ function Counter() {
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [done, setDone] = useState<Receipt | null>(null);
+  const [qr, setQr] = useState<PaymentResult | null>(null);
 
   const dues = fees.data?.dues;
   const open = useMemo(() => (dues?.instalments ?? []).filter((i) => i.balance > 0), [dues]);
@@ -207,9 +209,28 @@ function Counter() {
                     <p className="text-xs text-on-surface-variant/70">
                       Ticked: {rupees(selectedTotal)}.{config.data && !config.data.partial ? " Part payment is off: pay whole instalments." : " A smaller amount pays part of the oldest ticked instalment."}
                     </p>
-                    <Button type="submit" disabled={busy || !Number(amount) || !selected.length}>
-                      {busy ? "Saving…" : `Receive ${rupees(Number(amount) || 0)}`}
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={busy || !Number(amount) || !selected.length}
+                        title="Show a UPI QR code for this amount; the parent scans it with any UPI app"
+                        onClick={async () => {
+                          setError(null);
+                          try {
+                            setQr(await paymentsApi.qrAtCounter({ studentId: studentId!, instalmentIds: selected, amount: Number(amount) }));
+                          } catch (err) {
+                            setError(errorMessage(err));
+                          }
+                        }}
+                      >
+                        <span className="material-symbols-outlined text-lg align-middle mr-1">qr_code_2</span>
+                        UPI QR
+                      </Button>
+                      <Button type="submit" disabled={busy || !Number(amount) || !selected.length}>
+                        {busy ? "Saving…" : `Receive ${rupees(Number(amount) || 0)}`}
+                      </Button>
+                    </div>
                   </div>
                 </form>
               </Card>
@@ -243,6 +264,17 @@ function Counter() {
         </div>
       )}
 
+      {qr && fees.data && (
+        <UpiQrPay
+          payment={qr}
+          title={`Scan to pay: ${fees.data.student.name}`}
+          onClose={() => setQr(null)}
+          onPaid={async (r) => {
+            setQr(null);
+            if (r.receipt) setDone(await feesApi.receipt(r.receipt.id));
+          }}
+        />
+      )}
       {done && (
         <Modal isOpen onClose={() => setDone(null)} title={`Received ${rupees(done.amount)}`} width="max-w-3xl">
           <div className="space-y-4">

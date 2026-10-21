@@ -243,13 +243,27 @@ export interface PaymentResult {
   receipt: { id: string; receiptNo: string } | null;
   registrationNo: string | null;
   enquiryNo: string | null;
+  mode: 'test' | 'live';
+  method: 'checkout' | 'qr';
+  provider: 'razorpay' | 'mock';
+  /** While a QR code is waiting to be paid. */
+  qrImageUrl: string | null;
+  expiresAt: string | null;
+}
+
+export interface GatewayKeys {
+  keyId: string | null;
+  hasKeySecret: boolean;
+  hasWebhookSecret: boolean;
+  ready: boolean;
 }
 
 export interface GatewaySettings {
   provider: 'razorpay' | 'mock' | null;
-  keyId: string | null;
-  hasKeySecret: boolean;
-  hasWebhookSecret: boolean;
+  /** Which keys are in use: test (no real money) or live. */
+  mode: 'test' | 'live';
+  test: GatewayKeys;
+  live: GatewayKeys;
   ready: boolean;
   mockAllowed: boolean;
   webhookUrl: string;
@@ -270,6 +284,8 @@ export interface OnlinePaymentRow {
   convenienceFee: number;
   status: 'created' | 'paid' | 'failed';
   error: string | null;
+  mode: 'test' | 'live';
+  method: 'checkout' | 'qr';
   student: { id: string; name: string; admissionNo: string } | null;
   enquiry: { id: string; enquiryNo: string; name: string } | null;
   receipt: { id: string; receiptNo: string } | null;
@@ -318,7 +334,21 @@ export const feesApi = {
 
 export const paymentsApi = {
   gateway: () => api.get<GatewaySettings>('/payments/gateway'),
-  saveGateway: (input: { provider: 'razorpay' | 'mock'; keyId?: string | null; keySecret?: string; webhookSecret?: string }) => api.put<GatewaySettings>('/payments/gateway', input),
+  saveGateway: (input: {
+    provider: 'razorpay' | 'mock';
+    mode?: 'test' | 'live';
+    keyId?: string | null;
+    keySecret?: string;
+    webhookSecret?: string;
+    liveKeyId?: string | null;
+    liveKeySecret?: string;
+    liveWebhookSecret?: string;
+  }) => api.put<GatewaySettings>('/payments/gateway', input),
+  /** A UPI QR for the parent (My Fees) or at the counter. */
+  qrForFees: (input: { studentId: string; instalmentIds?: string[]; amount?: number }) => api.post<PaymentResult>('/payments/fees/qr', input, { timeout: 60_000 }),
+  qrAtCounter: (input: { studentId: string; instalmentIds?: string[]; amount?: number }) => api.post<PaymentResult>('/payments/counter-qr', input, { timeout: 60_000 }),
+  pollQr: (id: string) => api.get<PaymentResult>(`/payments/${id}/qr`, { quiet: true }),
+  cancelQr: (id: string) => api.post<PaymentResult>(`/payments/${id}/qr/cancel`),
   list: (q: { page?: number; pageSize?: number; search?: string; status?: string; purpose?: string; attention?: string }) =>
     api.get<Paged<OnlinePaymentRow>>('/payments', {
       params: clean({ page: q.page, pageSize: q.pageSize, search: q.search, 'filter[status]': q.status, 'filter[purpose]': q.purpose, 'filter[attention]': q.attention }),
