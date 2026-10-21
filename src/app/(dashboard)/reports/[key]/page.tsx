@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -21,6 +21,8 @@ import { errorMessage, saveBlob } from "@/lib/api/client";
 
 function Report() {
   const { key } = useParams<{ key: string }>();
+  // Filters can come in the link (e.g. /reports/attendance_absentees?date=2026-10-21).
+  const search = useSearchParams();
   const { showToast } = useToast();
   const info = useQuery({ queryKey: ["report", key], queryFn: () => reportsApi.get(key) });
   const [values, setValues] = useState<Record<string, string> | null>(null);
@@ -33,8 +35,8 @@ function Report() {
   const first = useRef(true);
 
   useEffect(() => {
-    if (info.data && !values) setValues(Object.fromEntries(info.data.filters.map((f) => [f.key, f.value ?? ""])));
-  }, [info.data, values]);
+    if (info.data && !values) setValues(Object.fromEntries(info.data.filters.map((f) => [f.key, search.get(f.key) ?? f.value ?? ""])));
+  }, [info.data, values, search]);
 
   const filters = values ?? {};
   const clean = () => Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== ""));
@@ -177,7 +179,9 @@ function Report() {
 export default function ReportPage() {
   return (
     <RequirePermission permission="report.view">
-      <Report />
+      <Suspense>
+        <Report />
+      </Suspense>
     </RequirePermission>
   );
 }
