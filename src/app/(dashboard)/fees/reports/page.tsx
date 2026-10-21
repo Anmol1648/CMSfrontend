@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/Card";
@@ -166,7 +167,15 @@ function Reports() {
   const [tab, setTab] = useState("collection");
   return (
     <>
-      <PageHeader title="Fee reports" description="Money received (the day book) and how much each class has paid." />
+      <PageHeader
+        title="Fee reports"
+        description="Money received (the day book) and how much each class has paid."
+        actions={
+          <Link href="/reports" className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
+            Registers, defaulters and PDF / Excel: Report Center
+          </Link>
+        }
+      />
       <Tabs
         tabs={[
           { id: "collection", label: "Collection" },

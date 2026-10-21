@@ -84,9 +84,14 @@ function Reports() {
         title="Admission reports"
         description="Where enquiries come from, how many become admissions, why the others are lost, and the seats left per class."
         actions={
-          <Link href="/admissions" className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
-            Enquiries
-          </Link>
+          <div className="flex flex-wrap gap-6">
+            <Link href="/admissions" className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
+              Enquiries
+            </Link>
+            <Link href="/reports/enquiry_register" className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
+              Enquiry register (PDF / Excel)
+            </Link>
+          </div>
         }
       />
       <Card className="mb-6">

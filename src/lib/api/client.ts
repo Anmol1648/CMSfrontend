@@ -212,6 +212,8 @@ export type ApiConfig = AxiosRequestConfig & { quiet?: boolean };
 export const api = {
   get: <T>(url: string, config?: ApiConfig) => tracked('get', url, () => unwrap<T>(http.get(url, config)), config?.quiet),
   post: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => tracked('post', url, () => unwrap<T>(http.post(url, body, config))),
+  /** A POST that only reads (e.g. a preview): screens are not reloaded after it. */
+  postRead: <T>(url: string, body?: unknown, config?: ApiConfig) => tracked('get', url, () => unwrap<T>(http.post(url, body, config)), config?.quiet),
   patch: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => tracked('patch', url, () => unwrap<T>(http.patch(url, body, config))),
   put: <T>(url: string, body?: unknown, config?: AxiosRequestConfig) => tracked('put', url, () => unwrap<T>(http.put(url, body, config))),
   delete: <T>(url: string, config?: AxiosRequestConfig) => tracked('delete', url, () => unwrap<T>(http.delete(url, config))),
@@ -264,6 +266,37 @@ export const fetchPdf = (url: string, opts: { params?: Record<string, string>; b
     const res = await http.request<Blob>({ url, method: opts.body !== undefined ? 'POST' : 'GET', params: opts.params, data: opts.body, responseType: 'blob', timeout: 120_000 });
     return res.data;
   });
+
+export interface FetchedFile {
+  blob: Blob;
+  filename: string;
+  /** Report files: what made it ("Jasper · built-in design", "Built-in table layout"). */
+  engine: string | null;
+  /** Report files: something to tell the person (e.g. the report service was not running). */
+  note: string | null;
+}
+
+const header = (v: unknown) => (typeof v === 'string' && v ? decodeURIComponent(v) : null);
+
+/** A file from an authenticated endpoint, with its name and report headers (a read: nothing reloads). */
+export const fetchFile = (url: string, params?: Record<string, string>) =>
+  tracked('get', url, async (): Promise<FetchedFile> => {
+    const res = await http.get<Blob>(url, { params, responseType: 'blob', timeout: 180_000 });
+    const disposition = String(res.headers['content-disposition'] ?? '');
+    return { blob: res.data, filename: disposition.match(/filename="?([^"]+)"?/)?.[1] ?? 'download', engine: header(res.headers['x-report-engine']), note: header(res.headers['x-report-note']) };
+  });
+
+/** Saves a Blob as a file on the person's computer. */
+export const saveBlob = (blob: Blob, filename: string) => {
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = href;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(href), 10_000);
+};
 
 /**
  * An image from an authenticated endpoint (e.g. a profile photo) as an object URL for <img>.
