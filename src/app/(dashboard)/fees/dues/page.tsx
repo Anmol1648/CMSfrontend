@@ -15,6 +15,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { academicApi } from "@/lib/api/academic";
 import { DuesQuery, feesApi, rupees } from "@/lib/api/fees";
 import { errorMessage } from "@/lib/api/client";
+import { DocumentViewer } from "@/components/documents/DocumentViewer";
 
 const fmt = (d: string | null) => (d ? new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" }) : "—");
 
@@ -28,6 +29,7 @@ function Dues() {
   const [show, setShow] = useState<NonNullable<DuesQuery["show"]>>("overdue");
   const [asOf, setAsOf] = useState("");
   const [search, setSearch] = useState("");
+  const [slip, setSlip] = useState<{ params: Record<string, string>; title: string; filename: string } | null>(null);
   const [debounced, setDebounced] = useState("");
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search), 400);
@@ -47,9 +49,23 @@ function Dues() {
         title="Fee dues"
         description="Who still has fees to pay, worked out from the fee set-up, concessions and receipts. Class teachers see their own sections."
         actions={
-          <Button variant="secondary" onClick={() => feesApi.exportDues(q).catch((err) => showToast(errorMessage(err), "error"))}>
-            Export
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              disabled={!section}
+              title={section ? "One slip per student of this section who has fees to pay" : "Choose a class and section first"}
+              onClick={() => {
+                const label = sections.data?.find((x) => x.id === section)?.label ?? "section";
+                setSlip({ params: { section, ...(asOf ? { asOf } : {}) }, title: `Fee due slips · ${label}`, filename: `due-slips-${label.replace(/[^A-Za-z0-9]+/g, "-")}.pdf` });
+              }}
+            >
+              <span className="material-symbols-outlined text-lg align-middle mr-1">description</span>
+              Due slips for this section
+            </Button>
+            <Button variant="secondary" onClick={() => feesApi.exportDues(q).catch((err) => showToast(errorMessage(err), "error"))}>
+              Export
+            </Button>
+          </div>
         }
       />
       <Card padding="none" className="overflow-hidden">
@@ -103,6 +119,7 @@ function Dues() {
                 <th className="px-5 py-3 font-bold text-right">Overdue</th>
                 <th className="px-5 py-3 font-bold">Since</th>
                 <th className="px-5 py-3 font-bold text-right">Balance</th>
+                <th className="px-5 py-3" />
               </tr>
             </thead>
             <tbody>
@@ -128,18 +145,30 @@ function Dues() {
                   <td className="px-5 py-2.5 text-right font-bold text-error">{s.overdue ? rupees(s.overdue) : "—"}</td>
                   <td className="px-5 py-2.5 text-xs">{fmt(s.overdueSince)}</td>
                   <td className="px-5 py-2.5 text-right font-black">{rupees(s.balance)}</td>
+                  <td className="px-5 py-2.5 text-right">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSlip({ params: { student: s.id, ...(asOf ? { asOf } : {}) }, title: `Fee due slip · ${s.name}`, filename: `due-slip-${s.admissionNo.replace(/[^A-Za-z0-9]+/g, "-")}.pdf` });
+                      }}
+                      className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70"
+                    >
+                      Slip
+                    </button>
+                  </td>
                 </tr>
               ))}
               {r && !r.students.length && (
                 <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center text-on-surface-variant/70">
+                  <td colSpan={8} className="px-5 py-12 text-center text-on-surface-variant/70">
                     {show === "overdue" ? "Nobody is overdue." : "No students."}
                   </td>
                 </tr>
               )}
               {!r && report.isLoading && (
                 <tr>
-                  <td colSpan={7} className="px-5 py-12 text-center text-on-surface-variant/70">
+                  <td colSpan={8} className="px-5 py-12 text-center text-on-surface-variant/70">
                     Working out the dues…
                   </td>
                 </tr>
@@ -148,6 +177,7 @@ function Dues() {
           </table>
         </div>
       </Card>
+      {slip && <DocumentViewer docKey="fee_due_slip" params={slip.params} title={slip.title} filename={slip.filename} onClose={() => setSlip(null)} />}
     </>
   );
 }

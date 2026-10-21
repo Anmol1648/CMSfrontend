@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/Button";
 import { FormAlert } from "@/components/forms";
-import { ReceiptView } from "@/components/fees/ReceiptView";
+import { DocumentViewer } from "@/components/documents/DocumentViewer";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { feesApi } from "@/lib/api/fees";
 import { errorMessage } from "@/lib/api/client";
@@ -22,11 +22,8 @@ function MyReceipt() {
         <Link href="/my-fees" className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
           My fees
         </Link>
-        <Button onClick={() => window.print()}>Print / save as PDF</Button>
       </div>
-      <div className="print-area flex justify-center">
-        <ReceiptView receipt={receipt.data} />
-      </div>
+      <DocumentViewer inline docKey="fee_receipt" params={{ id: receipt.data.id }} title={`Receipt ${receipt.data.receiptNo}`} filename={`receipt-${receipt.data.receiptNo.replace(/[^A-Za-z0-9]+/g, "-")}.pdf`} />
     </div>
   );
 }

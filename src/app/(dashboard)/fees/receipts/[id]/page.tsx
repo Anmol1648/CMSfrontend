@@ -9,7 +9,7 @@ import { Modal } from "@/components/ui/Modal";
 import { TextArea } from "@/components/ui/TextArea";
 import { FormAlert } from "@/components/forms";
 import { useToast } from "@/components/ui/ToastProvider";
-import { ReceiptView } from "@/components/fees/ReceiptView";
+import { DocumentViewer } from "@/components/documents/DocumentViewer";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { feesApi } from "@/lib/api/fees";
@@ -50,12 +50,9 @@ function ReceiptPage() {
               Cancel receipt
             </Button>
           )}
-          <Button onClick={() => window.print()}>Print</Button>
         </div>
       </div>
-      <div className="print-area flex justify-center">
-        <ReceiptView receipt={r} format={config.data?.receiptFormat} />
-      </div>
+      <DocumentViewer key={r.status} inline docKey="fee_receipt" params={{ id: r.id }} title={`Receipt ${r.receiptNo}`} filename={`receipt-${r.receiptNo.replace(/[^A-Za-z0-9]+/g, "-")}.pdf`} />
       {cancelling && (
         <Modal isOpen onClose={() => setCancelling(false)} title={`Cancel ${r.receiptNo}?`}>
           <div className="space-y-4">

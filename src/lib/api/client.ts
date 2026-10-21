@@ -175,6 +175,14 @@ http.interceptors.response.use(
       }
       return http(config);
     }
+    // A file request (PDF, export) that failed carries its JSON error as a Blob: read it for the message.
+    if (err.response?.data instanceof Blob) {
+      try {
+        err.response.data = JSON.parse(await err.response.data.text());
+      } catch {
+        /* not JSON: the generic message is used */
+      }
+    }
     throw toApiError(err);
   }
 );
@@ -248,6 +256,14 @@ const download = async (url: string, params: Record<string, string | number> | u
   a.remove();
   setTimeout(() => URL.revokeObjectURL(href), 10_000);
 };
+
+/** A PDF from an authenticated endpoint, as a Blob (GET with params, or POST with a body). */
+export const fetchPdf = (url: string, opts: { params?: Record<string, string>; body?: unknown } = {}) =>
+  // Making a document changes nothing: it is a read (no reload of the screens afterwards).
+  tracked('get', url, async () => {
+    const res = await http.request<Blob>({ url, method: opts.body !== undefined ? 'POST' : 'GET', params: opts.params, data: opts.body, responseType: 'blob', timeout: 120_000 });
+    return res.data;
+  });
 
 /**
  * An image from an authenticated endpoint (e.g. a profile photo) as an object URL for <img>.

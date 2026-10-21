@@ -12,7 +12,7 @@ import { FormAlert, Pill, Select } from "@/components/forms";
 import { PageHeader } from "@/components/layout/AppShell";
 import { YearSelect } from "@/components/academic/YearSelect";
 import { useToast } from "@/components/ui/ToastProvider";
-import { ReceiptView } from "@/components/fees/ReceiptView";
+import { DocumentViewer } from "@/components/documents/DocumentViewer";
 import { DuesTable } from "@/components/fees/DuesTable";
 import { StudentFeeExtras } from "@/components/fees/StudentFeeExtras";
 import { UpiQrPay } from "@/components/fees/UpiQrPay";
@@ -57,6 +57,7 @@ function Counter() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [done, setDone] = useState<Receipt | null>(null);
   const [qr, setQr] = useState<PaymentResult | null>(null);
+  const [slipFor, setSlipFor] = useState<{ id: string; name: string; admissionNo: string } | null>(null);
 
   const dues = fees.data?.dues;
   const open = useMemo(() => (dues?.instalments ?? []).filter((i) => i.balance > 0), [dues]);
@@ -158,9 +159,14 @@ function Counter() {
                     {s.roll ? ` · Roll ${s.roll}` : ""}
                     {s.status !== "active" && <span className="ml-2 font-bold text-error uppercase text-xs">{s.status}</span>}
                   </p>
-                  <Link href={`/students/${s.id}`} className="text-xs font-bold text-primary underline">
-                    Student profile
-                  </Link>
+                  <div className="flex gap-4">
+                    <Link href={`/students/${s.id}`} className="text-xs font-bold text-primary underline">
+                      Student profile
+                    </Link>
+                    <button type="button" onClick={() => setSlipFor({ id: s.id, name: s.name, admissionNo: s.admissionNo })} className="text-xs font-bold text-primary underline">
+                      Fee due slip
+                    </button>
+                  </div>
                 </div>
                 {dues && (
                   <div className="flex gap-6 text-right">
@@ -276,17 +282,14 @@ function Counter() {
         />
       )}
       {done && (
-        <Modal isOpen onClose={() => setDone(null)} title={`Received ${rupees(done.amount)}`} width="max-w-3xl">
+        <Modal isOpen onClose={() => setDone(null)} title={`Received ${rupees(done.amount)} · ${done.receiptNo}`} width="max-w-5xl">
           <div className="space-y-4">
-            <div className="print-area max-h-[65vh] overflow-y-auto">
-              <ReceiptView receipt={done} format={config.data?.receiptFormat} />
-            </div>
-            <div className="flex justify-end gap-3 no-print">
+            <DocumentViewer inline docKey="fee_receipt" params={{ id: done.id }} title={`Receipt ${done.receiptNo}`} filename={`receipt-${done.receiptNo.replace(/[^A-Za-z0-9]+/g, "-")}.pdf`} className="[&_iframe]:!h-[62vh]" />
+            <div className="flex justify-end gap-3">
               <Button variant="secondary" onClick={() => setDone(null)}>
                 Close
               </Button>
               <Button
-                variant="secondary"
                 onClick={() => {
                   setDone(null);
                   router.replace("/fees/collect");
@@ -294,18 +297,11 @@ function Counter() {
               >
                 Next student
               </Button>
-              <Button
-                onClick={() => {
-                  showToast("Opening the print dialog…", "info");
-                  window.print();
-                }}
-              >
-                Print receipt
-              </Button>
             </div>
           </div>
         </Modal>
       )}
+      {slipFor && <DocumentViewer docKey="fee_due_slip" params={{ student: slipFor.id }} title={`Fee due slip · ${slipFor.name}`} filename={`due-slip-${slipFor.admissionNo.replace(/[^A-Za-z0-9]+/g, "-")}.pdf`} onClose={() => setSlipFor(null)} />}
     </>
   );
 }
