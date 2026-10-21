@@ -31,8 +31,8 @@ function KeysBox({ title, tone, keys, placeholder, value, onChange, errors }: {
         {keys.ready ? <Pill tone="success">Keys saved</Pill> : <Pill>Not set</Pill>}
       </div>
       <Input label="Key id" placeholder={placeholder} value={value.keyId} onChange={(e) => onChange({ ...value, keyId: e.target.value })} error={errors[f]} />
-      <Input label={keys.hasKeySecret ? "Key secret (saved; type to replace)" : "Key secret"} type="password" value={value.keySecret} onChange={(e) => onChange({ ...value, keySecret: e.target.value })} autoComplete="off" />
-      <Input label={keys.hasWebhookSecret ? "Webhook secret (saved; type to replace)" : "Webhook secret"} type="password" value={value.webhookSecret} onChange={(e) => onChange({ ...value, webhookSecret: e.target.value })} autoComplete="off" />
+      <Input label={keys.hasKeySecret ? "Key secret (saved; type to replace)" : "Key secret"} type="password" name={`${tone}-key-secret`} error={errors[tone === "live" ? "liveKeySecret" : "keySecret"]} value={value.keySecret} onChange={(e) => onChange({ ...value, keySecret: e.target.value })} autoComplete="new-password" data-lpignore="true" data-1p-ignore />
+      <Input label={keys.hasWebhookSecret ? "Webhook secret (saved; type to replace)" : "Webhook secret"} type="password" name={`${tone}-webhook-secret`} value={value.webhookSecret} onChange={(e) => onChange({ ...value, webhookSecret: e.target.value })} autoComplete="new-password" data-lpignore="true" data-1p-ignore />
     </div>
   );
 }
@@ -53,6 +53,18 @@ function Gateway() {
   }, [gw.data]);
   if (!gw.data) return <PageLoader />;
   const g = gw.data;
+
+  /** Switching the mode changes only the mode: the key boxes are saved with "Save keys". */
+  const switchMode = async (mode: "test" | "live") => {
+    setErrors({});
+    try {
+      queryClient.setQueryData(["payment-gateway"], await paymentsApi.saveGateway({ provider: "razorpay", mode }));
+      showToast(mode === "live" ? "Live mode: payments now take real money" : "Test mode: no real money", mode === "live" ? "warning" : "success");
+    } catch (err) {
+      showToast(errorMessage(err), "error");
+      setErrors(err instanceof ApiError ? err.fieldErrors() : {});
+    }
+  };
 
   const save = async (mode?: "test" | "live") => {
     setErrors({});
@@ -107,13 +119,13 @@ function Gateway() {
             <div className="rounded-xl bg-surface-container-low p-4 space-y-3">
               <p className="text-sm font-bold text-primary">Payments use: {g.mode === "live" ? "LIVE keys (real money)" : "TEST keys (no real money)"}</p>
               <div className="flex flex-wrap gap-2">
-                <Button variant={g.mode === "test" ? "primary" : "secondary"} disabled={g.mode === "test"} onClick={() => save("test")}>
+                <Button variant={g.mode === "test" ? "primary" : "secondary"} disabled={g.mode === "test"} onClick={() => switchMode("test")}>
                   Use test mode
                 </Button>
                 <Button
                   variant={g.mode === "live" ? "primary" : "secondary"}
-                  disabled={g.mode === "live" || (!g.live.ready && !(live.keyId && live.keySecret))}
-                  onClick={() => (window.confirm("Switch to LIVE mode? From now on every payment (My Fees, the website form, QR codes) takes real money.") ? save("live") : undefined)}
+                  disabled={g.mode === "live" || !g.live.ready}
+                  onClick={() => (window.confirm("Switch to LIVE mode? From now on every payment (My Fees, the website form, QR codes) takes real money.") ? switchMode("live") : undefined)}
                 >
                   Use live mode
                 </Button>
