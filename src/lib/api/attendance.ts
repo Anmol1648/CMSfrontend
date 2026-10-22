@@ -40,6 +40,7 @@ export interface Overview {
     label: string;
     classTeacher: string | null;
     students: number;
+    canMark?: boolean;
     slots: ({ slot: Slot; marked: false; total?: number; done?: number } | { slot: Slot; marked: boolean; present: number; absent: number; leave: number; markedBy: string | null; markedAt: string; total?: number; done?: number })[];
   }[];
   mode?: string;
@@ -105,6 +106,9 @@ export const attendanceApi = {
   sections: () => api.get<{ id: string; label: string; mine: boolean }[]>('/attendance/sections'),
   register: (section: string, date: string, slot?: Slot) => api.get<Register>('/attendance/register', { params: { section, date, ...(slot ? { slot } : {}) } }),
   save: (input: { section: string; date: string; slot: Slot; marks: { studentId: string; statusId: string; note?: string }[] }) => api.put<Register>('/attendance/register', input),
+  students: (q: { section?: string; search?: string }) =>
+    api.get<{ sections: { id: string; label: string }[]; section: string | null; minPercent: number; students: { id: string; name: string; admissionNo: string; roll: number | null; section: string; month: Summary; session: Summary }[] }>('/attendance/students', { params: q }),
+  student: (student: string, month: string) => api.get<MyAttendance>('/attendance/student', { params: { student, month } }),
   overview: (date: string) => api.get<Overview>('/attendance/overview', { params: { date } }),
   holidays: (year?: string) => api.get<Holidays>('/attendance/holidays', { params: year ? { year } : {} }),
   addHoliday: (input: { from: string; to?: string; name: string; forStudents: boolean; forStaff: boolean }) => api.post<{ days: number }>('/attendance/holidays', input),

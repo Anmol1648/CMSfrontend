@@ -115,7 +115,7 @@ function Today() {
                       </td>
                     ))}
                     <td className="px-5 py-3 text-right">
-                      {canMark && (
+                      {canMark && s.canMark && (
                         <Link href={`/attendance/mark?section=${s.id}&date=${d.date}`} className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
                           {s.slots.every((x) => x.marked) ? "Open" : "Mark"}
                         </Link>
