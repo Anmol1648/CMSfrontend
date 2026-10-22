@@ -72,6 +72,9 @@ export interface MyAttendance {
   minPercent?: number;
 }
 
+/** A staff member's own month (same calendar as the students'). */
+export type MyStaffMonth = Required<Pick<MyAttendance, 'month' | 'days' | 'statuses' | 'monthSummary' | 'yearSummary' | 'minPercent'>> & { staff: { name: string; employeeCode: string | null } };
+
 export interface StaffRecord {
   id?: string | null;
   checkIn: string | null;
@@ -112,6 +115,7 @@ export interface StaffDay {
 }
 
 export const attendanceApi = {
+  myStaffMonth: (month?: string) => api.get<MyStaffMonth>("/attendance/staff/me/month", { params: month ? { month } : {} }),
   statuses: () => api.get<AttendanceStatus[]>('/attendance/statuses'),
   sections: () => api.get<{ id: string; label: string; mine: boolean }[]>('/attendance/sections'),
   register: (section: string, date: string, slot?: Slot) => api.get<Register>('/attendance/register', { params: { section, date, ...(slot ? { slot } : {}) } }),
