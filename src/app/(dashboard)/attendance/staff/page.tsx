@@ -13,6 +13,8 @@ import { PageLoader } from "@/components/ui/PageLoader";
 import { useToast } from "@/components/ui/ToastProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { CorrectionRequests } from "@/components/attendance/CorrectionBox";
+import { PendingCheckIns } from "@/components/attendance/PendingCheckIns";
+import { AuthedPhoto } from "@/components/attendance/AuthedPhoto";
 import { attendanceApi, showDay, StaffDay, statusTone, todayIST } from "@/lib/api/attendance";
 import { errorMessage } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
@@ -90,6 +92,7 @@ function Staff() {
           </Link>
         }
       />
+      <PendingCheckIns />
       <CorrectionRequests />
       <Card className="mb-4">
         <div className="flex flex-wrap items-end gap-6">
@@ -144,8 +147,13 @@ function Staff() {
                   return (
                     <tr key={p.id} className="border-t border-outline-variant/10">
                       <td className="px-5 py-2.5">
+                        <div className="flex items-center gap-3">
+                          {r?.photoIn && <AuthedPhoto fileId={r.photoIn} alt={`${p.name} at check-in`} className="h-9 w-9 rounded-full" />}
+                          <div>
                         <p className="font-semibold">{p.name}</p>
                         <p className="text-[11px] font-mono text-on-surface-variant/70">{p.employeeCode}</p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-5 py-2.5 text-xs">{p.designation ?? "—"}</td>
                       <td className="px-5 py-2.5 tabular-nums">
@@ -163,6 +171,16 @@ function Staff() {
                           <Pill tone={d.isToday ? "warning" : "danger"}>{d.isToday ? "Not in yet" : "Absent"}</Pill>
                         )}
                         {r?.source === "admin" && <span className="ml-2 text-[10px] text-on-surface-variant/60">corrected</span>}
+                        {r?.approval === "pending" && (
+                          <span className="ml-2" title={(r.reasons ?? []).join(", ")}>
+                            <Pill tone="warning">Waiting approval</Pill>
+                          </span>
+                        )}
+                        {r?.approval === "rejected" && (
+                          <span className="ml-2">
+                            <Pill tone="danger">Rejected</Pill>
+                          </span>
+                        )}
                       </td>
                       <td className="px-5 py-2.5 text-xs text-on-surface-variant max-w-[220px]">{r?.note ?? ""}</td>
                       <td className="px-5 py-2.5 text-right">

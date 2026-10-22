@@ -73,6 +73,7 @@ export interface MyAttendance {
 }
 
 export interface StaffRecord {
+  id?: string | null;
   checkIn: string | null;
   checkOut: string | null;
   late: boolean;
@@ -80,10 +81,19 @@ export interface StaffRecord {
   source: string | null;
   note: string | null;
   status: { name: string; code: string } | null;
+  /** null = fine; pending = waits for the office; approved / rejected. */
+  approval?: "pending" | "approved" | "rejected" | null;
+  reasons?: string[];
+  photoIn?: string | null;
+  photoOut?: string | null;
+  distance?: number | null;
+  faceDistance?: number | null;
 }
 
 export interface MyDay {
   staff: { name: string; employeeCode: string };
+  /** Which checks the school uses at check-in, and the person's face enrolment. */
+  checks: { photo: boolean; face: boolean; location: boolean; enrolled: "approved" | "pending" | null; canEnrol: boolean };
   today: string;
   shift: { start: string; end: string; grace: number };
   day: StaffRecord | null;
@@ -115,8 +125,8 @@ export const attendanceApi = {
   deleteHoliday: (id: string) => api.delete<null>(`/attendance/holidays/${id}`),
   mine: (q: { student?: string; month?: string }) => api.get<MyAttendance>('/attendance/me', { params: q }),
   myDay: () => api.get<MyDay>('/attendance/staff/me'),
-  checkIn: () => api.post<MyDay>('/attendance/staff/check-in'),
-  checkOut: () => api.post<MyDay>('/attendance/staff/check-out'),
+  checkIn: (input: CheckInInput = {}) => api.post<MyDay>('/attendance/staff/check-in', input, { timeout: 90_000 }),
+  checkOut: (input: CheckInInput = {}) => api.post<MyDay>('/attendance/staff/check-out', input, { timeout: 90_000 }),
   staffDay: (date: string) => api.get<StaffDay>('/attendance/staff/day', { params: { date } }),
   correct: (staffId: string, input: { date: string; checkIn?: string | null; checkOut?: string | null; statusId?: string | null; note?: string }) => api.put<StaffDay>(`/attendance/staff/${staffId}`, input),
 };
@@ -208,3 +218,77 @@ export const LEAVE_STATUS: Record<LeaveRequest['status'], { label: string; tone:
   rejected: { label: 'Not approved', tone: 'danger' },
   cancelled: { label: 'Cancelled', tone: 'neutral' },
 };
+
+// ─── Selfie, location and face checks ────────────────────────────────────────
+
+export interface CheckInInput {
+  /** data:image/jpeg;base64,… from the live camera. */
+  photo?: string;
+  lat?: number;
+  lng?: number;
+  accuracy?: number;
+}
+
+export interface PendingCheckIn {
+  id: string;
+  staff: { id: string; name: string; employeeCode: string; facePhotoId: string | null };
+  date: string;
+  checkIn: string | null;
+  checkOut: string | null;
+  late: boolean;
+  photoIn: string | null;
+  photoOut: string | null;
+  distance: number | null;
+  accuracy: number | null;
+  location: { lat: number; lng: number } | null;
+  faceDistance: number | null;
+  reasons: string[];
+}
+
+export interface StaffFaceRow {
+  id: string;
+  name: string;
+  employeeCode: string;
+  designation: string | null;
+  face: { status: "approved" | "pending"; photoIds: string[]; enrolledAt: string } | null;
+}
+
+export interface CheckInLocation {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  radius: number;
+  isActive: boolean;
+}
+
+/** The address of a check-in / face photo (shown with authedImageUrl). */
+export const photoPath = (fileId: string) => `/attendance/staff/photo/${fileId}`;
+
+export const checkInApi = {
+  pending: () => api.get<PendingCheckIn[]>('/attendance/staff/pending'),
+  decide: (id: string, approve: boolean, note?: string) => api.post<PendingCheckIn[]>(`/attendance/staff/pending/${id}/decide`, { approve, ...(note ? { note } : {}) }),
+  faces: () => api.get<StaffFaceRow[]>('/attendance/faces'),
+  enrol: (staffId: string, photos: string[]) => api.post<StaffFaceRow[]>(`/attendance/faces/${staffId}`, { photos }, { timeout: 120_000 }),
+  approveFace: (staffId: string) => api.post<StaffFaceRow[]>(`/attendance/faces/${staffId}/approve`),
+  removeFace: (staffId: string) => api.delete<StaffFaceRow[]>(`/attendance/faces/${staffId}`),
+  myFace: () => api.get<{ face: { status: "approved" | "pending"; enrolledAt: string } | null; canEnrol: boolean }>('/attendance/my-face'),
+  enrolSelf: (photos: string[]) => api.post<{ face: { status: "approved" | "pending"; enrolledAt: string } | null; canEnrol: boolean }>('/attendance/my-face', { photos }, { timeout: 120_000 }),
+  locations: () => api.get<CheckInLocation[]>('/attendance/locations'),
+  addLocation: (input: Omit<CheckInLocation, 'id'>) => api.post<CheckInLocation[]>('/attendance/locations', input),
+  saveLocation: (id: string, input: Omit<CheckInLocation, 'id'>) => api.put<CheckInLocation[]>(`/attendance/locations/${id}`, input),
+  deleteLocation: (id: string) => api.delete<CheckInLocation[]>(`/attendance/locations/${id}`),
+};
+
+/** The phone's location (null when it can't be had: refused, not available, too slow). */
+export const currentPosition = (): Promise<{ lat: number; lng: number; accuracy: number } | null> =>
+  new Promise((resolve) => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: Math.round(p.coords.accuracy) }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 }
+    );
+  });
+
+export const mapLink = (lat: number, lng: number) => `https://www.google.com/maps?q=${lat},${lng}`;
