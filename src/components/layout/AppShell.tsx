@@ -14,6 +14,8 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { logoSrc } from "@/lib/api/school";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { useQuery } from "@tanstack/react-query";
+import { noticesApi } from "@/lib/api/notices";
 
 interface NavItem {
   label: string;
@@ -21,7 +23,7 @@ interface NavItem {
   icon: string;
 }
 
-function NavLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
+function NavLink({ item, onNavigate, badge }: { item: NavItem; onNavigate?: () => void; badge?: number }) {
   const pathname = usePathname();
   const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
   return (
@@ -36,7 +38,8 @@ function NavLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void 
       <span className="material-symbols-outlined shrink-0" style={{ fontVariationSettings: `'FILL' ${active ? 1 : 0}` }}>
         {item.icon}
       </span>
-      <span className="text-sm tracking-tight">{item.label}</span>
+      <span className="text-sm tracking-tight flex-1">{item.label}</span>
+      {!!badge && <span className="min-w-[20px] rounded-full bg-primary px-1.5 py-0.5 text-center text-[10px] font-black text-white">{badge > 99 ? "99+" : badge}</span>}
       {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-full" />}
     </Link>
   );
@@ -127,6 +130,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { me, access } = useAuth();
   const menu = access?.menu ?? [];
   const pathname = usePathname();
+  // Notices not opened yet: the number next to "Notices" (checked every few minutes).
+  const hasNotices = menu.some((g) => g.items.some((i) => i.key === "notices"));
+  const unread = useQuery({ queryKey: ["notices-unread"], queryFn: noticesApi.unread, enabled: hasNotices, refetchInterval: 3 * 60_000, staleTime: 60_000 });
   // Phones and tablets: the sidebar is a drawer opened from the top bar.
   const [navOpen, setNavOpen] = useState(false);
   useEffect(() => setNavOpen(false), [pathname]);
@@ -171,7 +177,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <p className="text-[9px] font-black uppercase tracking-[0.25em] text-on-surface-variant/40 px-4 mb-2 mt-3">{group.label}</p>
               )}
               {group.items.map((item) => (
-                <NavLink key={item.key} item={item} onNavigate={() => setNavOpen(false)} />
+                <NavLink key={item.key} item={item} onNavigate={() => setNavOpen(false)} badge={item.key === "notices" ? unread.data?.unread : undefined} />
               ))}
             </div>
           ))}
