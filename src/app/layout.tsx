@@ -5,6 +5,7 @@ import { ToastProvider } from "@/components/ui/ToastProvider";
 import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
+import { COMPANY } from "@/lib/brand";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -19,8 +20,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "School ERP",
-  description: "School management system",
+  title: `${COMPANY.product} · ${COMPANY.name}`,
+  description: `School management system by ${COMPANY.name}`,
+  icons: { icon: COMPANY.logo, apple: COMPANY.logo },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

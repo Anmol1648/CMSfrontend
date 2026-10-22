@@ -9,6 +9,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { PoweredBy } from "@/components/branding/PoweredBy";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { logoSrc } from "@/lib/api/school";
 import { Modal } from "@/components/ui/Modal";
@@ -147,6 +148,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           ))}
         </nav>
+        <PoweredBy compact className="mt-6 px-4 pt-5 border-t border-outline-variant/15" />
       </aside>
 
       <div className="flex-1 flex flex-col pl-64">

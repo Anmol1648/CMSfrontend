@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { logoSrc, PublicSchool, readCachedBranding, saveCachedBranding, schoolApi } from "@/lib/api/school";
 import { LoginBrandPanel } from "@/components/branding/LoginBrandPanel";
 import { ApiError } from "@/lib/api/client";
+import { PoweredBy } from "@/components/branding/PoweredBy";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const school = useQuery({ queryKey: ["public-school"], queryFn: schoolApi.publicInfo, staleTime: Infinity });
@@ -45,6 +46,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </p>
           )}
           {children}
+          <PoweredBy className="justify-center pt-6 border-t border-outline-variant/15" />
         </div>
       </div>
     </div>
