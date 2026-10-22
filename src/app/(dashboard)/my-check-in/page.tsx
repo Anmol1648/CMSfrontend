@@ -10,7 +10,7 @@ import { PageLoader } from "@/components/ui/PageLoader";
 import { useToast } from "@/components/ui/ToastProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { CorrectionBox } from "@/components/attendance/CorrectionBox";
-import { attendanceApi, checkInApi, currentPosition, MyDay, showDay, statusTone } from "@/lib/api/attendance";
+import { attendanceApi, browserId, browserLabel, checkInApi, currentPosition, MyDay, showDay, statusTone } from "@/lib/api/attendance";
 import { CameraCapture } from "@/components/attendance/CameraCapture";
 import { Pill } from "@/components/forms";
 import { errorMessage } from "@/lib/api/client";
@@ -35,7 +35,8 @@ function CheckIn() {
   const [locating, setLocating] = useState(false);
 
   /** Check in / out: the selfie (when the school wants one) and the location go with it. */
-  const go = async (which: "in" | "out", photo?: string) => {
+  const go = async (which: "in" | "out", photos: string[] = []) => {
+    const [photo, photo2] = photos;
     const checks = m!.checks;
     let pos: Awaited<ReturnType<typeof currentPosition>> = null;
     if (checks.location) {
@@ -43,7 +44,12 @@ function CheckIn() {
       pos = await currentPosition();
       setLocating(false);
     }
-    const input = { ...(photo ? { photo } : {}), ...(pos ? { lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy } : {}) };
+    const input = {
+      ...(photo ? { photo } : {}),
+      ...(photo2 ? { photo2 } : {}),
+      ...(pos ? { lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy } : {}),
+      ...(checks.phoneLock ? { deviceId: browserId(), deviceLabel: browserLabel() } : {}),
+    };
     const day: MyDay = which === "in" ? await attendanceApi.checkIn(input) : await attendanceApi.checkOut(input);
     queryClient.setQueryData(["my-check-in"], day);
     setCamera(null);
@@ -59,6 +65,8 @@ function CheckIn() {
     }
   };
   const myFace = useQuery({ queryKey: ["my-face"], queryFn: checkInApi.myFace, enabled: !!m?.checks.face });
+  // Liveness: which way to turn is chosen at random each time (a recorded clip can't know).
+  const [turn] = useState(() => (Math.random() < 0.5 ? "left" : "right"));
 
   if (me.isError) return <FormAlert>{errorMessage(me.error)}</FormAlert>;
   if (!m) return <PageLoader />;
@@ -115,10 +123,11 @@ function CheckIn() {
             <FormAlert>The office did not approve today’s check-in. Speak to the office.</FormAlert>
           </div>
         )}
-        {(m.checks.photo || m.checks.location) && (
+        {(m.checks.photo || m.checks.location || m.checks.phoneLock) && (
           <p className="mt-4 text-xs text-on-surface-variant">
             {m.checks.photo ? "A selfie is taken when you check in and out. " : ""}
             {m.checks.location ? "Your location is checked: allow it when the browser asks. " : ""}
+            {m.checks.phoneLock ? "Check in from your own phone. " : ""}
             {locating ? "Finding your location…" : ""}
           </p>
         )}
@@ -150,11 +159,13 @@ function CheckIn() {
       {(camera === "in" || camera === "out") && (
         <CameraCapture
           title={camera === "in" ? "Check in: take a selfie" : "Check out: take a selfie"}
-          busyLabel={m.checks.face ? "Checking your face…" : "Saving…"}
+          shots={m.checks.liveness ? 2 : 1}
+          hints={m.checks.liveness ? ["Photo 1: look straight at the camera", `Photo 2: now turn your head slightly to the ${turn}`] : []}
+          busyLabel={m.checks.face || m.checks.liveness ? "Checking your face…" : "Saving…"}
           onClose={() => setCamera(null)}
-          onDone={async ([photo]) => {
+          onDone={async (photos) => {
             try {
-              await go(camera, photo);
+              await go(camera, photos);
             } catch (err) {
               throw new Error(errorMessage(err));
             }

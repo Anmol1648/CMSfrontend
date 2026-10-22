@@ -93,7 +93,7 @@ export interface StaffRecord {
 export interface MyDay {
   staff: { name: string; employeeCode: string };
   /** Which checks the school uses at check-in, and the person's face enrolment. */
-  checks: { photo: boolean; face: boolean; location: boolean; enrolled: "approved" | "pending" | null; canEnrol: boolean };
+  checks: { photo: boolean; face: boolean; liveness: boolean; location: boolean; phoneLock: boolean; enrolled: "approved" | "pending" | null; canEnrol: boolean };
   today: string;
   shift: { start: string; end: string; grace: number };
   day: StaffRecord | null;
@@ -224,6 +224,11 @@ export const LEAVE_STATUS: Record<LeaveRequest['status'], { label: string; tone:
 export interface CheckInInput {
   /** data:image/jpeg;base64,… from the live camera. */
   photo?: string;
+  /** Liveness: the second photo, head turned. */
+  photo2?: string;
+  /** This browser's id and what it is (registered-phone lock). */
+  deviceId?: string;
+  deviceLabel?: string;
   lat?: number;
   lng?: number;
   accuracy?: number;
@@ -251,6 +256,7 @@ export interface StaffFaceRow {
   employeeCode: string;
   designation: string | null;
   face: { status: "approved" | "pending"; photoIds: string[]; enrolledAt: string } | null;
+  phone: { label: string; registeredAt: string } | null;
 }
 
 export interface CheckInLocation {
@@ -272,6 +278,7 @@ export const checkInApi = {
   enrol: (staffId: string, photos: string[]) => api.post<StaffFaceRow[]>(`/attendance/faces/${staffId}`, { photos }, { timeout: 120_000 }),
   approveFace: (staffId: string) => api.post<StaffFaceRow[]>(`/attendance/faces/${staffId}/approve`),
   removeFace: (staffId: string) => api.delete<StaffFaceRow[]>(`/attendance/faces/${staffId}`),
+  resetPhone: (staffId: string) => api.delete<StaffFaceRow[]>(`/attendance/phones/${staffId}`),
   myFace: () => api.get<{ face: { status: "approved" | "pending"; enrolledAt: string } | null; canEnrol: boolean }>('/attendance/my-face'),
   enrolSelf: (photos: string[]) => api.post<{ face: { status: "approved" | "pending"; enrolledAt: string } | null; canEnrol: boolean }>('/attendance/my-face', { photos }, { timeout: 120_000 }),
   locations: () => api.get<CheckInLocation[]>('/attendance/locations'),
@@ -292,3 +299,61 @@ export const currentPosition = (): Promise<{ lat: number; lng: number; accuracy:
   });
 
 export const mapLink = (lat: number, lng: number) => `https://www.google.com/maps?q=${lat},${lng}`;
+
+/** This browser's own random id (kept on the phone), for the registered-phone lock. */
+export const browserId = () => {
+  const KEY = 'erp-device-id';
+  try {
+    let id = localStorage.getItem(KEY);
+    if (!id) {
+      id = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem(KEY, id);
+    }
+    return id;
+  } catch {
+    return undefined;
+  }
+};
+
+/** "Chrome on Android", "Safari on iPhone"… */
+export const browserLabel = () => {
+  if (typeof navigator === 'undefined') return 'Phone';
+  const ua = navigator.userAgent;
+  const os = /Android/i.test(ua) ? 'Android' : /iPhone|iPad/i.test(ua) ? 'iPhone' : /Windows/i.test(ua) ? 'Windows' : /Mac OS/i.test(ua) ? 'Mac' : /Linux/i.test(ua) ? 'Linux' : 'device';
+  const browser = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Browser';
+  return `${browser} on ${os}`;
+};
+
+// ─── Attendance devices (machines / other systems) ──────────────────────────
+
+export type DeviceKind = 'essl_adms' | 'webhook' | 'import';
+
+export interface AttendanceDevice {
+  id: string;
+  name: string;
+  kind: DeviceKind;
+  serialNo: string | null;
+  token: string;
+  isActive: boolean;
+  lastSeenAt: string | null;
+  lastPunchAt: string | null;
+  punches: number;
+}
+
+export const DEVICE_KINDS: Record<DeviceKind, string> = {
+  essl_adms: 'Biometric machine (eSSL / ZKTeco, ADMS)',
+  webhook: 'Another system (sends punches to a web address)',
+  import: 'File import (export from a machine)',
+};
+
+export const devicesApi = {
+  list: () => api.get<AttendanceDevice[]>('/attendance-devices'),
+  add: (input: { name: string; kind: DeviceKind; serialNo?: string; isActive: boolean }) => api.post<AttendanceDevice[]>('/attendance-devices', input),
+  save: (id: string, input: { name: string; kind: DeviceKind; serialNo?: string; isActive: boolean }) => api.put<AttendanceDevice[]>(`/attendance-devices/${id}`, input),
+  newToken: (id: string) => api.post<AttendanceDevice[]>(`/attendance-devices/${id}/token`),
+  remove: (id: string) => api.delete<AttendanceDevice[]>(`/attendance-devices/${id}`),
+  numbers: () => api.get<{ staff: { id: string; name: string; employeeCode: string; deviceUserId: string | null }[]; unmatched: { deviceUserId: string; punches: number; lastAt: string | null }[] }>('/attendance-devices/numbers'),
+  setNumber: (staffId: string, deviceUserId: string | null) => api.put<{ staff: { id: string; name: string; employeeCode: string; deviceUserId: string | null }[]; unmatched: { deviceUserId: string; punches: number; lastAt: string | null }[] }>(`/attendance-devices/numbers/${staffId}`, { deviceUserId }),
+  punches: () => api.get<{ id: string; at: string; deviceUserId: string; staff: string | null; device: string }[]>('/attendance-devices/punches'),
+  importText: (text: string, deviceId?: string) => api.post<{ received: number; added: number; unmatched: number; lines: number; unreadable: number }>('/attendance-devices/import', { text, ...(deviceId ? { deviceId } : {}) }, { timeout: 120_000 }),
+};

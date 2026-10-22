@@ -45,8 +45,8 @@ function Faces() {
   return (
     <>
       <PageHeader
-        title="Staff faces"
-        description="Each person’s face, to check the selfie at check-in (System Settings → Attendance → face check). Enrol with 3 photos here, or approve the photos a person took themselves."
+        title="Faces & phones"
+        description="Each person’s face, to check the selfie at check-in (System Settings → Attendance → face check), and the phone they check in from (phone lock). Enrol a face with 3 photos here, or approve the photos a person took themselves."
       />
       <Card className="mb-4">
         <div className="flex flex-wrap items-end gap-6">
@@ -88,6 +88,26 @@ function Faces() {
                 </td>
                 <td className="px-5 py-3">
                   {r.face?.status === "approved" ? <Pill tone="success">Enrolled</Pill> : r.face?.status === "pending" ? <Pill tone="warning">Waiting approval</Pill> : <Pill>Not enrolled</Pill>}
+                </td>
+                <td className="px-5 py-3 text-xs">
+                  {r.phone ? (
+                    <span>
+                      <span className="material-symbols-outlined text-base align-middle mr-1">smartphone</span>
+                      {r.phone.label}
+                      <button
+                        type="button"
+                        className="ml-3 font-bold uppercase tracking-widest text-primary hover:opacity-70"
+                        onClick={async () => {
+                          if (!(await confirm({ title: `Reset ${r.name}’s phone?`, message: "The next phone they check in from becomes theirs.", confirmLabel: "Reset" }))) return;
+                          await act(() => checkInApi.resetPhone(r.id), "Phone reset");
+                        }}
+                      >
+                        Reset
+                      </button>
+                    </span>
+                  ) : (
+                    <span className="text-on-surface-variant/60">No phone yet</span>
+                  )}
                 </td>
                 <td className="px-5 py-3 text-right whitespace-nowrap">
                   <div className="flex justify-end gap-4 text-xs font-bold uppercase tracking-widest">
