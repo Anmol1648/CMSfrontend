@@ -89,14 +89,14 @@ export function ReportDesignPanel({ reportKey, label, filters }: { reportKey: st
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {d.service.running ? <Pill tone="success">Report service running · JasperReports {d.service.version}</Pill> : <Pill tone="warning">Report service not running</Pill>}
+            {d.service.running ? <Pill tone="success">Report service running · JasperReports {d.service.version}</Pill> : <Pill tone="warning">Report service not answering</Pill>}
           </div>
         </div>
         {!d.service.running && (
           <div className="mt-4">
             <FormAlert tone="warning">
-              The report service (Jasper) is not running, so reports use the built-in table layout and designs can’t be checked or uploaded. On the server, start it with
-              <code className="font-mono mx-1">npm run jasper</code> in the backend folder.
+              The report service (Jasper) didn’t answer, so reports use the built-in table layout and designs can’t be checked or uploaded. On a free host it may just be waking up: reload this page in a minute. If it stays like this, start it on the server (
+              <code className="font-mono">npm run jasper</code> in the backend folder) or check <code className="font-mono">JASPER_URL</code> and <code className="font-mono">JASPER_TOKEN</code>.
             </FormAlert>
           </div>
         )}
