@@ -28,7 +28,7 @@ export interface Register {
   statuses: AttendanceStatus[];
   defaultStatusId: string | null;
   marked: { at: string; by: string | null; changedAt: string | null; changedBy: string | null } | null;
-  students: { id: string; name: string; admissionNo: string; roll: number | null; statusId: string | null; note: string | null; leave: { statusId: string | null; kind: string; reason: string } | null }[];
+  students: { id: string; name: string; admissionNo: string; roll: number | null; statusId: string | null; note: string | null; leave: { statusId: string | null; kind: string; kindName: string; reason: string } | null }[];
 }
 
 export interface Overview {
@@ -65,7 +65,7 @@ export interface MyAttendance {
   children: { id: string; name: string; admissionNo: string }[];
   student: { id: string; name: string; admissionNo: string; section: string | null; roll: number | null } | null;
   month?: string;
-  days?: { date: string; off: string | null; future: boolean; leave: { status: 'pending' | 'approved'; kind: string; reason: string } | null; marks: { slot: Slot; code: string; name: string; present: number; excused: boolean; note: string | null }[] }[];
+  days?: { date: string; off: string | null; future: boolean; leave: { status: 'pending' | 'approved'; kind: string; kindName: string; reason: string } | null; marks: { slot: Slot; code: string; name: string; present: number; excused: boolean; note: string | null }[] }[];
   statuses?: Omit<AttendanceStatus, 'id'>[];
   monthSummary?: Summary;
   yearSummary?: Summary & { from: string; year: string };
@@ -174,7 +174,9 @@ export interface LeaveRequest {
   from: string;
   to: string;
   days: number;
-  kind: 'leave' | 'medical';
+  /** A student leave type's code (Masters → Student leave types). */
+  kind: string;
+  kindName: string;
   reason: string;
   status: 'pending' | 'approved' | 'rejected' | 'cancelled';
   appliedBy: string | null;
@@ -201,7 +203,7 @@ export interface CorrectionRequest {
 
 export const leaveApi = {
   lessons: (date?: string) => api.get<{ mode: string; date: string; lessons: Lesson[] }>('/attendance/lessons', { params: date ? { date } : {} }),
-  apply: (input: { student: string; from: string; to: string; kind: 'leave' | 'medical'; reason: string }) => api.post<LeaveRequest>('/attendance/leave', input),
+  apply: (input: { student: string; from: string; to: string; kind: string; reason: string }) => api.post<LeaveRequest>('/attendance/leave', input),
   mine: (student: string) => api.get<{ canAsk: boolean; backDays: number; leaves: LeaveRequest[] }>('/attendance/leave/mine', { params: { student } }),
   cancel: (id: string) => api.post<null>(`/attendance/leave/${id}/cancel`),
   requests: (status: string) => api.get<LeaveRequest[]>('/attendance/leave', { params: { status } }),

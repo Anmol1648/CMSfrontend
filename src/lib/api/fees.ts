@@ -8,9 +8,8 @@ export interface Ref {
   name: string;
 }
 
-export type PaymentMode = 'cash' | 'upi' | 'cheque' | 'dd' | 'bank_transfer' | 'card' | 'online';
-export const PAYMENT_MODES: Record<PaymentMode, string> = { cash: 'Cash', upi: 'UPI', cheque: 'Cheque', dd: 'Demand draft', bank_transfer: 'Bank transfer', card: 'Card', online: 'Online' };
-export const COUNTER_MODES: Exclude<PaymentMode, 'online'>[] = ['cash', 'upi', 'cheque', 'dd', 'bank_transfer', 'card'];
+/** A payment mode's code (Masters → Payment modes; names via usePaymentModes). */
+export type PaymentMode = string;
 
 export const rupees = (n: number | null | undefined) => (n == null ? '—' : `₹${n.toLocaleString('en-IN')}`);
 
@@ -316,7 +315,7 @@ export const feesApi = {
   removeConcession: (id: string, concessionId: string) => api.delete<StudentFees>(`/fees/students/${id}/concessions/${concessionId}`),
   addAdjustment: (id: string, input: { instalmentId: string; feeHeadId: string; amount: number; reason: string }) => api.post<StudentFees>(`/fees/students/${id}/adjustments`, input),
   removeAdjustment: (id: string, adjustmentId: string) => api.delete<StudentFees>(`/fees/students/${id}/adjustments/${adjustmentId}`),
-  collect: (input: { studentId: string; academicYearId?: string; date?: string; mode: Exclude<PaymentMode, 'online'>; reference?: string | null; bankName?: string | null; amount: number; instalmentIds?: string[]; note?: string | null }) =>
+  collect: (input: { studentId: string; academicYearId?: string; date?: string; mode: PaymentMode; reference?: string | null; bankName?: string | null; amount: number; instalmentIds?: string[]; note?: string | null }) =>
     api.post<Receipt>('/fees/receipts', input, { timeout: 60_000 }),
   receipts: (q: ReceiptListQuery) => api.get<Paged<Receipt> & { totalAmount: number }>('/fees/receipts', { params: receiptParams(q) }),
   exportReceipts: (q: ReceiptListQuery) => downloadFile('/fees/receipts/export', receiptParams(q), 'receipts.xlsx'),

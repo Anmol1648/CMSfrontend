@@ -14,7 +14,8 @@ import { GatewayCheckout } from "@/components/fees/GatewayCheckout";
 import { UpiQrPay } from "@/components/fees/UpiQrPay";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { schoolApi } from "@/lib/api/school";
-import { Checkout, feesApi, MyFees, PAYMENT_MODES, PaymentResult, paymentsApi, rupees } from "@/lib/api/fees";
+import { Checkout, feesApi, MyFees, PaymentResult, paymentsApi, rupees } from "@/lib/api/fees";
+import { usePaymentModes } from "@/components/masters/useCodedList";
 import { errorMessage } from "@/lib/api/client";
 import { PageLoader } from "@/components/ui/PageLoader";
 
@@ -23,6 +24,7 @@ type Child = MyFees["children"][number];
 const convenience = (amount: number, c: MyFees["online"]["convenience"]) => (!c || c.mode === "none" ? 0 : c.mode === "percent" ? Math.ceil((amount * c.value) / 100) : Math.ceil(c.value));
 
 function ChildFees({ child, online, onPay, onQr }: { child: Child; online: MyFees["online"]; onPay: (checkout: Checkout) => void; onQr: (qr: PaymentResult) => void }) {
+  const modes = usePaymentModes();
   const open = child.dues.instalments.filter((i) => i.balance > 0);
   const [selected, setSelected] = useState<string[]>(() => {
     const overdue = open.filter((i) => i.overdue).map((i) => i.id);
@@ -131,7 +133,7 @@ function ChildFees({ child, online, onPay, onQr }: { child: Child; online: MyFee
                     </Link>
                   </td>
                   <td className="py-2">{new Date(`${r.date}T00:00:00Z`).toLocaleDateString("en-IN", { timeZone: "UTC" })}</td>
-                  <td className="py-2">{PAYMENT_MODES[r.mode]}</td>
+                  <td className="py-2">{modes.nameOf(r.mode)}</td>
                   <td className="py-2 text-right font-bold">{rupees(r.amount)}</td>
                   <td className="py-2 text-right">{r.status === "cancelled" && <Pill tone="danger">Cancelled</Pill>}</td>
                 </tr>

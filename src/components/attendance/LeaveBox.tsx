@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useCodedList } from "@/components/masters/useCodedList";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -20,7 +21,8 @@ export function LeaveBox({ studentId, studentName }: { studentId: string; studen
   const [open, setOpen] = useState(false);
   const [from, setFrom] = useState(todayIST());
   const [to, setTo] = useState(todayIST());
-  const [kind, setKind] = useState<"leave" | "medical">("leave");
+  const types = useCodedList("student_leave_type");
+  const [kind, setKind] = useState("leave");
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -69,7 +71,7 @@ export function LeaveBox({ studentId, studentName }: { studentId: string; studen
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input label="From" type="date" value={from} min={earliest} onChange={(e) => setFrom(e.target.value)} />
             <Input label="To" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />
-            <Select label="Kind" value={kind} onChange={(v) => setKind(v as "leave" | "medical")} options={[{ value: "leave", label: "Leave" }, { value: "medical", label: "Medical (illness)" }]} />
+            <Select label="Kind" value={kind} onChange={setKind} options={types.options} />
           </div>
           <Input label="Reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Fever; family function out of station" />
           {error && <FormAlert>{error}</FormAlert>}
@@ -96,7 +98,7 @@ export function LeaveBox({ studentId, studentName }: { studentId: string; studen
               <td className="px-5 py-3 whitespace-nowrap">
                 {l.from === l.to ? showDay(l.from) : `${showDay(l.from, { day: "numeric", month: "short" })} – ${showDay(l.to, { day: "numeric", month: "short", year: "numeric" })}`}
                 <p className="text-[11px] text-on-surface-variant/70">
-                  {l.days} school day{l.days === 1 ? "" : "s"} · {l.kind === "medical" ? "Medical" : "Leave"}
+                  {l.days} school day{l.days === 1 ? "" : "s"} · {l.kindName}
                 </p>
               </td>
               <td className="px-5 py-3">{l.reason}</td>

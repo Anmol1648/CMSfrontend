@@ -10,7 +10,8 @@ import { PageHeader } from "@/components/layout/AppShell";
 import { YearSelect } from "@/components/academic/YearSelect";
 import { Tabs } from "@/components/ui/Tabs";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
-import { feesApi, PAYMENT_MODES, rupees } from "@/lib/api/fees";
+import { feesApi, rupees } from "@/lib/api/fees";
+import { usePaymentModes } from "@/components/masters/useCodedList";
 import { errorMessage } from "@/lib/api/client";
 import { PageLoader } from "@/components/ui/PageLoader";
 
@@ -51,6 +52,7 @@ function Breakdown({ title, rows }: { title: string; rows: { key: string; name: 
 }
 
 function Collection() {
+  const modes = usePaymentModes();
   const [from, setFrom] = useState(today());
   const [to, setTo] = useState(today());
   const report = useQuery({ queryKey: ["fee-collection", from, to], queryFn: () => feesApi.collection(from, to), enabled: !!from && !!to });
@@ -92,7 +94,7 @@ function Collection() {
             ))}
           </div>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Breakdown title="By mode (for the cash book)" rows={r.byMode.map((m) => ({ key: m.mode, name: PAYMENT_MODES[m.mode], amount: m.amount, count: m.count }))} />
+            <Breakdown title="By mode (for the cash book)" rows={r.byMode.map((m) => ({ key: m.mode, name: modes.nameOf(m.mode), amount: m.amount, count: m.count }))} />
             <Breakdown title="By fee head" rows={r.byHead.map((h) => ({ key: h.id, name: h.name, amount: h.amount }))} />
             <Breakdown title="By who collected" rows={r.byCollector.map((c) => ({ key: c.id, name: c.name, amount: c.amount, count: c.count }))} />
             <Breakdown title="By class" rows={r.byClass.map((c) => ({ key: c.id, name: c.name, amount: c.amount, count: c.count }))} />

@@ -2,7 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { logoSrc, schoolApi } from "@/lib/api/school";
-import { PAYMENT_MODES, Receipt, rupees } from "@/lib/api/fees";
+import { Receipt, rupees } from "@/lib/api/fees";
+import { usePaymentModes } from "@/components/masters/useCodedList";
 import { cn } from "@/lib/utils";
 
 /** A fee receipt as printed: half an A4 page with the school's name and logo, or an 80 mm roll. */
@@ -30,6 +31,7 @@ export const inWords = (n: number) => {
 const fmt = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" });
 
 export function ReceiptView({ receipt: r, format = "a4_half" }: { receipt: Receipt; format?: "a4_half" | "thermal" }) {
+  const modes = usePaymentModes();
   const school = useQuery({ queryKey: ["public-school"], queryFn: schoolApi.publicInfo, staleTime: Infinity });
   const profile = useQuery({ queryKey: ["school-profile"], queryFn: schoolApi.profile, staleTime: 5 * 60_000, retry: false });
   const p = profile.data;
@@ -122,7 +124,7 @@ export function ReceiptView({ receipt: r, format = "a4_half" }: { receipt: Recei
         Rupees <b>{inWords(r.amount)}</b> only
       </p>
       <p className="mt-1">
-        Paid by <b>{PAYMENT_MODES[r.mode]}</b>
+        Paid by <b>{modes.nameOf(r.mode)}</b>
         {r.reference ? ` · ref ${r.reference}` : ""}
         {r.bankName ? ` · ${r.bankName}` : ""}
         {r.online?.convenienceFee ? ` · convenience fee ${rupees(r.online.convenienceFee)} paid separately` : ""}

@@ -219,7 +219,7 @@ function Mark() {
                           {s.name}
                           {s.leave && (
                             <span title={s.leave.reason} className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-800">
-                              {s.leave.kind === "medical" ? "Medical leave" : "On leave"} (approved)
+                              {s.leave.kindName} (approved)
                             </span>
                           )}
                         </p>

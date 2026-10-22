@@ -11,7 +11,8 @@ import { PageHeader } from "@/components/layout/AppShell";
 import { useToast } from "@/components/ui/ToastProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { academicApi } from "@/lib/api/academic";
-import { feesApi, PAYMENT_MODES, PaymentMode, ReceiptListQuery, rupees } from "@/lib/api/fees";
+import { feesApi, PaymentMode, ReceiptListQuery, rupees } from "@/lib/api/fees";
+import { usePaymentModes } from "@/components/masters/useCodedList";
 import { errorMessage } from "@/lib/api/client";
 
 const PAGE_SIZE = 50;
@@ -23,7 +24,8 @@ function Receipts() {
   const { showToast } = useToast();
   const [from, setFrom] = useState(monthStart());
   const [to, setTo] = useState(today());
-  const [mode, setMode] = useState<PaymentMode | "">("");
+  const modes = usePaymentModes();
+  const [mode, setMode] = useState<PaymentMode>("");
   const [status, setStatus] = useState<"active" | "cancelled" | "">("");
   const [classId, setClassId] = useState("");
   const [search, setSearch] = useState("");
@@ -56,7 +58,7 @@ function Receipts() {
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 p-5 border-b border-outline-variant/20">
           <Input label="From" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           <Input label="To" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-          <Select label="Mode" value={mode} onChange={(v) => setMode(v as PaymentMode | "")} options={[{ value: "", label: "All" }, ...(Object.keys(PAYMENT_MODES) as PaymentMode[]).map((m) => ({ value: m, label: PAYMENT_MODES[m] }))]} />
+          <Select label="Mode" value={mode} onChange={setMode} options={[{ value: "", label: "All" }, ...modes.options]} />
           <Select label="Class" value={classId} onChange={setClassId} options={[{ value: "", label: "All" }, ...(classes.data ?? []).map((c) => ({ value: c.id, label: c.name }))]} />
           <Select label="Status" value={status} onChange={(v) => setStatus(v as "active" | "cancelled" | "")} options={[{ value: "", label: "All" }, { value: "active", label: "Valid" }, { value: "cancelled", label: "Cancelled" }]} />
         </div>
@@ -95,7 +97,7 @@ function Receipts() {
                   </td>
                   <td className="px-5 py-3 text-xs">{r.instalments.map((i) => i.name).join(", ")}</td>
                   <td className="px-5 py-3">
-                    {PAYMENT_MODES[r.mode]}
+                    {modes.nameOf(r.mode)}
                     {r.reference && <p className="text-[11px] font-mono text-on-surface-variant/70">{r.reference}</p>}
                   </td>
                   <td className="px-5 py-3 text-right font-bold">

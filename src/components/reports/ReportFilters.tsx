@@ -7,6 +7,12 @@ import { Select } from "@/components/forms";
 import { YearSelect } from "@/components/academic/YearSelect";
 import { academicApi } from "@/lib/api/academic";
 import { ReportFilter } from "@/lib/api/reports";
+import { useCodedList } from "@/components/masters/useCodedList";
+
+function MasterFilter({ label, master, value, onChange }: { label: string; master: string; value: string; onChange: (v: string) => void }) {
+  const { options } = useCodedList(master);
+  return <Select label={label} value={value} onChange={onChange} options={[{ value: "", label: "All" }, ...options]} />;
+}
 
 /** The filters of a report, drawn from its definition (dates, session, class, section, choices). */
 export function ReportFilters({ filters, values, onChange }: { filters: ReportFilter[]; values: Record<string, string>; onChange: (v: Record<string, string>) => void }) {
@@ -51,6 +57,8 @@ export function ReportFilters({ filters, values, onChange }: { filters: ReportFi
                 options={[{ value: "", label: cls ? "All sections" : "Choose a class first" }, ...(sections.data ?? []).map((s) => ({ value: s.id, label: s.label }))]}
               />
             );
+          case "master":
+            return <MasterFilter key={f.key} label={label} master={f.master ?? ""} value={v} onChange={(x) => set(f.key, x)} />;
           case "select":
             return <Select key={f.key} label={label} value={v} onChange={(x) => set(f.key, x)} options={f.options ?? []} />;
           default:

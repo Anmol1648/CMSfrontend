@@ -39,7 +39,7 @@ const describe = (d: Day) => {
     const notes = d.marks.map((x) => x.note).filter(Boolean).join("; ");
     return { kind: "marked" as const, title: name, code: d.marks.length > 1 ? d.marks.map((x) => x.code).join("/") : m.code, detail: [d.leave?.status === "approved" ? `Leave: ${d.leave.reason}` : "", notes].filter(Boolean).join(" · ") };
   }
-  if (d.leave) return { kind: "leave" as const, title: d.leave.status === "approved" ? (d.leave.kind === "medical" ? "Medical leave (approved)" : "Leave (approved)") : "Leave asked", detail: d.leave.reason };
+  if (d.leave) return { kind: "leave" as const, title: d.leave.status === "approved" ? `${d.leave.kindName} (approved)` : "Leave asked", detail: d.leave.reason };
   if (d.future) return { kind: "future" as const, title: "", detail: "" };
   return { kind: "unmarked" as const, title: "Not marked", detail: "" };
 };

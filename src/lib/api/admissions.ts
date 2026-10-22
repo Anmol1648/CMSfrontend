@@ -10,7 +10,8 @@ export interface Ref {
 }
 
 export type EnquiryStatus = 'open' | 'won' | 'lost';
-export type TestResult = 'pending' | 'passed' | 'failed' | 'not_needed';
+/** A test result's code (Masters → Admission test results). */
+export type TestResult = string;
 
 export interface Stage extends Ref {
   won: boolean;
@@ -178,4 +179,3 @@ export const admissionsApi = {
   submitPublic: (input: Record<string, string | null>) => api.post<{ enquiryNo: string | null; payment: Checkout | null }>('/public/enquiry', input, { timeout: 60_000 }),
 };
 
-export const TEST_RESULT: Record<TestResult, string> = { pending: 'Pending', passed: 'Passed', failed: 'Not cleared', not_needed: 'Not needed' };

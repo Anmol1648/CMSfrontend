@@ -18,12 +18,12 @@ import { StudentFeeExtras } from "@/components/fees/StudentFeeExtras";
 import { UpiQrPay } from "@/components/fees/UpiQrPay";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { COUNTER_MODES, feesApi, PAYMENT_MODES, PaymentMode, PaymentResult, paymentsApi, Receipt, rupees } from "@/lib/api/fees";
+import { feesApi, PaymentResult, paymentsApi, Receipt, rupees } from "@/lib/api/fees";
+import { usePaymentModes } from "@/components/masters/useCodedList";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { PageLoader } from "@/components/ui/PageLoader";
 
 const today = () => new Date().toISOString().slice(0, 10);
-type CounterMode = Exclude<PaymentMode, "online">;
 
 function Counter() {
   const router = useRouter();
@@ -47,7 +47,8 @@ function Counter() {
   // Payment form
   const [selected, setSelected] = useState<string[]>([]);
   const [amount, setAmount] = useState("");
-  const [mode, setMode] = useState<CounterMode>("cash");
+  const modes = usePaymentModes();
+  const [mode, setMode] = useState("cash");
   const [reference, setReference] = useState("");
   const [bankName, setBankName] = useState("");
   const [date, setDate] = useState(today());
@@ -203,8 +204,8 @@ function Counter() {
                   {error && <FormAlert>{error}</FormAlert>}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <Input label="Amount (₹) *" type="number" min={1} value={amount} onChange={(e) => setAmount(e.target.value)} error={errors.amount} />
-                    <Select label="Mode" value={mode} onChange={(v) => setMode(v as CounterMode)} options={COUNTER_MODES.map((m) => ({ value: m, label: PAYMENT_MODES[m] }))} />
-                    {mode !== "cash" && <Input label={mode === "cheque" ? "Cheque no *" : mode === "dd" ? "DD no *" : "Transaction no *"} value={reference} onChange={(e) => setReference(e.target.value)} error={errors.reference} maxLength={60} />}
+                    <Select label="Mode" value={mode} onChange={setMode} options={modes.counter} />
+                    {modes.needsReference(mode) && <Input label={mode === "cheque" ? "Cheque no *" : mode === "dd" ? "DD no *" : "Transaction no *"} value={reference} onChange={(e) => setReference(e.target.value)} error={errors.reference} maxLength={60} />}
                     {(mode === "cheque" || mode === "dd") && <Input label="Bank" value={bankName} onChange={(e) => setBankName(e.target.value)} maxLength={80} />}
                     <Input label="Date" type="date" max={today()} value={date} onChange={(e) => setDate(e.target.value)} error={errors.date} />
                     <div className="md:col-span-3">
@@ -252,7 +253,7 @@ function Counter() {
                       <tr key={r.id} onClick={() => router.push(`/fees/receipts/${r.id}`)} className="border-t border-outline-variant/10 hover:bg-surface-container-low/60 cursor-pointer">
                         <td className="py-2 font-mono text-xs">{r.receiptNo}</td>
                         <td className="py-2">{new Date(`${r.date}T00:00:00Z`).toLocaleDateString("en-IN", { timeZone: "UTC" })}</td>
-                        <td className="py-2">{PAYMENT_MODES[r.mode]}</td>
+                        <td className="py-2">{modes.nameOf(r.mode)}</td>
                         <td className="py-2">{r.instalments.map((i) => i.name).join(", ")}</td>
                         <td className="py-2 text-right font-bold">{rupees(r.amount)}</td>
                         <td className="py-2 text-right">{r.status === "cancelled" ? <Pill tone="danger">Cancelled</Pill> : null}</td>

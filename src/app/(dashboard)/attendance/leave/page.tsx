@@ -16,6 +16,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { LEAVE_STATUS, leaveApi, LeaveRequest, showDay, todayIST } from "@/lib/api/attendance";
 import { errorMessage } from "@/lib/api/client";
 import { studentsApi } from "@/lib/api/students";
+import { useCodedList } from "@/components/masters/useCodedList";
 
 const range = (r: LeaveRequest) => (r.from === r.to ? showDay(r.from, { day: "numeric", month: "short", year: "numeric" }) : `${showDay(r.from, { day: "numeric", month: "short" })} – ${showDay(r.to, { day: "numeric", month: "short", year: "numeric" })}`);
 
@@ -27,7 +28,8 @@ function Record({ onClose }: { onClose: () => void }) {
   const [student, setStudent] = useState<{ id: string; label: string } | null>(null);
   const [from, setFrom] = useState(todayIST());
   const [to, setTo] = useState(todayIST());
-  const [kind, setKind] = useState<"leave" | "medical">("leave");
+  const types = useCodedList("student_leave_type");
+  const [kind, setKind] = useState("leave");
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const found = useQuery({
@@ -73,7 +75,7 @@ function Record({ onClose }: { onClose: () => void }) {
           <Input label="From" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           <Input label="To" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} />
         </div>
-        <Select label="Kind" value={kind} onChange={(v) => setKind(v as "leave" | "medical")} options={[{ value: "leave", label: "Leave" }, { value: "medical", label: "Medical leave" }]} />
+        <Select label="Kind" value={kind} onChange={setKind} options={types.options} />
         <Input label="Reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Family function; fever (note from parent)" />
         {error && <FormAlert>{error}</FormAlert>}
         <div className="flex justify-end gap-3">
@@ -167,7 +169,7 @@ function Requests() {
                     <td className="px-5 py-3 whitespace-nowrap">
                       {range(r)}
                       <p className="text-[11px] text-on-surface-variant/70">
-                        {r.days} school day{r.days === 1 ? "" : "s"} · {r.kind === "medical" ? "Medical" : "Leave"}
+                        {r.days} school day{r.days === 1 ? "" : "s"} · {r.kindName}
                       </p>
                     </td>
                     <td className="px-5 py-3 max-w-[280px]">{r.reason}</td>
@@ -210,7 +212,7 @@ function Requests() {
         <Modal isOpen onClose={() => setDeciding(null)} title={`${deciding.approve ? "Approve" : "Not approve"}: ${deciding.r.student.name}, ${range(deciding.r)}`}>
           <div className="space-y-4">
             <p className="text-sm text-on-surface-variant">
-              {deciding.approve ? "Those school days get “" + (deciding.r.kind === "medical" ? "Medical leave" : "Leave") + "” in the register, and don’t count against the attendance %." : "The parent sees that it was not approved."}
+              {deciding.approve ? "Those school days get “" + deciding.r.kindName + "” in the register, and don’t count against the attendance %." : "The parent sees that it was not approved."}
             </p>
             <Input label="Note (optional, the parent sees it)" value={note} onChange={(e) => setNote(e.target.value)} />
             <div className="flex justify-end gap-3">

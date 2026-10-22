@@ -56,6 +56,7 @@ export interface MasterOption {
   code: string | null;
   parentId: string | null;
   isActive: boolean;
+  extra: Record<string, unknown>;
 }
 
 export interface MasterValueQuery {

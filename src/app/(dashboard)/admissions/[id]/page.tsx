@@ -17,9 +17,10 @@ import { addDays, EnquiryForm, EnquiryValues, fromEnquiry, toEnquiryInput } from
 import { FollowUpDate, formatDay, StatusPill } from "@/components/admissions/EnquiryBits";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { admissionsApi, Enquiry, EnquiryFormConfig, Stage, TEST_RESULT, TestResult } from "@/lib/api/admissions";
+import { admissionsApi, Enquiry, EnquiryFormConfig, Stage, TestResult } from "@/lib/api/admissions";
 import { ApiError, errorMessage } from "@/lib/api/client";
-import { COUNTER_MODES, PAYMENT_MODES, PaymentMode, rupees } from "@/lib/api/fees";
+import { rupees } from "@/lib/api/fees";
+import { useCodedList, usePaymentModes } from "@/components/masters/useCodedList";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 
@@ -103,7 +104,8 @@ function RegistrationCard({ e, config, canManage, onSaved }: { e: Enquiry; confi
   const [date, setDate] = useState(today());
   const [stageId, setStageId] = useState("");
   const [fee, setFee] = useState(config.registrationFee ? String(config.registrationFee) : "");
-  const [mode, setMode] = useState<Exclude<PaymentMode, "online">>("cash");
+  const modes = usePaymentModes();
+  const [mode, setMode] = useState("cash");
   const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
@@ -115,7 +117,7 @@ function RegistrationCard({ e, config, canManage, onSaved }: { e: Enquiry; confi
         <div className="grid grid-cols-2 gap-4">
           <Detail label="Registration no" value={<span className="font-mono">{e.registrationNo}</span>} />
           <Detail label="Date" value={formatDay(e.registrationDate)} />
-          <Detail label="Registration fee" value={e.registrationFee ? `${rupees(e.registrationFee)} · ${PAYMENT_MODES[(e.registrationFeeMode ?? "cash") as PaymentMode]}` : "Not taken"} />
+          <Detail label="Registration fee" value={e.registrationFee ? `${rupees(e.registrationFee)} · ${modes.nameOf(e.registrationFeeMode ?? "cash")}` : "Not taken"} />
           {e.registrationFeeRef && <Detail label="Reference" value={<span className="font-mono text-xs">{e.registrationFeeRef}</span>} />}
         </div>
       ) : canManage && e.status === "open" ? (
@@ -125,8 +127,8 @@ function RegistrationCard({ e, config, canManage, onSaved }: { e: Enquiry; confi
             <Input label="Registration date" type="date" max={today()} value={date} onChange={(ev) => setDate(ev.target.value)} />
             <StageSelect stages={config.stages.filter((s) => !s.lost)} value={stageId} onChange={setStageId} current={e.stage.id} />
             <Input label="Registration fee received (₹)" type="number" min={0} value={fee} onChange={(ev) => setFee(ev.target.value)} placeholder="0 = none" />
-            <Select label="Paid by" value={mode} onChange={(v) => setMode(v as Exclude<PaymentMode, "online">)} options={COUNTER_MODES.map((m) => ({ value: m, label: PAYMENT_MODES[m] }))} />
-            {Number(fee) > 0 && mode !== "cash" && <Input label="Cheque / transaction no *" value={reference} onChange={(ev) => setReference(ev.target.value)} maxLength={60} />}
+            <Select label="Paid by" value={mode} onChange={setMode} options={modes.counter} />
+            {Number(fee) > 0 && modes.needsReference(mode) && <Input label="Cheque / transaction no *" value={reference} onChange={(ev) => setReference(ev.target.value)} maxLength={60} />}
           </div>
           <div className="flex justify-end">
             <Button
@@ -159,6 +161,7 @@ function RegistrationCard({ e, config, canManage, onSaved }: { e: Enquiry; confi
 function TestCard({ e, config, canManage, onSaved }: { e: Enquiry; config: EnquiryFormConfig; canManage: boolean; onSaved: (e: Enquiry) => void }) {
   const [testDate, setTestDate] = useState(e.testDate ?? "");
   const [testScore, setTestScore] = useState(e.testScore ?? "");
+  const results = useCodedList("admission_test_result");
   const [testResult, setTestResult] = useState<TestResult>(e.testResult === "not_needed" ? "pending" : e.testResult);
   const [stageId, setStageId] = useState("");
   const [busy, setBusy] = useState(false);
@@ -173,7 +176,7 @@ function TestCard({ e, config, canManage, onSaved }: { e: Enquiry; config: Enqui
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input label="Date" type="date" value={testDate} onChange={(ev) => setTestDate(ev.target.value)} />
             <Input label="Score" maxLength={40} placeholder="e.g. 42/50" value={testScore} onChange={(ev) => setTestScore(ev.target.value)} />
-            <Select label="Result" value={testResult} onChange={(v) => setTestResult(v as TestResult)} options={(Object.keys(TEST_RESULT) as TestResult[]).map((k) => ({ value: k, label: TEST_RESULT[k] }))} />
+            <Select label="Result" value={testResult} onChange={setTestResult} options={results.options} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
             {e.status === "open" ? <StageSelect stages={config.stages.filter((s) => !s.lost)} value={stageId} onChange={setStageId} current={e.stage.id} /> : <span />}
@@ -202,7 +205,7 @@ function TestCard({ e, config, canManage, onSaved }: { e: Enquiry; config: Enqui
         <div className="grid grid-cols-3 gap-4">
           <Detail label="Date" value={formatDay(e.testDate)} />
           <Detail label="Score" value={e.testScore} />
-          <Detail label="Result" value={TEST_RESULT[e.testResult]} />
+          <Detail label="Result" value={results.nameOf(e.testResult)} />
         </div>
       )}
     </Card>
