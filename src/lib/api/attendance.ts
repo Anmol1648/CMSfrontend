@@ -64,7 +64,7 @@ export interface MyAttendance {
   children: { id: string; name: string; admissionNo: string }[];
   student: { id: string; name: string; admissionNo: string; section: string | null; roll: number | null } | null;
   month?: string;
-  days?: { date: string; off: string | null; future: boolean; marks: { slot: Slot; code: string; name: string; present: number; excused: boolean; note: string | null }[] }[];
+  days?: { date: string; off: string | null; future: boolean; leave: { status: 'pending' | 'approved'; kind: string; reason: string } | null; marks: { slot: Slot; code: string; name: string; present: number; excused: boolean; note: string | null }[] }[];
   statuses?: Omit<AttendanceStatus, 'id'>[];
   monthSummary?: Summary;
   yearSummary?: Summary & { from: string; year: string };
