@@ -2,7 +2,8 @@ import { api } from './client';
 
 /** Attendance (cmsbackend/src/modules/attendance): student registers, the school calendar, staff check-in. */
 
-export type Slot = 'day' | 'am' | 'pm';
+/** day; am / pm (twice a day); p1, p2… (every period). */
+export type Slot = string;
 
 export interface AttendanceStatus {
   id: string;
@@ -19,13 +20,15 @@ export interface Register {
   date: string;
   slot: Slot;
   slots: { value: Slot; label: string }[];
+  /** Every period: the period's subject, time and teacher. */
+  period: { label: string; subject: string; time: string | null; teacher: string | null } | null;
   dayOff: string | null;
   editable: boolean;
   reason: string | null;
   statuses: AttendanceStatus[];
   defaultStatusId: string | null;
   marked: { at: string; by: string | null; changedAt: string | null; changedBy: string | null } | null;
-  students: { id: string; name: string; admissionNo: string; roll: number | null; statusId: string | null; note: string | null }[];
+  students: { id: string; name: string; admissionNo: string; roll: number | null; statusId: string | null; note: string | null; leave: { statusId: string | null; kind: string; reason: string } | null }[];
 }
 
 export interface Overview {
@@ -37,8 +40,9 @@ export interface Overview {
     label: string;
     classTeacher: string | null;
     students: number;
-    slots: ({ slot: Slot; marked: false } | { slot: Slot; marked: true; present: number; absent: number; leave: number; markedBy: string | null; markedAt: string })[];
+    slots: ({ slot: Slot; marked: false; total?: number; done?: number } | { slot: Slot; marked: boolean; present: number; absent: number; leave: number; markedBy: string | null; markedAt: string; total?: number; done?: number })[];
   }[];
+  mode?: string;
   totals: { sections: number; marked: number; notMarked: number };
 }
 
@@ -135,3 +139,68 @@ export const statusTone = (code: string | undefined) => {
 /** Today in India (the school's day), as YYYY-MM-DD. */
 export const todayIST = () => new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10);
 export const showDay = (iso: string, opts: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-IN', { ...opts, timeZone: 'UTC' });
+
+// ─── Period mode, leave, staff requests ──────────────────────────────────────
+
+export interface Lesson {
+  sectionId: string;
+  section: string;
+  periodNo: number;
+  slot: Slot;
+  label: string;
+  time: string | null;
+  subject: string;
+  substitute: boolean;
+  marked: boolean;
+}
+
+export interface LeaveRequest {
+  id: string;
+  student: { id: string; name: string; admissionNo: string; section: string | null; roll: number | null };
+  from: string;
+  to: string;
+  days: number;
+  kind: 'leave' | 'medical';
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  appliedBy: string | null;
+  appliedAt: string;
+  decidedBy: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+}
+
+export interface CorrectionRequest {
+  id: string;
+  staff: { id: string; name: string; employeeCode: string };
+  date: string;
+  checkIn: string | null;
+  checkOut: string | null;
+  recorded: { checkIn: string | null; checkOut: string | null };
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  askedAt: string;
+  decidedBy: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+}
+
+export const leaveApi = {
+  lessons: (date?: string) => api.get<{ mode: string; date: string; lessons: Lesson[] }>('/attendance/lessons', { params: date ? { date } : {} }),
+  apply: (input: { student: string; from: string; to: string; kind: 'leave' | 'medical'; reason: string }) => api.post<LeaveRequest>('/attendance/leave', input),
+  mine: (student: string) => api.get<{ canAsk: boolean; backDays: number; leaves: LeaveRequest[] }>('/attendance/leave/mine', { params: { student } }),
+  cancel: (id: string) => api.post<null>(`/attendance/leave/${id}/cancel`),
+  requests: (status: string) => api.get<LeaveRequest[]>('/attendance/leave', { params: { status } }),
+  decide: (id: string, approve: boolean, note?: string) => api.post<LeaveRequest>(`/attendance/leave/${id}/decide`, { approve, ...(note ? { note } : {}) }),
+  askCorrection: (input: { date: string; checkIn?: string; checkOut?: string; reason: string }) => api.post<CorrectionRequest[]>('/attendance/staff/requests', input),
+  myCorrections: () => api.get<CorrectionRequest[]>('/attendance/staff/requests/mine'),
+  corrections: (status: string) => api.get<CorrectionRequest[]>('/attendance/staff/requests', { params: { status } }),
+  decideCorrection: (id: string, approve: boolean, note?: string) => api.post<CorrectionRequest[]>(`/attendance/staff/requests/${id}/decide`, { approve, ...(note ? { note } : {}) }),
+};
+
+export const LEAVE_STATUS: Record<LeaveRequest['status'], { label: string; tone: 'warning' | 'success' | 'danger' | 'neutral' }> = {
+  pending: { label: 'Waiting', tone: 'warning' },
+  approved: { label: 'Approved', tone: 'success' },
+  rejected: { label: 'Not approved', tone: 'danger' },
+  cancelled: { label: 'Cancelled', tone: 'neutral' },
+};

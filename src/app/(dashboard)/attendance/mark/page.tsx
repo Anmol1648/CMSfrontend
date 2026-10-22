@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/layout/AppShell";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { useToast } from "@/components/ui/ToastProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
-import { attendanceApi, showDay, Slot, statusTone, todayIST } from "@/lib/api/attendance";
+import { attendanceApi, leaveApi, showDay, Slot, statusTone, todayIST } from "@/lib/api/attendance";
 import { errorMessage } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
@@ -35,13 +35,14 @@ function Mark() {
     if (!section && sections.data?.length) setSection(sections.data[0].id);
   }, [section, sections.data]);
 
+  const lessons = useQuery({ queryKey: ["attendance-lessons", date], queryFn: () => leaveApi.lessons(date) });
   const register = useQuery({ queryKey: ["attendance-register", section, date, slot ?? ""], queryFn: () => attendanceApi.register(section, date, slot), enabled: !!section && !!date });
   const r = register.data;
 
   // Start from what is saved, or everyone at the default status.
   useEffect(() => {
     if (!r) return;
-    setMarks(Object.fromEntries(r.students.map((s) => [s.id, s.statusId ?? r.defaultStatusId ?? ""])));
+    setMarks(Object.fromEntries(r.students.map((s) => [s.id, s.statusId ?? s.leave?.statusId ?? r.defaultStatusId ?? ""])));
     setNotes(Object.fromEntries(r.students.map((s) => [s.id, s.note ?? ""])));
     if (!slot) setSlot(r.slot);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -52,7 +53,7 @@ function Mark() {
     for (const v of Object.values(marks)) c.set(v, (c.get(v) ?? 0) + 1);
     return c;
   }, [marks]);
-  const dirty = !!r && r.students.some((s) => (s.statusId ?? r.defaultStatusId) !== marks[s.id] || (s.note ?? "") !== (notes[s.id] ?? "") || !s.statusId);
+  const dirty = !!r && r.students.some((s) => (s.statusId ?? s.leave?.statusId ?? r.defaultStatusId) !== marks[s.id] || (s.note ?? "") !== (notes[s.id] ?? "") || !s.statusId);
 
   const go = (next: { section?: string; date?: string; slot?: Slot }) => {
     const q = new URLSearchParams({ section: next.section ?? section, date: next.date ?? date, ...((next.slot ?? slot) ? { slot: (next.slot ?? slot)! } : {}) });
@@ -76,7 +77,7 @@ function Mark() {
 
   if (sections.isError) return <FormAlert>{errorMessage(sections.error)}</FormAlert>;
   if (!sections.data) return <PageLoader />;
-  if (!sections.data.length)
+  if (!sections.data.length && !lessons.data?.lessons.length)
     return (
       <>
         <PageHeader title="Mark attendance" description="The register of your section." />
@@ -89,6 +90,36 @@ function Mark() {
   return (
     <>
       <PageHeader title="Mark attendance" description="Everyone starts as present: tap the students who are not, then Save." />
+      {lessons.data && lessons.data.mode === "period" && lessons.data.lessons.length > 0 && (
+        <Card className="mb-4">
+          <h3 className="text-xs font-black uppercase tracking-widest text-on-surface-variant/70 mb-3">Your lessons · {showDay(lessons.data.date)}</h3>
+          <div className="flex flex-wrap gap-2">
+            {lessons.data.lessons.map((l) => {
+              const open = l.sectionId === section && l.slot === (slot ?? r?.slot);
+              return (
+                <button
+                  key={`${l.sectionId}-${l.slot}`}
+                  type="button"
+                  onClick={() => {
+                    setSection(l.sectionId);
+                    setSlot(l.slot);
+                    go({ section: l.sectionId, slot: l.slot });
+                  }}
+                  className={cn("rounded-xl border px-3 py-2 text-left text-xs transition-all", open ? "border-primary ring-2 ring-primary/20" : "border-outline-variant/30 hover:bg-surface-container-low")}
+                >
+                  <span className="font-black text-primary">{l.label}</span>
+                  {l.time && <span className="text-on-surface-variant"> · {l.time}</span>}
+                  <span className="block font-semibold">
+                    {l.section} · {l.subject}
+                    {l.substitute && <span className="ml-1 text-amber-700">(substitute)</span>}
+                  </span>
+                  <span className={cn("block font-bold mt-0.5", l.marked ? "text-emerald-700" : "text-amber-700")}>{l.marked ? "Marked ✓" : "Not marked"}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      )}
       <Card className="mb-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Select
@@ -98,7 +129,7 @@ function Mark() {
               setSection(v);
               go({ section: v });
             }}
-            options={sections.data.map((s) => ({ value: s.id, label: `${s.label}${s.mine ? " (your class)" : ""}` }))}
+            options={(sections.data.length ? sections.data : []).map((s) => ({ value: s.id, label: `${s.label}${s.mine ? " (your class)" : ""}` }))}
           />
           <Input
             label="Date"
@@ -113,7 +144,7 @@ function Mark() {
           />
           {r && r.slots.length > 1 && (
             <Select
-              label="Part of the day"
+              label={r.period ? "Period" : "Part of the day"}
               value={slot ?? r.slot}
               onChange={(v) => {
                 setSlot(v as Slot);
@@ -133,10 +164,11 @@ function Mark() {
             <div>
               <h3 className="font-black text-primary">
                 {r.section.label} · {showDay(r.date)}
-                {r.slots.length > 1 ? ` · ${r.slots.find((s) => s.value === r.slot)?.label}` : ""}
+                {r.slots.length > 1 && !r.period ? ` · ${r.slots.find((s) => s.value === r.slot)?.label}` : ""}
+                {r.period ? ` · ${r.period.label.split(" · ")[0]}` : ""}
               </h3>
               <p className="text-xs text-on-surface-variant mt-0.5">
-                {r.section.classTeacher ? `Class teacher: ${r.section.classTeacher} · ` : ""}
+                {r.period ? `${r.period.subject}${r.period.time ? ` · ${r.period.time}` : ""}${r.period.teacher ? ` · ${r.period.teacher}` : ""} · ` : r.section.classTeacher ? `Class teacher: ${r.section.classTeacher} · ` : ""}
                 {r.marked
                   ? `Marked by ${r.marked.by ?? "—"} at ${time(r.marked.at)}${r.marked.changedBy ? ` · changed by ${r.marked.changedBy}` : ""}`
                   : "Not marked yet"}
@@ -183,7 +215,14 @@ function Mark() {
                     <div className="flex flex-wrap items-center gap-3">
                       <span className="w-8 text-right text-sm font-bold tabular-nums text-on-surface-variant/70">{s.roll ?? "–"}</span>
                       <div className="flex-1 min-w-[160px]">
-                        <p className="font-semibold text-sm">{s.name}</p>
+                        <p className="font-semibold text-sm">
+                          {s.name}
+                          {s.leave && (
+                            <span title={s.leave.reason} className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-800">
+                              {s.leave.kind === "medical" ? "Medical leave" : "On leave"} (approved)
+                            </span>
+                          )}
+                        </p>
                         <p className="text-[11px] font-mono text-on-surface-variant/70">{s.admissionNo}</p>
                       </div>
                       <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={`Status of ${s.name}`}>

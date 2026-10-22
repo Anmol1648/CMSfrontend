@@ -8,6 +8,7 @@ import { FormAlert, Select } from "@/components/forms";
 import { PageHeader } from "@/components/layout/AppShell";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
+import { LeaveBox } from "@/components/attendance/LeaveBox";
 import { attendanceApi, statusTone, Summary, todayIST } from "@/lib/api/attendance";
 import { errorMessage } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
@@ -100,6 +101,7 @@ function Mine() {
           {d.statuses!.map((s) => `${s.code} ${s.name}`).join(" · ")} · H holiday · grey: no school
         </p>
       </Card>
+      <LeaveBox studentId={d.student.id} studentName={d.student.name} />
     </>
   );
 }

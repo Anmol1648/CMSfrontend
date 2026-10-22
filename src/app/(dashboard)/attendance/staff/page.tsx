@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/layout/AppShell";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { useToast } from "@/components/ui/ToastProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
+import { CorrectionRequests } from "@/components/attendance/CorrectionBox";
 import { attendanceApi, showDay, StaffDay, statusTone, todayIST } from "@/lib/api/attendance";
 import { errorMessage } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
@@ -89,6 +90,7 @@ function Staff() {
           </Link>
         }
       />
+      <CorrectionRequests />
       <Card className="mb-4">
         <div className="flex flex-wrap items-end gap-6">
           <div className="w-56">

@@ -93,7 +93,12 @@ function Today() {
                     <td className="px-5 py-3 text-right tabular-nums">{s.students}</td>
                     {s.slots.map((x) => (
                       <td key={x.slot} className="px-5 py-3">
-                        {x.marked ? (
+                        {x.slot === "periods" && (
+                          <p className={`text-xs font-bold mb-1 ${x.total && (x.done ?? 0) >= x.total ? "text-emerald-700" : "text-amber-700"}`}>
+                            {x.total ? `${x.done ?? 0} of ${x.total} periods marked` : "No periods today"}
+                          </p>
+                        )}
+                        {"present" in x ? (
                           <div>
                             <div className="flex flex-wrap gap-1.5">
                               <Pill tone="success">{x.present} present</Pill>
@@ -104,7 +109,7 @@ function Today() {
                               {x.markedBy ?? "—"} · {time(x.markedAt)}
                             </p>
                           </div>
-                        ) : (
+                        ) : x.slot === "periods" ? null : (
                           <Pill tone="warning">Not marked</Pill>
                         )}
                       </td>

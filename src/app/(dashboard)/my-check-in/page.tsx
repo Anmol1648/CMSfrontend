@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/layout/AppShell";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { useToast } from "@/components/ui/ToastProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
+import { CorrectionBox } from "@/components/attendance/CorrectionBox";
 import { attendanceApi, showDay, statusTone } from "@/lib/api/attendance";
 import { errorMessage } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
@@ -115,6 +116,7 @@ function CheckIn() {
           </tbody>
         </table>
       </Card>
+      <CorrectionBox />
     </>
   );
 }
