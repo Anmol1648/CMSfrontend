@@ -99,7 +99,7 @@ function RoleDetail({ id }: { id: string }) {
         title={r.name}
         description={r.isSystem ? "Has every permission in the system, now and in future modules. It can't be changed." : `${r.userCount} ${r.userCount === 1 ? "person has" : "people have"} this role.`}
         actions={
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <Link href="/roles" className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
               All roles
             </Link>
@@ -160,7 +160,7 @@ function RoleDetail({ id }: { id: string }) {
               {group.permissions.map((p) => {
                 const scope = grants[p.key];
                 return (
-                  <li key={p.key} className="flex items-center justify-between gap-6 py-3">
+                  <li key={p.key} className="flex flex-wrap items-center justify-between gap-6 py-3">
                     <Checkbox
                       checked={!!scope}
                       onChange={(on) => toggle(p.key, on, p.scopes)}

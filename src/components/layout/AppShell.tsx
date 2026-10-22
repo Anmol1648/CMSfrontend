@@ -21,12 +21,13 @@ interface NavItem {
   icon: string;
 }
 
-function NavLink({ item }: { item: NavItem }) {
+function NavLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
   const pathname = usePathname();
   const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
   return (
     <Link
       href={item.href}
+      onClick={onNavigate}
       className={cn(
         "flex items-center gap-3 px-4 py-3 transition-all duration-200 relative rounded-r-full",
         active ? "text-primary font-bold bg-surface-container-high shadow-sm" : "text-on-surface-variant hover:text-primary hover:bg-surface-container-high/50"
@@ -67,11 +68,11 @@ function UserMenu() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-3 pl-4 border-l border-outline-variant/30 rounded-lg p-1 hover:bg-surface-container-high/30 transition-all"
+        className="flex items-center gap-3 sm:pl-4 sm:border-l border-outline-variant/30 rounded-lg p-1 hover:bg-surface-container-high/30 transition-all"
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <div className="text-right">
+        <div className="text-right hidden sm:block">
           <p className="text-sm font-bold text-primary leading-tight">{name}</p>
           <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest leading-tight mt-0.5">
             {me?.roles.map((r) => r.name).join(", ") || me?.user.kind}
@@ -81,7 +82,7 @@ function UserMenu() {
       </button>
 
       {open && (
-        <div role="menu" className="absolute right-0 mt-2 w-60 bg-surface-lowest rounded-2xl shadow-premium border border-outline-variant/20 py-2 z-50">
+        <div role="menu" className="absolute right-0 mt-2 w-60 max-w-[calc(100vw-2rem)] bg-surface-lowest rounded-2xl shadow-premium border border-outline-variant/20 py-2 z-50">
           <Link href="/account" role="menuitem" onClick={() => setOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-on-surface hover:bg-surface-container-low">
             <span className="material-symbols-outlined text-lg">manage_accounts</span>
             My account
@@ -125,16 +126,43 @@ function UserMenu() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { me, access } = useAuth();
   const menu = access?.menu ?? [];
+  const pathname = usePathname();
+  // Phones and tablets: the sidebar is a drawer opened from the top bar.
+  const [navOpen, setNavOpen] = useState(false);
+  useEffect(() => setNavOpen(false), [pathname]);
+  useEffect(() => {
+    if (!navOpen) return;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setNavOpen(false);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [navOpen]);
+
   return (
     <div className="flex min-h-screen">
-      <aside className="h-screen w-64 fixed left-0 top-0 overflow-y-auto bg-surface-container-low flex flex-col py-8 px-4 z-50 shadow-[1px_0_0_0_rgba(0,0,0,0.05)]">
-        <div className="mb-10 px-4">
-          {me?.school?.logoUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoSrc(me.school.logoUrl)!} alt="" className="w-12 h-12 object-contain mb-3" />
-          )}
-          <h1 className="text-xl font-black tracking-tight text-primary leading-tight">{me?.school?.name ?? "School ERP"}</h1>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/60 font-bold mt-1">School management</p>
+      {navOpen && <div className="fixed inset-0 z-[55] bg-slate-900/40 lg:hidden" onClick={() => setNavOpen(false)} aria-hidden />}
+      <aside
+        id="main-nav"
+        className={cn(
+          "h-screen w-72 lg:w-64 fixed left-0 top-0 overflow-y-auto bg-surface-container-low flex flex-col py-6 lg:py-8 px-4 z-[60] lg:z-50 shadow-[1px_0_0_0_rgba(0,0,0,0.05)] transition-transform duration-200",
+          navOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"
+        )}
+      >
+        <div className="mb-8 lg:mb-10 px-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            {me?.school?.logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoSrc(me.school.logoUrl)!} alt="" className="w-12 h-12 object-contain mb-3" />
+            )}
+            <h1 className="text-xl font-black tracking-tight text-primary leading-tight break-words">{me?.school?.name ?? "School ERP"}</h1>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/60 font-bold mt-1">School management</p>
+          </div>
+          <button type="button" onClick={() => setNavOpen(false)} className="lg:hidden -mr-2 p-2 rounded-full text-on-surface-variant hover:bg-surface-container-high" aria-label="Close menu">
+            <span className="material-symbols-outlined">close</span>
+          </button>
         </div>
         <nav className="flex-1 space-y-1 pr-2" aria-label="Main">
           {menu.map((group) => (
@@ -143,7 +171,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <p className="text-[9px] font-black uppercase tracking-[0.25em] text-on-surface-variant/40 px-4 mb-2 mt-3">{group.label}</p>
               )}
               {group.items.map((item) => (
-                <NavLink key={item.key} item={item} />
+                <NavLink key={item.key} item={item} onNavigate={() => setNavOpen(false)} />
               ))}
             </div>
           ))}
@@ -151,12 +179,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <PoweredBy compact className="mt-6 px-4 pt-5 border-t border-outline-variant/15" />
       </aside>
 
-      <div className="flex-1 flex flex-col pl-64">
-        <header className="fixed top-0 right-0 left-64 h-20 bg-surface/80 backdrop-blur-xl flex justify-between items-center px-12 z-40 border-b border-outline-variant/10">
-          <p className="text-sm font-bold text-on-surface-variant/70">{me?.school?.legalName}</p>
+      <div className="flex-1 min-w-0 flex flex-col lg:pl-64">
+        <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 lg:h-20 bg-surface/80 backdrop-blur-xl flex justify-between items-center gap-3 px-4 sm:px-6 lg:px-12 z-40 border-b border-outline-variant/10">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              type="button"
+              onClick={() => setNavOpen(true)}
+              className="lg:hidden -ml-2 p-2 rounded-full text-primary hover:bg-surface-container-high"
+              aria-label="Open menu"
+              aria-controls="main-nav"
+              aria-expanded={navOpen}
+            >
+              <span className="material-symbols-outlined">menu</span>
+            </button>
+            <p className="text-sm font-bold text-on-surface-variant/70 truncate">
+              <span className="lg:hidden">{me?.school?.name}</span>
+              <span className="hidden lg:inline">{me?.school?.legalName}</span>
+            </p>
+          </div>
           <UserMenu />
         </header>
-        <main className="flex-1 pt-28 px-12 pb-20">{children}</main>
+        <main className="flex-1 min-w-0 pt-20 lg:pt-28 px-4 sm:px-6 lg:px-12 pb-16 lg:pb-20">{children}</main>
       </div>
     </div>
   );
@@ -165,9 +208,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 /** Page title block used at the top of every screen. */
 export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: React.ReactNode }) {
   return (
-    <div className="flex items-end justify-between gap-6 mb-8">
-      <div>
-        <h1 className="text-3xl font-extrabold text-on-surface tracking-tight">{title}</h1>
+    <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-6 mb-6 lg:mb-8">
+      <div className="min-w-0">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-on-surface tracking-tight break-words">{title}</h1>
         {description && <p className="text-sm text-on-surface-variant/70 font-medium mt-2 max-w-2xl">{description}</p>}
       </div>
       {actions}

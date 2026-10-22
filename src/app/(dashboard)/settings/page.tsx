@@ -58,7 +58,7 @@ function SettingControl({ s, value, onChange, disabled, error }: { s: SettingIte
       );
     case "text":
       return (
-        <div className="w-80">
+        <div className="w-full sm:w-80">
           <Input value={String(value ?? "")} error={error} onChange={(e) => onChange(e.target.value)} disabled={disabled} maxLength={200} />
         </div>
       );
@@ -88,7 +88,7 @@ function SettingControl({ s, value, onChange, disabled, error }: { s: SettingIte
       );
     default:
       return (
-        <div className="w-80">
+        <div className="w-full sm:w-80">
           <Input value={String(value)} onChange={(e) => onChange(e.target.value)} disabled={disabled} error={error} />
         </div>
       );

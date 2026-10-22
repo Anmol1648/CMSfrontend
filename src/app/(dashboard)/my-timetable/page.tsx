@@ -27,6 +27,7 @@ function Mine() {
       {m.substitutions.length > 0 && (
         <Card className="mb-6 no-print">
           <h3 className="text-sm font-black uppercase tracking-widest text-amber-700 mb-3">Substitution periods for you</h3>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <tbody>
               {m.substitutions.map((s, i) => (
@@ -42,6 +43,7 @@ function Mine() {
               ))}
             </tbody>
           </table>
+          </div>
         </Card>
       )}
       <div className="space-y-6 print-area">

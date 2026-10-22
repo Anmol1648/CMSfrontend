@@ -96,6 +96,7 @@ function Instalments({ year }: { year: string }) {
       )}
 
       <Card padding="none" className="overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
@@ -130,6 +131,7 @@ function Instalments({ year }: { year: string }) {
             )}
           </tbody>
         </table>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end p-5 border-t border-outline-variant/20">
           <Input label="Add an instalment" placeholder="e.g. Quarter 1 (Apr–Jun)" value={name} onChange={(e) => setName(e.target.value)} error={errors.name} maxLength={60} />
           <Input label="Due date" type="date" value={due} onChange={(e) => setDue(e.target.value)} error={errors.dueDate} />
@@ -210,6 +212,7 @@ function Structure({ year }: { year: string }) {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
       <Card padding="none" className="overflow-hidden h-fit">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <tbody>
             {(overview.data ?? []).map((c) => (
@@ -220,6 +223,7 @@ function Structure({ year }: { year: string }) {
             ))}
           </tbody>
         </table>
+        </div>
       </Card>
       <div className="xl:col-span-3 space-y-4">
         {g && !g.instalments.length && <FormAlert tone="warning">Make the instalments first (the Instalments tab).</FormAlert>}
@@ -408,6 +412,7 @@ function ConcessionForm({ year, initial, onDone }: { year: string; initial: Conc
       <div>
         <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60 mb-2">What it takes off *</p>
         {errors.lines && <FormAlert>{errors.lines}</FormAlert>}
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <tbody>
             {(config.data?.heads ?? []).map((h) => {
@@ -426,6 +431,7 @@ function ConcessionForm({ year, initial, onDone }: { year: string; initial: Conc
             })}
           </tbody>
         </table>
+        </div>
       </div>
       <Input label="Note" value={v.note ?? ""} onChange={(e) => setV({ ...v, note: e.target.value })} maxLength={300} />
       <Checkbox label="In use" checked={v.isActive} onChange={(isActive) => setV({ ...v, isActive })} />
@@ -454,6 +460,7 @@ function Concessions({ year }: { year: string }) {
         <Button onClick={() => setEditing("new")}>Add concession</Button>
       </div>
       <Card padding="none" className="overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
@@ -503,6 +510,7 @@ function Concessions({ year }: { year: string }) {
             )}
           </tbody>
         </table>
+        </div>
       </Card>
       {editing && (
         <Modal isOpen onClose={() => setEditing(null)} title={editing === "new" ? "Add concession" : `Edit ${editing.name}`} width="max-w-3xl">

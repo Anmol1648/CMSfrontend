@@ -83,6 +83,7 @@ export function ReceiptView({ receipt: r, format = "a4_half" }: { receipt: Recei
         )}
       </div>
 
+      <div className="overflow-x-auto">
       <table className="w-full my-3 border-collapse">
         <thead>
           <tr className="border-b border-black/60 text-left">
@@ -120,6 +121,7 @@ export function ReceiptView({ receipt: r, format = "a4_half" }: { receipt: Recei
           </tr>
         </tfoot>
       </table>
+      </div>
       <p>
         Rupees <b>{inWords(r.amount)}</b> only
       </p>

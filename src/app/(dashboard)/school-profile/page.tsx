@@ -112,7 +112,7 @@ export default function SchoolProfilePage() {
         title="School Profile"
         description="Shown on headers, reports, receipts and ID cards."
         actions={
-          canEdit && (<div className="flex gap-3">
+          canEdit && (<div className="flex flex-wrap gap-3">
             <Button type="button" variant="secondary" disabled={!dirty || busy} onClick={() => setValues(original)}>
               Discard changes
             </Button>

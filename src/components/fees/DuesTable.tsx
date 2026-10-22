@@ -62,6 +62,7 @@ export function DuesTable({
               {open === i.id && (
                 <tr>
                   <td colSpan={selectable ? 8 : 7} className="pb-3">
+                    <div className="overflow-x-auto">
                     <table className="w-full text-xs bg-surface-container-low/60 rounded-lg">
                       <thead>
                         <tr className="text-left text-on-surface-variant/60">
@@ -99,6 +100,7 @@ export function DuesTable({
                         )}
                       </tbody>
                     </table>
+                    </div>
                   </td>
                 </tr>
               )}

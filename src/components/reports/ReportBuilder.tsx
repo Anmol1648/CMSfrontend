@@ -164,7 +164,7 @@ export function ReportBuilder({ id }: { id?: string }) {
               }}
             >
               <Card className="h-full hover:shadow-md hover:ring-2 hover:ring-primary/10 transition-all">
-                <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                   <h3 className="font-black text-primary">{s.label}</h3>
                   <Pill>{s.fields.length} fields</Pill>
                 </div>

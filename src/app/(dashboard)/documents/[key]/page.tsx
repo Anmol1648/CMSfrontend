@@ -149,6 +149,7 @@ function Editor() {
                     Write a field as <code className="font-mono">{"{{receipt.receiptNo}}"}</code>. Lists: <code className="font-mono">{"{{#each list}} … {{/each}}"}</code>; only when there is something:{" "}
                     <code className="font-mono">{"{{#if x}} … {{/if}}"}</code>.
                   </p>
+                  <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <tbody>
                       {t.fields.map((f) => (
@@ -159,6 +160,7 @@ function Editor() {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
             </div>

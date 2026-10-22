@@ -132,6 +132,7 @@ function Day() {
               Not absent
             </button>
           </div>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <tbody>
               {a.periods.map((p) => (
@@ -139,6 +140,7 @@ function Day() {
               ))}
             </tbody>
           </table>
+          </div>
         </Card>
       ))}
     </div>
@@ -158,6 +160,7 @@ function Report() {
           <p className="text-sm mb-3">
             {r.data.total} periods needed a substitute; {r.data.arranged} were arranged.
           </p>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
@@ -176,6 +179,7 @@ function Report() {
               ))}
             </tbody>
           </table>
+          </div>
         </>
       )}
     </Card>

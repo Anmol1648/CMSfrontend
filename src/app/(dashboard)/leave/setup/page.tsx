@@ -241,7 +241,7 @@ function Setup() {
         title="Leave Setup"
         description="The kinds of staff leave and their rules. Who approves by default, the leave year and substitution are in System Settings → Leave."
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Link href="/settings" className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
               System Settings
             </Link>
@@ -256,6 +256,7 @@ function Setup() {
       {!types.data && !types.isError && <PageLoader />}
       {types.data && (
         <Card padding="none" className="overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <tbody>
               {types.data.map((t, i) => (
@@ -282,6 +283,7 @@ function Setup() {
               ))}
             </tbody>
           </table>
+          </div>
         </Card>
       )}
       {editing && <TypeForm initial={editing === "new" ? null : editing} onClose={() => setEditing(null)} />}

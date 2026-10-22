@@ -269,7 +269,7 @@ function Family({ s, reload }: { s: Student; reload: () => Promise<void> }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {s.family?.guardians.map((g) => (
           <Card key={g.id} className="space-y-3">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-lg font-bold text-primary">{g.name}</p>
                 <p className="text-sm text-on-surface-variant">{g.relation?.name ?? "Guardian"}</p>
@@ -394,6 +394,7 @@ function ClassTab({ s, reload }: { s: Student; reload: () => Promise<void> }) {
   return (
     <div className="space-y-6">
       <Card padding="none" className="overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
@@ -433,6 +434,7 @@ function ClassTab({ s, reload }: { s: Student; reload: () => Promise<void> }) {
             )}
           </tbody>
         </table>
+        </div>
       </Card>
       {canEdit && (
         <Button variant="secondary" onClick={() => open()}>
@@ -512,7 +514,7 @@ function Documents({ s, reload }: { s: Student; reload: () => Promise<void> }) {
       {missing.length > 0 && <FormAlert tone="warning">Still needed: {missing.map((m) => m.name).join(", ")}</FormAlert>}
       {canEdit && (
         <Card className="flex flex-wrap items-end gap-3">
-          <div className="w-72">
+          <div className="w-full sm:w-72">
             <Select label="Document" value={typeId} onChange={setTypeId} options={[{ value: "", label: "Choose the kind…" }, ...(types.data ?? []).map((t) => ({ value: t.id, label: t.name }))]} />
           </div>
           <input
@@ -665,7 +667,7 @@ function StudentPage({ id }: { id: string }) {
         title={s.name}
         description={`${s.admissionNo}${current ? ` · ${current.section.label} · roll ${current.rollNumber ?? "—"}` : ""}`}
         actions={
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             {(can("fee.collect") || can("fee.view")) && (
               <Link href={`/fees/collect?student=${s.id}`} className="px-5 py-2.5 font-bold rounded-md bg-surface-high text-primary hover:bg-surface-highest transition-all">
                 Fees

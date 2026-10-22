@@ -143,7 +143,7 @@ function UsersList() {
         title="Users"
         description="Everyone who can sign in: their roles, status and sign-in details."
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button
               variant="secondary"
               disabled={exporting}
@@ -184,6 +184,7 @@ function UsersList() {
           </div>
         )}
 
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
@@ -224,6 +225,7 @@ function UsersList() {
             )}
           </tbody>
         </table>
+        </div>
 
         <div className="flex items-center justify-between px-6 py-4 border-t border-outline-variant/20 text-sm">
           <span className="text-on-surface-variant/70">{users.data ? `${users.data.total} user${users.data.total === 1 ? "" : "s"}` : users.isLoading ? "Loading…" : ""}</span>

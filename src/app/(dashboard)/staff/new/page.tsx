@@ -90,7 +90,7 @@ function AddStaff() {
       <form onSubmit={submit} noValidate className="space-y-6 max-w-5xl">
         {error && <FormAlert>{error}</FormAlert>}
         <Section title="Employee code">
-          <div className="w-80">
+          <div className="w-full sm:w-80">
             <Input
               label={config.data.editable ? "Employee code" : "Employee code (given automatically)"}
               value={code}

@@ -53,6 +53,7 @@ function ScheduleEditor({ year, initial, onDone }: { year: string; initial: Sche
   return (
     <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
       <Input label="Name *" placeholder="e.g. Regular, Winter, Short Saturday" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} />
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
@@ -89,6 +90,7 @@ function ScheduleEditor({ year, initial, onDone }: { year: string; initial: Sche
           ))}
         </tbody>
       </table>
+      </div>
       <div className="flex gap-3">
         <Button variant="secondary" onClick={() => addAfter("period")}>
           + Period
@@ -264,6 +266,7 @@ function Loads({ year }: { year: string }) {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
       <Card padding="none" className="overflow-hidden h-fit">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <tbody>
             {(overview.data?.classes ?? []).map((c) => (
@@ -276,6 +279,7 @@ function Loads({ year }: { year: string }) {
             ))}
           </tbody>
         </table>
+        </div>
       </Card>
       <div className="xl:col-span-3">
         {loads.data && (
@@ -422,6 +426,7 @@ function Teachers({ year }: { year: string }) {
               <Input label={`Most periods a week (empty = ${d?.defaults.maxPerWeek})`} type="number" min={0} value={form.maxPerWeek} onChange={(e) => setForm({ ...form, maxPerWeek: e.target.value })} />
             </div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60">Periods they can&apos;t take (click to mark)</p>
+            <div className="overflow-x-auto">
             <table className="text-xs border-separate border-spacing-1">
               <tbody>
                 {(week.data ?? []).map((day) => (
@@ -451,6 +456,7 @@ function Teachers({ year }: { year: string }) {
                 ))}
               </tbody>
             </table>
+            </div>
             <div className="flex justify-end gap-3">
               <Button variant="secondary" onClick={() => setEditing(null)}>
                 Cancel

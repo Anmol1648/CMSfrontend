@@ -11,8 +11,8 @@ export const Card = ({ children, className, padding = "md" }: CardProps) => {
   const paddings = {
     none: "p-0",
     sm: "p-4",
-    md: "p-8",
-    lg: "p-12",
+    md: "p-5 sm:p-8",
+    lg: "p-6 sm:p-12",
   };
 
   return (

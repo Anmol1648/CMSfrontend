@@ -162,7 +162,7 @@ function Devices() {
       {sessions.isError && <FormAlert>{errorMessage(sessions.error)}</FormAlert>}
       <ul className="divide-y divide-outline-variant/20">
         {sessions.data?.map((s) => (
-          <li key={s.id} className="flex items-center justify-between gap-6 py-4">
+          <li key={s.id} className="flex flex-wrap items-center justify-between gap-6 py-4">
             <div className="flex items-center gap-4">
               <span className="material-symbols-outlined text-2xl text-primary/70">{/Android|iPhone/.test(s.userAgent ?? "") ? "smartphone" : "computer"}</span>
               <div>

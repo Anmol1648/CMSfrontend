@@ -108,6 +108,7 @@ function Locations() {
           </div>
         </Card>
         <Card padding="none" className="overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <tbody>
               {list.data.map((l) => (
@@ -150,6 +151,7 @@ function Locations() {
               )}
             </tbody>
           </table>
+          </div>
         </Card>
       </div>
     </>

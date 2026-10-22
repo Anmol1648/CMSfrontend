@@ -194,6 +194,7 @@ function Years() {
       />
       {years.isError && <FormAlert>{errorMessage(years.error)}</FormAlert>}
       <Card padding="none" className="overflow-hidden max-w-5xl">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
@@ -264,6 +265,7 @@ function Years() {
             )}
           </tbody>
         </table>
+        </div>
       </Card>
 
       {editing && <YearDialog year={editing === "new" ? null : editing} years={list} onClose={() => setEditing(null)} onSaved={saved} />}

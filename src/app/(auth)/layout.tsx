@@ -36,7 +36,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         quote={branding?.login?.quote}
         quoteAuthor={branding?.login?.quoteAuthor}
       />
-      <div className="flex-1 flex items-center justify-center p-8 lg:p-16 bg-surface-lowest">
+      <div className="flex-1 flex items-center justify-center p-5 sm:p-8 lg:p-16 bg-surface-lowest">
         <div className="w-full max-w-[420px] space-y-8">
           {school.isError && (
             <p className="text-xs font-semibold text-error">

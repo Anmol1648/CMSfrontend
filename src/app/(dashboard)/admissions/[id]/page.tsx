@@ -202,7 +202,7 @@ function TestCard({ e, config, canManage, onSaved }: { e: Enquiry; config: Enqui
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Detail label="Date" value={formatDay(e.testDate)} />
           <Detail label="Score" value={e.testScore} />
           <Detail label="Result" value={results.nameOf(e.testResult)} />
@@ -375,7 +375,7 @@ function EnquiryPage() {
 
         <div className="space-y-6">
           <Card>
-            <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
               <StatusPill e={e} />
               <div className="text-right text-sm">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60">Next follow-up</p>

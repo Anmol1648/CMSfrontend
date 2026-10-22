@@ -247,6 +247,7 @@ function Counter() {
             <Card>
               <h3 className="text-sm font-black uppercase tracking-widest text-primary mb-3">Receipts this year</h3>
               {fees.data.receipts.length ? (
+                <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <tbody>
                     {fees.data.receipts.map((r) => (
@@ -261,6 +262,7 @@ function Counter() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               ) : (
                 <p className="text-sm text-on-surface-variant/70">No receipts yet.</p>
               )}

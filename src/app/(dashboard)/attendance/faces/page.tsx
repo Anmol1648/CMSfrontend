@@ -67,6 +67,7 @@ function Faces() {
         </div>
       </Card>
       <Card padding="none" className="overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <tbody>
             {rows.map((r) => (
@@ -137,6 +138,7 @@ function Faces() {
             ))}
           </tbody>
         </table>
+        </div>
       </Card>
       {enrolling && (
         <CameraCapture

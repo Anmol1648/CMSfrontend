@@ -196,6 +196,7 @@ function CheckIn() {
           <h3 className="font-black text-primary">This month</h3>
           <p className="text-xs text-on-surface-variant mt-0.5">If a day is wrong (you forgot to check in, or were on duty elsewhere), ask the office to correct it.</p>
         </div>
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <tbody>
             {m.month.map((x) => (
@@ -230,6 +231,7 @@ function CheckIn() {
             ))}
           </tbody>
         </table>
+        </div>
       </Card>
       <CorrectionBox />
     </>

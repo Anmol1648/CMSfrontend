@@ -56,7 +56,7 @@ export function StudentFeeExtras({ fees, onChange, canChange }: { fees: StudentF
           </p>
         ))}
         {fees.concessions.map((g) => (
-          <div key={g.id} className="flex items-start justify-between gap-3 py-1.5 border-t border-outline-variant/10">
+          <div key={g.id} className="flex flex-wrap items-start justify-between gap-3 py-1.5 border-t border-outline-variant/10">
             <div>
               <p className="text-sm font-semibold">{g.concession.name}</p>
               {g.note && <p className="text-xs text-on-surface-variant">{g.note}</p>}
@@ -128,7 +128,7 @@ export function StudentFeeExtras({ fees, onChange, canChange }: { fees: StudentF
           {fees.adjustments.length > 0 && (
             <div className="mt-4 border-t border-outline-variant/20 pt-3 space-y-2">
               {fees.adjustments.map((a) => (
-                <div key={a.id} className="flex items-start justify-between gap-3 text-sm">
+                <div key={a.id} className="flex flex-wrap items-start justify-between gap-3 text-sm">
                   <div>
                     <p className="font-semibold">
                       {a.instalment} · {a.head}: <span className={a.amount < 0 ? "text-emerald-700" : "text-error"}>{a.amount < 0 ? `−${rupees(-a.amount)}` : `+${rupees(a.amount)}`}</span>

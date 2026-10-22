@@ -346,8 +346,8 @@ function ClassSubjects({ canManage }: { canManage: boolean }) {
 
         {editable && (
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <div className="flex items-end gap-2">
-              <div className="w-72">
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="w-full sm:w-72">
                 <Select label="Add a subject" value={adding} onChange={setAdding} options={[{ value: "", label: addable.length ? "Choose…" : "All subjects are added" }, ...addable.map((s) => ({ value: s.id, label: s.name }))]} />
               </div>
               <Button

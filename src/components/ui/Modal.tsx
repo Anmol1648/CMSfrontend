@@ -52,7 +52,7 @@ export const Modal = ({
   // Rendered at the end of <body>: a parent with an animation or transform would otherwise trap the
   // "fixed" overlay inside it and leave parts of the screen (the top bar) uncovered.
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none" role="dialog" aria-modal="true" aria-label={title}>
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none" role="dialog" aria-modal="true" aria-label={title}>
       {/* Backdrop: a light dim, so the page stays recognisable behind the dialog */}
       <div
         className={cn(
@@ -65,7 +65,7 @@ export const Modal = ({
       {/* Modal Content */}
       <div
         className={cn(
-          "relative bg-surface-lowest rounded-3xl shadow-[0_24px_64px_-12px_rgba(15,23,42,0.35)] ring-1 ring-black/5 overflow-hidden flex flex-col pointer-events-auto transition-all duration-200 transform w-full",
+          "relative bg-surface-lowest rounded-t-3xl sm:rounded-3xl max-h-[92vh] sm:max-h-none shadow-[0_24px_64px_-12px_rgba(15,23,42,0.35)] ring-1 ring-black/5 overflow-hidden flex flex-col pointer-events-auto transition-all duration-200 transform w-full",
           width,
           height !== "auto" && height,
           isOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-4",
@@ -75,12 +75,12 @@ export const Modal = ({
       >
         {/* Header */}
         {(title || !hideCloseButton) && (
-          <div className="flex items-center justify-between px-8 py-5 border-b border-outline-variant/20 bg-surface-lowest shrink-0">
-            <h3 className="text-xl font-bold text-primary">{title}</h3>
+          <div className="flex items-center justify-between gap-3 px-5 sm:px-8 py-4 sm:py-5 border-b border-outline-variant/20 bg-surface-lowest shrink-0">
+            <h3 className="text-lg sm:text-xl font-bold text-primary min-w-0 break-words">{title}</h3>
             {!hideCloseButton && (
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-primary flex items-center justify-center -mr-2"
+                className="w-8 h-8 shrink-0 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-primary flex items-center justify-center -mr-2"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
@@ -89,7 +89,7 @@ export const Modal = ({
         )}
         
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-8 py-6 max-h-[80vh]">
+        <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-5 sm:py-6 max-h-[80vh]">
           {children}
         </div>
       </div>

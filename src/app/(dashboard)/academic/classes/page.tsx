@@ -245,7 +245,7 @@ function Classes() {
 
       <div className="max-w-5xl space-y-4">
         <Card className="flex flex-wrap items-end gap-4">
-          <div className="w-72">
+          <div className="w-full sm:w-72">
             <YearSelect value={yearId} onChange={setYearId} />
           </div>
           {year && !open && <FormAlert tone="info">{year.name} is closed: its sections can be seen but not changed.</FormAlert>}

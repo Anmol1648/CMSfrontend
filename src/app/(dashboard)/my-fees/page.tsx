@@ -123,6 +123,7 @@ function ChildFees({ child, online, onPay, onQr }: { child: Child; online: MyFee
       {child.receipts.length > 0 && (
         <div className="mt-5">
           <h3 className="text-xs font-black uppercase tracking-widest text-primary mb-2">Receipts</h3>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <tbody>
               {child.receipts.map((r) => (
@@ -140,6 +141,7 @@ function ChildFees({ child, online, onPay, onQr }: { child: Child; online: MyFee
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </Card>

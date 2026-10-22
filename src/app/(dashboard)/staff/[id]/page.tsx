@@ -213,7 +213,7 @@ function Documents({ s, reload }: { s: Staff; reload: () => Promise<void> }) {
       {missing.length > 0 && <FormAlert tone="warning">Still needed: {missing.map((m) => m.name).join(", ")}</FormAlert>}
       {canEdit && (
         <Card className="flex flex-wrap items-end gap-3">
-          <div className="w-72">
+          <div className="w-full sm:w-72">
             <Select label="Document" value={typeId} onChange={setTypeId} options={[{ value: "", label: "Choose the kind…" }, ...(types.data ?? []).map((t) => ({ value: t.id, label: t.name }))]} />
           </div>
           <input

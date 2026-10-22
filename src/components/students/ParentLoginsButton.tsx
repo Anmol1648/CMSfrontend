@@ -74,6 +74,7 @@ export function ParentLoginsButton() {
               <>
                 <FormAlert tone="warning">The one-time passwords are shown only now. Download the list and hand them out (or print it).</FormAlert>
                 <div className="max-h-72 overflow-y-auto rounded-xl border border-outline-variant/20">
+                  <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <tbody>
                       {created.map((c) => (
@@ -85,6 +86,7 @@ export function ParentLoginsButton() {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
                 {!busy && (
                   <div className="flex justify-end">

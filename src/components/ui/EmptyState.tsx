@@ -22,7 +22,7 @@ export const EmptyState = ({
   className
 }: EmptyStateProps) => {
   return (
-    <div className={cn("flex flex-col items-center justify-center p-12 text-center bg-surface-container-lowest/50 rounded-2xl border border-dashed border-outline-variant/30", className)}>
+    <div className={cn("flex flex-col items-center justify-center p-6 sm:p-12 text-center bg-surface-container-lowest/50 rounded-2xl border border-dashed border-outline-variant/30", className)}>
       <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-6">
         <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">
           {icon}

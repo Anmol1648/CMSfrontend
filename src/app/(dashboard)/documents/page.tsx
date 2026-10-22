@@ -24,7 +24,7 @@ function Documents() {
         {list.data.map((d) => (
           <Link key={d.key} href={`/documents/${d.key}`} className="block">
             <Card className="h-full hover:shadow-md hover:ring-2 hover:ring-primary/10 transition-all">
-              <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
                 <h3 className="font-black text-primary">{d.label}</h3>
                 {d.custom ? <Pill tone="primary">Changed</Pill> : <Pill>Built-in</Pill>}
               </div>

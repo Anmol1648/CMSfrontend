@@ -86,6 +86,7 @@ function RolesList() {
       />
       {roles.isError && <FormAlert>{errorMessage(roles.error)}</FormAlert>}
       <Card padding="none" className="overflow-hidden max-w-5xl">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
@@ -130,6 +131,7 @@ function RolesList() {
             ))}
           </tbody>
         </table>
+        </div>
         {roles.isLoading && <div className="p-6"><PageLoader compact /></div>}
       </Card>
       <NewRoleDialog open={creating} onClose={() => setCreating(false)} />

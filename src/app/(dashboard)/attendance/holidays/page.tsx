@@ -112,6 +112,7 @@ function Holidays() {
           )}
           {!d && !list.isError && <PageLoader />}
           {d && (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <tbody>
                 {d.holidays.map((h) => (
@@ -138,6 +139,7 @@ function Holidays() {
                 )}
               </tbody>
             </table>
+            </div>
           )}
         </Card>
       </div>

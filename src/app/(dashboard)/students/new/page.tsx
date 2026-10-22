@@ -222,7 +222,7 @@ function Admission() {
           ) : (
             <>
               <div className="flex flex-wrap items-end gap-3">
-                <div className="w-80">
+                <div className="w-full sm:w-80">
                   <Input label="Find a sibling's family" placeholder="Parent's mobile or name" value={familySearch} onChange={(e) => setFamilySearch(e.target.value)} icon="search" />
                 </div>
                 <Button type="button" variant="secondary" disabled={familySearch.trim().length < 3} onClick={findFamily}>

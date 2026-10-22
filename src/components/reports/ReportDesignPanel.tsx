@@ -118,6 +118,7 @@ export function ReportDesignPanel({ reportKey, label, filters }: { reportKey: st
           <h3 className="font-black text-primary">Designs</h3>
           <p className="text-xs text-on-surface-variant mt-1">Each upload is kept as a version. Preview one with the filters above, then choose “Use”.</p>
         </div>
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
@@ -200,6 +201,7 @@ export function ReportDesignPanel({ reportKey, label, filters }: { reportKey: st
             )}
           </tbody>
         </table>
+        </div>
       </Card>
 
       <Card>
@@ -284,6 +286,7 @@ export function ReportDesignPanel({ reportKey, label, filters }: { reportKey: st
           <h3 className="font-black text-primary">Fields and parameters the ERP fills</h3>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
@@ -302,6 +305,8 @@ export function ReportDesignPanel({ reportKey, label, filters }: { reportKey: st
               ))}
             </tbody>
           </table>
+          </div>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm lg:border-l border-outline-variant/20">
             <thead>
               <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
@@ -320,6 +325,7 @@ export function ReportDesignPanel({ reportKey, label, filters }: { reportKey: st
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </Card>
 

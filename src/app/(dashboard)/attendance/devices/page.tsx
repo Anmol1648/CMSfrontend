@@ -205,7 +205,7 @@ function Devices() {
         <h3 className="font-black text-primary mb-1">Import a file</h3>
         <p className="text-xs text-on-surface-variant mb-4">A CSV / text export from a machine: each line the person’s number, then the date and time (e.g. “105, 22-10-2026 08:05”). Punches already received are skipped.</p>
         <div className="flex flex-wrap items-end gap-4">
-          <div className="w-72">
+          <div className="w-full sm:w-72">
             <Select label="From device (optional)" value={importDevice} onChange={setImportDevice} options={[{ value: "", label: "Not a listed device" }, ...list.data.map((d) => ({ value: d.id, label: d.name }))]} />
           </div>
           <input
@@ -238,6 +238,7 @@ function Devices() {
             </div>
           )}
           <div className="max-h-[520px] overflow-y-auto">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <tbody>
                 {staff.map((s) => {
@@ -271,6 +272,7 @@ function Devices() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         </Card>
 
@@ -279,6 +281,7 @@ function Devices() {
             <h3 className="font-black text-primary">Latest punches</h3>
           </div>
           <div className="max-h-[560px] overflow-y-auto">
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <tbody>
                 {(punches.data ?? []).map((p) => (
@@ -296,6 +299,7 @@ function Devices() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </Card>
       </div>

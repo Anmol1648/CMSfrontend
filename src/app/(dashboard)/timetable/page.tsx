@@ -277,6 +277,7 @@ function Timetables() {
         <Modal isOpen onClose={() => setFreeAt(null)} title={`Free teachers: ${o.days.find((d) => d.weekday === freeAt.weekday)?.name}, period ${freeAt.periodNo}`}>
           {free.data ? (
             <div className="max-h-96 overflow-y-auto">
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <tbody>
                   {free.data.map((f) => (
@@ -288,6 +289,7 @@ function Timetables() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           ) : (
             <PageLoader />

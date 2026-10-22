@@ -91,6 +91,7 @@ export function LeaveBox({ studentId, studentName }: { studentId: string; studen
           <FormAlert>{errorMessage(mine.error)}</FormAlert>
         </div>
       )}
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <tbody>
           {(d?.leaves ?? []).map((l) => (
@@ -122,6 +123,7 @@ export function LeaveBox({ studentId, studentName }: { studentId: string; studen
           )}
         </tbody>
       </table>
+      </div>
     </Card>
   );
 }

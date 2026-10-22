@@ -90,7 +90,7 @@ function Editor({ template }: { template: EmailTemplate }) {
   return (
     <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
       <Card className="space-y-5">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-primary">
               {template.label} {template.isCustom ? <Pill tone="primary">Your wording</Pill> : <Pill>Default wording</Pill>}

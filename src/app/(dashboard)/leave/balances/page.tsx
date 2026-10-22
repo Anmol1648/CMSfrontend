@@ -103,7 +103,7 @@ function StaffDetail({ staffId, year, onClose, onChanged }: { staffId: string; y
             <h4 className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 mb-2">Changes this year</h4>
             {!d.entries.length && <p className="text-sm text-on-surface-variant/70">None: only what the leave rules give.</p>}
             {d.entries.map((e) => (
-              <div key={e.id} className="flex items-start justify-between gap-3 border-t border-outline-variant/10 py-2 text-sm">
+              <div key={e.id} className="flex flex-wrap items-start justify-between gap-3 border-t border-outline-variant/10 py-2 text-sm">
                 <div>
                   <b>{e.days > 0 ? `+${e.days}` : e.days}</b> {e.type} · {KIND[e.kind]}
                   {e.workedOn && ` (worked ${fmt(e.workedOn)}${e.expiresOn ? `, lapses ${fmt(e.expiresOn)}` : ""})`}
@@ -253,6 +253,7 @@ function CompOffs() {
       <Card padding="none" className="overflow-hidden">
         <h3 className="px-5 pt-5 text-sm font-black uppercase tracking-widest text-primary">Checked in on a day off (last 60 days)</h3>
         <p className="px-5 pt-1 text-xs text-on-surface-variant/70">People who came on a holiday or weekly off and have no comp-off for it yet.</p>
+        <div className="overflow-x-auto">
         <table className="w-full text-sm mt-3">
           <tbody>
             {(hints.data ?? []).map((h) => (
@@ -278,6 +279,7 @@ function CompOffs() {
             )}
           </tbody>
         </table>
+        </div>
       </Card>
     </div>
   );
@@ -390,7 +392,7 @@ function Balances() {
       <PageHeader
         title="Leave Balances"
         description="What each person has of every leave this year. Click a person to see how it is made up, or to adjust it."
-        actions={years.data && <Select value={y} onChange={setYear} options={years.data.years.map((x) => ({ value: x.start, label: `Leave year ${x.name}` }))} className="w-56" />}
+        actions={years.data && <Select value={y} onChange={setYear} options={years.data.years.map((x) => ({ value: x.start, label: `Leave year ${x.name}` }))} className="w-full sm:w-56" />}
       />
       <div className="mb-4">
         <Tabs

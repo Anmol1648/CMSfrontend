@@ -58,13 +58,13 @@ function Mine() {
         title="My Leave"
         description={d ? `Your leave for ${d.year.name}.${d.staff.reportsTo ? ` Requests go to ${d.staff.reportsTo}.` : ""}` : "Your leave balance and requests."}
         actions={
-          <div className="flex items-end gap-3">
+          <div className="flex flex-wrap items-end gap-3">
             {years.data && (
               <Select
                 value={year || years.data.current.start}
                 onChange={setYear}
                 options={years.data.years.map((y) => ({ value: y.start, label: `Leave year ${y.name}` }))}
-                className="w-56"
+                className="w-full sm:w-56"
               />
             )}
             <Button onClick={() => setAsking(true)} disabled={!d?.types.length}>

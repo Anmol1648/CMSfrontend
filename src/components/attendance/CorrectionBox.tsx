@@ -71,6 +71,7 @@ export function CorrectionBox() {
           </div>
         </div>
       )}
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <tbody>
           {(mine.data ?? []).map((r) => (
@@ -93,6 +94,7 @@ export function CorrectionBox() {
           )}
         </tbody>
       </table>
+      </div>
     </Card>
   );
 }
@@ -117,6 +119,7 @@ export function CorrectionRequests() {
       <div className="px-5 py-3 border-b border-outline-variant/20">
         <h3 className="font-black text-primary">Correction requests waiting · {list.data.length}</h3>
       </div>
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <tbody>
           {list.data.map((r) => (
@@ -148,6 +151,7 @@ export function CorrectionRequests() {
           ))}
         </tbody>
       </table>
+      </div>
     </Card>
   );
 }
