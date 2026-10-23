@@ -23,6 +23,7 @@ const ICONS: Record<string, string> = {
   Exams: "grading",
   Homework: "menu_book",
   Transport: "directions_bus",
+  Library: "local_library",
   AI: "smart_toy",
   "Question Bank": "quiz",
   "Online Tests": "assignment",
