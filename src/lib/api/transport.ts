@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, uploadFile } from './client';
 
 /** Transport and live bus tracking (cmsbackend/src/modules/transport). */
 
@@ -34,9 +34,11 @@ export interface VehiclePaper {
   expiresOn: string | null;
   expired: boolean;
   expiring: boolean;
+  fileId: string | null;
+  fileName: string | null;
   notes: string | null;
 }
-export type PaperInput = { typeId: string | null; number: string | null; issuedOn: string | null; expiresOn: string | null; notes: string | null };
+export type PaperInput = { typeId: string | null; number: string | null; issuedOn: string | null; expiresOn: string | null; fileId: string | null; notes: string | null };
 
 export interface Stop {
   id: string;
@@ -133,6 +135,28 @@ export interface Live {
   buses: LiveBus[];
 }
 
+export interface Connect {
+  mapProvider: 'osm' | 'google';
+  googleKeySet: boolean;
+  gpsProvider: 'none' | 'traccar' | 'generic';
+  gpsUrl: string;
+  gpsKeySet: boolean;
+  autoTrips: boolean;
+  vehicles: { id: string; name: string; number: string; gpsDeviceId: string | null }[];
+}
+export type ConnectInput = { mapProvider: Connect['mapProvider']; googleKey?: string; gpsProvider: Connect['gpsProvider']; gpsUrl: string; gpsKey?: string; autoTrips: boolean };
+export interface GpsTest {
+  positions: number;
+  vehicles: { name: string; number: string; deviceId: string; found: boolean; lat: number | null; lng: number | null; speed: number | null; at: string | null }[];
+}
+export interface MapTiles {
+  provider: 'osm' | 'google';
+  url: string;
+  attribution: string;
+  maxZoom: number;
+  note?: string;
+}
+
 export interface Driving {
   pingSeconds: number;
   routes: { id: string; name: string; morningStart: string; afternoonStart: string; trips: { id: string; kind: TripKind; status: string; startedAt: string; endedAt: string | null }[] }[];
@@ -178,6 +202,8 @@ export const transportApi = {
   papers: (vehicleId: string) => api.get<VehiclePaper[]>(`/transport/vehicles/${vehicleId}/documents`),
   savePaper: (vehicleId: string, id: string | null, input: PaperInput) => (id ? api.put(`/transport/documents/${id}`, input) : api.post(`/transport/vehicles/${vehicleId}/documents`, input)),
   deletePaper: (id: string) => api.delete(`/transport/documents/${id}`),
+  uploadPaper: (file: File) => uploadFile<{ id: string; name: string }>('/transport/files', 'file', file),
+  paperFilePath: (id: string) => `/transport/documents/${id}/file`,
 
   routes: () => api.get<{ school: LatLng; routes: Route[] }>('/transport/routes'),
   saveRoute: (id: string | null, input: RouteInput) => (id ? api.put<Route>(`/transport/routes/${id}`, input) : api.post<Route>('/transport/routes', input)),
@@ -203,6 +229,11 @@ export const transportApi = {
   ping: (id: string, p: { lat: number; lng: number; speed: number | null; accuracy: number | null }) => api.postRead<{ nextStop: number; delayMin: number }>(`/transport/trips/${id}/ping`, p, { quiet: true }),
   board: (id: string, studentId: string, kind: 'boarded' | 'dropped' | 'absent') => api.post<TripView>(`/transport/trips/${id}/board`, { studentId, kind }),
   sos: (id: string, note: string) => api.post(`/transport/trips/${id}/sos`, { note: note || undefined }),
+
+  connect: () => api.get<Connect>('/transport/connect'),
+  saveConnect: (input: ConnectInput) => api.put<Connect>('/transport/connect', input),
+  testGps: () => api.postRead<GpsTest>('/transport/connect/test'),
+  map: () => api.get<MapTiles>('/transport/map', { quiet: true }),
 
   myBus: () => api.get<{ pingSeconds: number; children: MyBusChild[] }>('/transport/my-bus', { quiet: true }),
 };

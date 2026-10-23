@@ -15,7 +15,8 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { ApiError, errorMessage } from "@/lib/api/client";
+import { ApiError, authedImageUrl, errorMessage } from "@/lib/api/client";
+import { cn } from "@/lib/utils";
 import { PaperInput, transportApi, Vehicle, VehicleInput, VehiclePaper } from "@/lib/api/transport";
 
 function VehicleForm({ vehicle, onClose }: { vehicle: Vehicle | null; onClose: () => void }) {
@@ -71,8 +72,22 @@ function VehicleForm({ vehicle, onClose }: { vehicle: Vehicle | null; onClose: (
 function PaperForm({ vehicleId, paper, onClose }: { vehicleId: string; paper: VehiclePaper | null; onClose: () => void }) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-  const [v, setV] = useState<PaperInput>(paper ? { typeId: paper.typeId, number: paper.number, issuedOn: paper.issuedOn, expiresOn: paper.expiresOn, notes: paper.notes } : { typeId: null, number: null, issuedOn: null, expiresOn: null, notes: null });
+  const [v, setV] = useState<PaperInput>(paper ? { typeId: paper.typeId, number: paper.number, issuedOn: paper.issuedOn, expiresOn: paper.expiresOn, fileId: paper.fileId, notes: paper.notes } : { typeId: null, number: null, issuedOn: null, expiresOn: null, fileId: null, notes: null });
+  const [fileName, setFileName] = useState<string | null>(paper?.fileName ?? null);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pickFile = async (file: File) => {
+    setUploading(true);
+    try {
+      const f = await transportApi.uploadPaper(file);
+      setV((x) => ({ ...x, fileId: f.id }));
+      setFileName(f.name);
+    } catch (err) {
+      showToast(errorMessage(err), "error");
+    } finally {
+      setUploading(false);
+    }
+  };
   const set = (p: Partial<PaperInput>) => setV((x) => ({ ...x, ...p }));
   const save = async () => {
     try {
@@ -94,12 +109,31 @@ function PaperForm({ vehicleId, paper, onClose }: { vehicleId: string; paper: Ve
           <Input label="Expires on" type="date" value={v.expiresOn ?? ""} onChange={(e) => set({ expiresOn: e.target.value || null })} />
         </div>
         <Input label="Notes" value={v.notes ?? ""} onChange={(e) => set({ notes: e.target.value || null })} />
+        <div className="space-y-2">
+          <p className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest">Scan (PDF or photo)</p>
+          {v.fileId ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-xs font-bold pl-3 pr-1 py-1">
+              {fileName ?? "Scan"}
+              <button type="button" onClick={() => { set({ fileId: null }); setFileName(null); }} aria-label="Remove the scan" className="rounded-full p-0.5 hover:bg-primary/20">
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            </span>
+          ) : (
+            <label className={cn("inline-flex items-center gap-1.5 text-sm font-bold text-primary cursor-pointer hover:opacity-70", uploading && "opacity-50 pointer-events-none")}>
+              <span className="material-symbols-outlined text-lg">attach_file</span>
+              {uploading ? "Uploading…" : "Attach the scan"}
+              <input type="file" accept=".pdf,.png,.jpg,.jpeg" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void pickFile(f); e.target.value = ""; }} />
+            </label>
+          )}
+        </div>
         {error && <FormAlert>{error}</FormAlert>}
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={save}>Save</Button>
+          <Button onClick={save} disabled={uploading}>
+            Save
+          </Button>
         </div>
       </div>
     </Modal>
@@ -114,6 +148,13 @@ function Papers({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => void })
   const queryClient = useQueryClient();
   const q = useQuery({ queryKey: ["transport", "papers", vehicle.id], queryFn: () => transportApi.papers(vehicle.id) });
   const [form, setForm] = useState<VehiclePaper | null | "new">(null);
+  const openScan = async (p: VehiclePaper) => {
+    try {
+      window.open(await authedImageUrl(transportApi.paperFilePath(p.id)), "_blank", "noopener");
+    } catch (err) {
+      showToast(errorMessage(err), "error");
+    }
+  };
   const remove = async (p: VehiclePaper) => {
     if (!(await confirm({ title: `Delete ${p.type}?`, confirmLabel: "Delete", danger: true }))) return;
     try {
@@ -138,6 +179,11 @@ function Papers({ vehicle, onClose }: { vehicle: Vehicle; onClose: () => void })
                   {p.number ?? "—"} · {p.expiresOn ? `expires ${p.expiresOn}` : "no expiry"}
                 </p>
               </div>
+              {p.fileId && (
+                <button type="button" onClick={() => openScan(p)} className="p-1 rounded hover:bg-surface-container-high text-primary" aria-label="Open the scan" title={p.fileName ?? "Scan"}>
+                  <span className="material-symbols-outlined text-base">{p.fileName?.toLowerCase().endsWith(".pdf") ? "picture_as_pdf" : "image"}</span>
+                </button>
+              )}
               {p.expired ? <Pill tone="danger">Expired</Pill> : p.expiring ? <Pill tone="warning">Expiring soon</Pill> : <Pill tone="success">Valid</Pill>}
               {manage && (
                 <>

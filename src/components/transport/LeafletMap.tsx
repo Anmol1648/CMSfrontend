@@ -36,6 +36,8 @@ export interface MapProps {
   /** Zoom to show everything when this key changes (e.g. another route chosen). */
   fitKey?: string;
   className?: string;
+  /** The tiles (Google or OpenStreetMap; Transport → GPS & Maps). */
+  tiles?: { url: string; attribution: string; maxZoom: number };
 }
 
 const ICON: Record<MapMarker["kind"], string> = { bus: "directions_bus", stop: "location_on", school: "school", mine: "home_pin", pin: "add_location" };
@@ -51,10 +53,13 @@ const iconFor = (m: MapMarker) => {
   return L.divIcon({ html, className: "", iconSize: [size, size], iconAnchor: bubble ? [size / 2, size / 2] : [size / 2, size] });
 };
 
-export default function LeafletMap({ center, zoom = 14, lines = [], markers = [], onMapClick, onMarkerClick, fitKey, className }: MapProps) {
+const OSM = { url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", attribution: "&copy; OpenStreetMap contributors", maxZoom: 19 };
+
+export default function LeafletMap({ center, zoom = 14, lines = [], markers = [], onMapClick, onMarkerClick, fitKey, className, tiles = OSM }: MapProps) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const layer = useRef<L.LayerGroup | null>(null);
+  const tileLayer = useRef<L.TileLayer | null>(null);
   const clickRef = useRef(onMapClick);
   const markerRef = useRef(onMarkerClick);
   const fitted = useRef<string | undefined>(undefined);
@@ -64,7 +69,6 @@ export default function LeafletMap({ center, zoom = 14, lines = [], markers = []
   useEffect(() => {
     if (!box.current || map.current) return;
     const m = L.map(box.current, { zoomControl: true }).setView([center.lat, center.lng], zoom);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }).addTo(m);
     layer.current = L.layerGroup().addTo(m);
     m.on("click", (e: L.LeafletMouseEvent) => clickRef.current?.(Number(e.latlng.lat.toFixed(6)), Number(e.latlng.lng.toFixed(6))));
     map.current = m;
@@ -75,6 +79,13 @@ export default function LeafletMap({ center, zoom = 14, lines = [], markers = []
     // The map is made once; later centres come through fitKey.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    tileLayer.current?.remove();
+    tileLayer.current = L.tileLayer(tiles.url, { maxZoom: tiles.maxZoom, attribution: tiles.attribution }).addTo(m);
+  }, [tiles.url, tiles.attribution, tiles.maxZoom]);
 
   // A crosshair while clicking the map places something.
   useEffect(() => {

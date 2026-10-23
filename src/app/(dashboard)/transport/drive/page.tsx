@@ -19,10 +19,11 @@ import { cn } from "@/lib/utils";
 type Fix = { lat: number; lng: number; speed: number | null; accuracy: number | null };
 
 /** Sends the phone's position every few seconds while the trip runs (and keeps the screen on). */
-function useSendPosition(tripId: string, seconds: number) {
+function useSendPosition(tripId: string, seconds: number, enabled: boolean) {
   const last = useRef<Fix | null>(null);
   const [status, setStatus] = useState<{ ok: boolean; text: string; sentAt: number | null }>({ ok: false, text: "Finding your position…", sentAt: null });
   useEffect(() => {
+    if (!enabled) return;
     if (!("geolocation" in navigator)) {
       setStatus({ ok: false, text: "This phone can’t share its position.", sentAt: null });
       return;
@@ -61,7 +62,7 @@ function useSendPosition(tripId: string, seconds: number) {
       clearTimeout(first);
       void lock?.release().catch(() => undefined);
     };
-  }, [tripId, seconds]);
+  }, [tripId, seconds, enabled]);
   return status;
 }
 
@@ -100,7 +101,10 @@ function Running({ tripId, seconds }: { tripId: string; seconds: number }) {
   const { showToast } = useToast();
   const confirm = useConfirm();
   const q = useQuery({ queryKey: ["transport", "trip", tripId], queryFn: () => transportApi.trip(tripId, true), refetchInterval: 15_000 });
-  const gps = useSendPosition(tripId, seconds);
+  // A bus with its own GPS device: the phone doesn't send the position.
+  const device = q.data?.source === "device";
+  const sent = useSendPosition(tripId, seconds, !!q.data && !device);
+  const gps = device ? { ok: true, text: "The bus’s GPS device sends its position: no need to keep this screen open", sentAt: null } : sent;
   const [sos, setSos] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
   const t = q.data;
