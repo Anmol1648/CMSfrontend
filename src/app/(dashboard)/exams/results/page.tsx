@@ -31,28 +31,63 @@ function Results() {
   const [scope, setScope] = useState<string>("");
   const [section, setSection] = useState("");
   const [tab, setTab] = useState("students");
-  const [card, setCard] = useState<{ student?: string; name: string } | null>(null);
-  const choices = useQuery({ queryKey: ["exam-choices", yearId], queryFn: () => examsApi.choices(yearId), enabled: !!yearId });
+  const [card, setCard] = useState<{ student?: string; name: string } | null>(
+    null,
+  );
+  const choices = useQuery({
+    queryKey: ["exam-choices", yearId],
+    queryFn: () => examsApi.choices(yearId),
+    enabled: !!yearId,
+  });
   const c = choices.data;
   // scope = "exam:<id>" | "term:<id>" | "final:<year>"
   useEffect(() => {
     if (!c) return;
     if (!scope) {
-      const lastPublished = [...c.exams].reverse().find((e) => e.published) ?? c.exams[c.exams.length - 1];
+      const lastPublished =
+        [...c.exams].reverse().find((e) => e.published) ??
+        c.exams[c.exams.length - 1];
       if (lastPublished) setScope(`exam:${lastPublished.id}`);
     }
     if (!section && c.sections.length) setSection(c.sections[0].id);
   }, [c, scope, section]);
-  const [kind, id] = scope ? (scope.split(":") as [ScopeKind, string]) : (["exam", ""] as [ScopeKind, string]);
-  const r = useQuery({ queryKey: ["exam-results", scope, section], queryFn: () => examsApi.results(kind, id, section), enabled: !!scope && !!section });
+  const [kind, id] = scope
+    ? (scope.split(":") as [ScopeKind, string])
+    : (["exam", ""] as [ScopeKind, string]);
+  const r = useQuery({
+    queryKey: ["exam-results", scope, section],
+    queryFn: () => examsApi.results(kind, id, section),
+    enabled: !!scope && !!section,
+  });
   const d = r.data;
   const publishing = kind !== "exam" && can("exam.publish");
-  const published = kind === "term" ? c?.terms.find((t) => t.id === id)?.published : kind === "final" ? c?.finalPublished : c?.exams.find((e) => e.id === id)?.published;
+  // A subject teacher's view of a section (System Settings → Exams): their subjects only.
+  const limited = !!d?.limitedTo;
+  const published =
+    kind === "term"
+      ? c?.terms.find((t) => t.id === id)?.published
+      : kind === "final"
+        ? c?.finalPublished
+        : c?.exams.find((e) => e.id === id)?.published;
   const togglePublish = async () => {
     const on = !published;
-    if (!(await confirm({ title: `${on ? "Publish" : "Unpublish"} ${d?.scope.label}?`, message: on ? "Students and parents can see this result and its report card." : "Students and parents no longer see it.", confirmLabel: on ? "Publish" : "Unpublish" }))) return;
+    if (
+      !(await confirm({
+        title: `${on ? "Publish" : "Unpublish"} ${d?.scope.label}?`,
+        message: on
+          ? "Students and parents can see this result and its report card."
+          : "Students and parents no longer see it.",
+        confirmLabel: on ? "Publish" : "Unpublish",
+      }))
+    )
+      return;
     try {
-      await examsApi.publishScope(yearId, kind as "term" | "final", kind === "term" ? id : null, on);
+      await examsApi.publishScope(
+        yearId,
+        kind as "term" | "final",
+        kind === "term" ? id : null,
+        on,
+      );
       queryClient.invalidateQueries({ queryKey: ["exam-choices", yearId] });
       queryClient.invalidateQueries({ queryKey: ["exam-results"] });
       showToast(on ? "Published" : "Unpublished", "success");
@@ -60,13 +95,27 @@ function Results() {
       showToast(errorMessage(err), "error");
     }
   };
-  const docParams = (student?: string) => ({ scope: kind, id, ...(student ? { student } : { section }) });
+  const docParams = (student?: string) => ({
+    scope: kind,
+    id,
+    ...(student ? { student } : { section }),
+  });
   return (
     <>
-      <PageHeader title="Results & Report Cards" description="Results of an exam, a term (its exams by weightage) or the whole session, section by section, with the analysis and the report cards." />
+      <PageHeader
+        title="Results & Report Cards"
+        description="Results of an exam, a term (its exams by weightage) or the whole session, section by section, with the analysis and the report cards."
+      />
       <Card className="mb-4 flex flex-wrap items-end gap-4">
         <div className="w-full sm:w-56">
-          <YearSelect value={yearId} onChange={(y) => { setYearId(y); setScope(""); setSection(""); }} />
+          <YearSelect
+            value={yearId}
+            onChange={(y) => {
+              setYearId(y);
+              setScope("");
+              setSection("");
+            }}
+          />
         </div>
         <Select
           label="Result of"
@@ -75,46 +124,115 @@ function Results() {
           className="w-full sm:w-72"
           options={[
             { value: "", label: "Choose…" },
-            ...(c?.exams ?? []).map((e) => ({ value: `exam:${e.id}`, label: `${e.name}${e.published ? "" : " (not published)"}` })),
-            ...(c?.terms ?? []).map((t) => ({ value: `term:${t.id}`, label: `${t.name} (its exams)${t.published ? "" : " · not published"}` })),
-            ...(yearId ? [{ value: `final:${yearId}`, label: `${labels.finalName} of the session${c?.finalPublished ? "" : " · not published"}` }] : []),
+            ...(c?.exams ?? []).map((e) => ({
+              value: `exam:${e.id}`,
+              label: `${e.name}${e.published ? "" : " (not published)"}`,
+            })),
+            ...(c?.terms ?? []).map((t) => ({
+              value: `term:${t.id}`,
+              label: `${t.name} (its exams)${t.published ? "" : " · not published"}`,
+            })),
+            ...(yearId
+              ? [
+                  {
+                    value: `final:${yearId}`,
+                    label: `${labels.finalName} of the session${c?.finalPublished ? "" : " · not published"}`,
+                  },
+                ]
+              : []),
           ]}
         />
-        <Select label="Section" value={section} onChange={setSection} className="w-full sm:w-48" options={(c?.sections ?? []).map((s) => ({ value: s.id, label: s.label }))} />
+        <Select
+          label="Section"
+          value={section}
+          onChange={setSection}
+          className="w-full sm:w-48"
+          options={(c?.sections ?? []).map((s) => ({
+            value: s.id,
+            label: s.inFull ? s.label : `${s.label} · your subject`,
+          }))}
+        />
         <div className="flex flex-wrap gap-3 sm:ml-auto">
           {publishing && d && (
             <Button variant="secondary" onClick={togglePublish}>
-              {published ? "Unpublish" : "Publish"} {kind === "final" ? "final result" : "term result"}
+              {published ? "Unpublish" : "Publish"}{" "}
+              {kind === "final" ? "final result" : "term result"}
             </Button>
           )}
-          <Button onClick={() => setCard({ name: d?.section.label ?? "" })} disabled={!d?.students.length}>
-            Report cards ({d?.students.length ?? 0})
-          </Button>
+          {!limited && (
+            <Button
+              onClick={() => setCard({ name: d?.section.label ?? "" })}
+              disabled={!d?.students.length}
+            >
+              Report cards ({d?.students.length ?? 0})
+            </Button>
+          )}
         </div>
       </Card>
-      {c && !c.sections.length && <FormAlert tone="info">You see the results of the sections you teach; none in this session.</FormAlert>}
+      {c && !c.sections.length && (
+        <FormAlert tone="info">
+          You see the results of the sections you teach; none in this session.
+        </FormAlert>
+      )}
       {r.isError && <FormAlert>{errorMessage(r.error)}</FormAlert>}
       {scope && section && !d && !r.isError && <PageLoader />}
       {d && (
         <div className="space-y-4">
+          {d.limitedTo && (
+            <FormAlert tone="info">
+              You teach {d.limitedTo.join(", ") || "no exam subject"} in{" "}
+              {d.section.label}, so you see only{" "}
+              {d.limitedTo.length === 1 ? "that subject" : "those subjects"}.
+              The full result and report cards are with the class teacher
+              {d.section.classTeacher ? ` (${d.section.classTeacher})` : ""}.
+            </FormAlert>
+          )}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Pass %", value: pct(d.analysis.passPercent), tone: (d.analysis.passPercent ?? 100) < 75 ? "text-error" : "text-emerald-700" },
-              { label: "Average", value: pct(d.analysis.average), tone: "text-primary" },
-              { label: "Results ready", value: `${d.analysis.withResult}/${d.analysis.students}`, tone: "text-primary" },
-              { label: "Need support", value: String(d.analysis.needSupport.length), tone: d.analysis.needSupport.length ? "text-amber-700" : "text-emerald-700" },
+              {
+                label: "Pass %",
+                value: pct(d.analysis.passPercent),
+                tone:
+                  (d.analysis.passPercent ?? 100) < 75
+                    ? "text-error"
+                    : "text-emerald-700",
+              },
+              {
+                label: "Average",
+                value: pct(d.analysis.average),
+                tone: "text-primary",
+              },
+              {
+                label: limited ? "Marks in" : "Results ready",
+                value: `${d.analysis.withResult}/${d.analysis.students}`,
+                tone: "text-primary",
+              },
+              {
+                label: "Need support",
+                value: String(d.analysis.needSupport.length),
+                tone: d.analysis.needSupport.length
+                  ? "text-amber-700"
+                  : "text-emerald-700",
+              },
             ].map((x) => (
               <Card key={x.label} padding="sm">
-                <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">{x.label}</p>
-                <p className={cn("text-2xl font-extrabold", x.tone)}>{x.value}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">
+                  {x.label}
+                </p>
+                <p className={cn("text-2xl font-extrabold", x.tone)}>
+                  {x.value}
+                </p>
               </Card>
             ))}
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <Pill tone={d.scope.published ? "success" : "warning"}>{d.scope.published ? "Published" : "Not published"}</Pill>
+            <Pill tone={d.scope.published ? "success" : "warning"}>
+              {d.scope.published ? "Published" : "Not published"}
+            </Pill>
             <span className="text-on-surface-variant/70">
               {d.section.label} · {d.scope.label} · {d.year}
-              {d.exams.length > 1 && ` · ${d.exams.map((e) => `${e.shortName}${e.weightage ? ` ${e.weightage}%` : ""}`).join(" + ")}`}
+              {d.exams.length > 1 &&
+                ` · ${d.exams.map((e) => `${e.shortName}${e.weightage ? ` ${e.weightage}%` : ""}`).join(" + ")}`}
             </span>
           </div>
           <Tabs
@@ -134,42 +252,133 @@ function Results() {
                       <th className="px-3 py-3 font-bold">Roll</th>
                       <th className="px-3 py-3 font-bold">Student</th>
                       {d.subjects.map((s) => (
-                        <th key={s.id} className="px-3 py-3 font-bold text-center">
+                        <th
+                          key={s.id}
+                          className="px-3 py-3 font-bold text-center"
+                        >
                           {s.name}
                         </th>
                       ))}
-                      {!d.rule.descriptive && <th className="px-3 py-3 font-bold text-center">Total</th>}
-                      {!d.rule.descriptive && <th className="px-3 py-3 font-bold text-center">%</th>}
-                      {!d.rule.descriptive && <th className="px-3 py-3 font-bold text-center">Grade</th>}
-                      {d.rule.showRank && <th className="px-3 py-3 font-bold text-center">Rank</th>}
-                      <th className="px-3 py-3 font-bold">Result</th>
-                      <th className="px-3 py-3" />
+                      {!limited && !d.rule.descriptive && (
+                        <th className="px-3 py-3 font-bold text-center">
+                          Total
+                        </th>
+                      )}
+                      {!limited && !d.rule.descriptive && (
+                        <th className="px-3 py-3 font-bold text-center">%</th>
+                      )}
+                      {!limited && !d.rule.descriptive && (
+                        <th className="px-3 py-3 font-bold text-center">
+                          Grade
+                        </th>
+                      )}
+                      {!limited && d.rule.showRank && (
+                        <th className="px-3 py-3 font-bold text-center">
+                          Rank
+                        </th>
+                      )}
+                      {!limited && (
+                        <th className="px-3 py-3 font-bold">Result</th>
+                      )}
+                      {!limited && <th className="px-3 py-3" />}
                     </tr>
                   </thead>
                   <tbody>
                     {d.students.map((s) => (
-                      <tr key={s.student.id} className="border-t border-outline-variant/10">
-                        <td className="px-3 py-2 text-xs">{s.student.roll ?? "—"}</td>
-                        <td className="px-3 py-2 font-semibold whitespace-nowrap">{s.student.name}</td>
+                      <tr
+                        key={s.student.id}
+                        className="border-t border-outline-variant/10"
+                      >
+                        <td className="px-3 py-2 text-xs">
+                          {s.student.roll ?? "—"}
+                        </td>
+                        <td className="px-3 py-2 font-semibold whitespace-nowrap">
+                          {s.student.name}
+                        </td>
                         {s.subjects.map((x) => (
-                          <td key={x.subjectId} className={cn("px-3 py-2 text-center whitespace-nowrap", x.passed === false && "text-error font-bold")}>
-                            {d.rule.descriptive ? (x.grade ?? "—") : x.percent == null ? (x.exams.find((e) => e.status !== "P" && e.status !== "none")?.status ?? "—") : `${d.exams.length === 1 ? x.exams[0]?.obtained ?? "—" : `${x.percent}%`}`}
-                            {!d.rule.descriptive && x.grade && <span className="block text-[10px] text-on-surface-variant/60">{x.grade}{x.grace ? ` (+${x.grace})` : ""}</span>}
+                          <td
+                            key={x.subjectId}
+                            className={cn(
+                              "px-3 py-2 text-center whitespace-nowrap",
+                              x.passed === false && "text-error font-bold",
+                            )}
+                          >
+                            {d.rule.descriptive
+                              ? (x.grade ?? "—")
+                              : x.percent == null
+                                ? (x.exams.find(
+                                    (e) =>
+                                      e.status !== "P" && e.status !== "none",
+                                  )?.status ?? "—")
+                                : `${d.exams.length === 1 ? (x.exams[0]?.obtained ?? "—") : `${x.percent}%`}`}
+                            {!d.rule.descriptive && x.grade && (
+                              <span className="block text-[10px] text-on-surface-variant/60">
+                                {x.grade}
+                                {x.grace ? ` (+${x.grace})` : ""}
+                              </span>
+                            )}
                           </td>
                         ))}
-                        {!d.rule.descriptive && <td className="px-3 py-2 text-center text-xs">{s.totalMax ? `${s.totalObtained}/${s.totalMax}` : "—"}</td>}
-                        {!d.rule.descriptive && <td className="px-3 py-2 text-center font-bold">{pct(s.percent)}</td>}
-                        {!d.rule.descriptive && <td className="px-3 py-2 text-center font-bold">{s.grade ?? "—"}</td>}
-                        {d.rule.showRank && <td className="px-3 py-2 text-center">{s.rank ?? "—"}</td>}
-                        <td className="px-3 py-2 text-xs">
-                          {s.result ? <Pill tone={s.failedSubjects.length ? "danger" : "success"}>{s.result}</Pill> : <span className="text-on-surface-variant/60">not ready</span>}
-                          {s.promotedTo && <p className="text-[10px] text-on-surface-variant/70 mt-0.5">→ {s.promotedTo}</p>}
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          <button type="button" onClick={() => setCard({ student: s.student.id, name: s.student.name })} className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
-                            Card
-                          </button>
-                        </td>
+                        {!limited && !d.rule.descriptive && (
+                          <td className="px-3 py-2 text-center text-xs">
+                            {s.totalMax
+                              ? `${s.totalObtained}/${s.totalMax}`
+                              : "—"}
+                          </td>
+                        )}
+                        {!limited && !d.rule.descriptive && (
+                          <td className="px-3 py-2 text-center font-bold">
+                            {pct(s.percent)}
+                          </td>
+                        )}
+                        {!limited && !d.rule.descriptive && (
+                          <td className="px-3 py-2 text-center font-bold">
+                            {s.grade ?? "—"}
+                          </td>
+                        )}
+                        {!limited && d.rule.showRank && (
+                          <td className="px-3 py-2 text-center">
+                            {s.rank ?? "—"}
+                          </td>
+                        )}
+                        {!limited && (
+                          <td className="px-3 py-2 text-xs">
+                            {s.result ? (
+                              <Pill
+                                tone={
+                                  s.failedSubjects.length ? "danger" : "success"
+                                }
+                              >
+                                {s.result}
+                              </Pill>
+                            ) : (
+                              <span className="text-on-surface-variant/60">
+                                not ready
+                              </span>
+                            )}
+                            {s.promotedTo && (
+                              <p className="text-[10px] text-on-surface-variant/70 mt-0.5">
+                                → {s.promotedTo}
+                              </p>
+                            )}
+                          </td>
+                        )}
+                        {!limited && (
+                          <td className="px-3 py-2 text-right">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setCard({
+                                  student: s.student.id,
+                                  name: s.student.name,
+                                })
+                              }
+                              className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70"
+                            >
+                              Card
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -180,7 +389,9 @@ function Results() {
           {tab === "analysis" && (
             <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
               <Card padding="none" className="overflow-hidden">
-                <h3 className="px-5 pt-4 text-sm font-black uppercase tracking-widest text-primary">Subjects</h3>
+                <h3 className="px-5 pt-4 text-sm font-black uppercase tracking-widest text-primary">
+                  Subjects
+                </h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm mt-2">
                     <thead>
@@ -195,19 +406,36 @@ function Results() {
                     </thead>
                     <tbody>
                       {d.analysis.subjects.map((s) => (
-                        <tr key={s.subject} className="border-t border-outline-variant/10">
-                          <td className="px-5 py-2 font-semibold">{s.subject}</td>
+                        <tr
+                          key={s.subject}
+                          className="border-t border-outline-variant/10"
+                        >
+                          <td className="px-5 py-2 font-semibold">
+                            {s.subject}
+                          </td>
                           <td className="px-5 py-2">
                             <div className="flex items-center gap-2">
                               <div className="h-1.5 w-20 rounded-full bg-surface-container overflow-hidden">
-                                <div className="h-full bg-primary" style={{ width: `${s.average ?? 0}%` }} />
+                                <div
+                                  className="h-full bg-primary"
+                                  style={{ width: `${s.average ?? 0}%` }}
+                                />
                               </div>
                               {pct(s.average)}
                             </div>
                           </td>
                           <td className="px-5 py-2">{pct(s.highest)}</td>
                           <td className="px-5 py-2">{pct(s.lowest)}</td>
-                          <td className={cn("px-5 py-2 font-bold", (s.passPercent ?? 100) < 75 ? "text-error" : "text-emerald-700")}>{pct(s.passPercent)}</td>
+                          <td
+                            className={cn(
+                              "px-5 py-2 font-bold",
+                              (s.passPercent ?? 100) < 75
+                                ? "text-error"
+                                : "text-emerald-700",
+                            )}
+                          >
+                            {pct(s.passPercent)}
+                          </td>
                           <td className="px-5 py-2 text-[11px] text-on-surface-variant/80">
                             {Object.entries(s.grades)
                               .map(([g, n]) => `${g}: ${n}`)
@@ -221,9 +449,16 @@ function Results() {
               </Card>
               <div className="space-y-4">
                 <Card>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-primary mb-2">Toppers</h3>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-primary mb-2">
+                    {limited
+                      ? `Toppers in ${d.limitedTo!.join(", ")}`
+                      : "Toppers"}
+                  </h3>
                   {d.analysis.toppers.map((t, i) => (
-                    <p key={t.name} className="flex justify-between text-sm py-1">
+                    <p
+                      key={t.name}
+                      className="flex justify-between text-sm py-1"
+                    >
                       <span>
                         {i + 1}. {t.name}
                       </span>
@@ -232,23 +467,42 @@ function Results() {
                       </b>
                     </p>
                   ))}
-                  {!d.analysis.toppers.length && <p className="text-sm text-on-surface-variant/70">—</p>}
+                  {!d.analysis.toppers.length && (
+                    <p className="text-sm text-on-surface-variant/70">—</p>
+                  )}
                 </Card>
                 <Card>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-primary mb-2">Need support</h3>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-primary mb-2">
+                    Need support
+                  </h3>
                   {d.analysis.needSupport.map((n) => (
                     <p key={n.name} className="text-sm py-1">
-                      <b>{n.name}</b> <span className="text-xs text-error">{n.subjects.join(", ")}</span>
+                      <b>{n.name}</b>{" "}
+                      <span className="text-xs text-error">
+                        {n.subjects.join(", ")}
+                      </span>
                     </p>
                   ))}
-                  {!d.analysis.needSupport.length && <p className="text-sm text-emerald-700">Everyone passed. ✓</p>}
+                  {!d.analysis.needSupport.length && (
+                    <p className="text-sm text-emerald-700">
+                      Everyone passed. ✓
+                    </p>
+                  )}
                 </Card>
               </div>
             </div>
           )}
         </div>
       )}
-      {card && d && <DocumentViewer docKey="report_card" params={docParams(card.student)} title={`Report card · ${card.name}`} filename={`report-card-${card.name}.pdf`} onClose={() => setCard(null)} />}
+      {card && d && !limited && (
+        <DocumentViewer
+          docKey="report_card"
+          params={docParams(card.student)}
+          title={`Report card · ${card.name}`}
+          filename={`report-card-${card.name}.pdf`}
+          onClose={() => setCard(null)}
+        />
+      )}
     </>
   );
 }

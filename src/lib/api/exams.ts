@@ -160,6 +160,8 @@ export interface Results {
   subjects: { id: string; name: string }[];
   areas: string[];
   students: StudentResult[];
+  /** A subject teacher's view: only these subjects, no totals, rank, result or report cards. */
+  limitedTo: string[] | null;
   analysis: {
     students: number;
     withResult: number;
@@ -175,7 +177,7 @@ export interface ResultChoices {
   exams: { id: string; name: string; status: ExamStatus; published: boolean; classIds: string[] }[];
   terms: { id: string; name: string; published: boolean }[];
   finalPublished: boolean;
-  sections: { id: string; label: string; classId: string }[];
+  sections: { id: string; label: string; classId: string; inFull: boolean }[];
 }
 
 const y = (year: string) => ({ params: { year } });
