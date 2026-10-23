@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { errorMessage } from "@/lib/api/client";
 import { EXAM_STATUS, examsApi, MarkStatus } from "@/lib/api/exams";
+import { mastersApi } from "@/lib/api/masters";
 import { cn } from "@/lib/utils";
 
 type Row = { status: MarkStatus; marks: Record<string, string> };
@@ -194,6 +195,7 @@ function ClassSheet({ examId, section, onBack }: { examId: string; section: stri
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const q = useQuery({ queryKey: ["exam-class-sheet", examId, section], queryFn: () => examsApi.classSheet(examId, section) });
+  const remarks = useQuery({ queryKey: ["master-options", "report_remark"], queryFn: () => mastersApi.options("report_remark"), staleTime: 5 * 60_000 });
   const [rows, setRows] = useState<Record<string, { coGrades: Record<string, string>; discipline: string; remark: string }>>({});
   const [busy, setBusy] = useState(false);
   const s = q.data;
@@ -271,7 +273,7 @@ function ClassSheet({ examId, section, onBack }: { examId: string; section: stri
                     ))}
                     <td className="px-4 py-1.5">{grade(r.discipline, (v) => set({ discipline: v }), `${st.name} discipline`)}</td>
                     <td className="px-4 py-1.5">
-                      <input aria-label={`${st.name} remark`} value={r.remark} disabled={!s.edit.can} maxLength={300} onChange={(e) => set({ remark: e.target.value })} className="w-64 rounded-lg bg-surface-container-low px-2 py-1.5 text-sm outline-none disabled:opacity-60" placeholder="e.g. Sincere and regular" />
+                      <input aria-label={`${st.name} remark`} list="report-remarks" value={r.remark} disabled={!s.edit.can} maxLength={300} onChange={(e) => set({ remark: e.target.value })} className="w-64 rounded-lg bg-surface-container-low px-2 py-1.5 text-sm outline-none disabled:opacity-60" placeholder="e.g. Sincere and regular" />
                     </td>
                   </tr>
                 );
@@ -280,6 +282,12 @@ function ClassSheet({ examId, section, onBack }: { examId: string; section: stri
           </table>
         </div>
       </Card>
+      {/* Ready remarks (Masters → Report card remarks): typed or picked. */}
+      <datalist id="report-remarks">
+        {(remarks.data ?? []).map((m) => (
+          <option key={m.id} value={m.name} />
+        ))}
+      </datalist>
       {!s.areas.length && <p className="text-xs text-on-surface-variant/70">No co-scholastic subjects for this class (Academic → Subjects: Art, Work Education, PE…).</p>}
     </div>
   );

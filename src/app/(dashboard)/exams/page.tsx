@@ -18,11 +18,19 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { errorMessage } from "@/lib/api/client";
 import { academicApi } from "@/lib/api/academic";
+import { mastersApi } from "@/lib/api/masters";
 import { Exam, EXAM_STATUS, ExamInput, ExamStatus, examsApi, ExamSubjectRow, Part } from "@/lib/api/exams";
 import { cn } from "@/lib/utils";
 
 const fmt = (iso: string | null) => (iso ? new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" }) : "—");
 const partsText = (ps: Part[]) => ps.map((p) => `${p.label} ${p.max}`).join(" + ");
+/** "Written 80, Internal 20" (an exam type's parts in Masters) → parts. */
+const parseParts = (text: string): Part[] =>
+  text
+    .split(/[,+]/)
+    .map((x) => x.trim().match(/^(.*?)\s+(\d+(?:\.\d+)?)$/))
+    .filter((m): m is RegExpMatchArray => !!m && !!m[1])
+    .map((m, i) => ({ key: slug(m[1]) || `p${i + 1}`, label: m[1], max: Number(m[2]) }));
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 10) || "p";
 
 /** The parts of a subject (Written 80 + Internal 20): add, remove, rename, change maximum. */
@@ -54,6 +62,8 @@ function ExamForm({ yearId, exam, onClose }: { yearId: string; exam: Exam | null
   const { showToast } = useToast();
   const classes = useQuery({ queryKey: ["academic-class-options", yearId], queryFn: () => academicApi.classOptions(yearId) });
   const terms = useQuery({ queryKey: ["exam-terms", yearId], queryFn: () => examsApi.terms(yearId) });
+  const types = useQuery({ queryKey: ["master-options", "exam_type"], queryFn: () => mastersApi.options("exam_type"), staleTime: 5 * 60_000 });
+  const [typeId, setTypeId] = useState("");
   const [v, setV] = useState<ExamInput>(
     exam
       ? { name: exam.name, shortName: exam.shortName, termId: exam.termId, classIds: exam.classIds, components: exam.components, weightage: exam.weightage, countsInResult: exam.countsInResult, entryDeadline: exam.entryDeadline }
@@ -65,6 +75,14 @@ function ExamForm({ yearId, exam, onClose }: { yearId: string; exam: Exam | null
     if (!exam && classes.data && !v.classIds.length) setV((x) => ({ ...x, classIds: classes.data.map((c) => c.id) }));
   }, [classes.data, exam, v.classIds.length]);
   const set = (patch: Partial<ExamInput>) => setV((x) => ({ ...x, ...patch }));
+  /** An exam type (Masters → Exam types) fills in the name, parts and weightage. */
+  const chooseType = (id: string) => {
+    setTypeId(id);
+    const t = types.data?.find((x) => x.id === id);
+    if (!t) return;
+    const parts = parseParts(String(t.extra.parts ?? ""));
+    setV((x) => ({ ...x, name: x.name || t.name, shortName: x.shortName || t.code || null, ...(parts.length ? { components: parts } : {}), ...(t.extra.weightage != null && t.extra.weightage !== "" ? { weightage: Number(t.extra.weightage) } : {}) }));
+  };
   const save = async () => {
     setError(null);
     setBusy(true);
@@ -84,6 +102,9 @@ function ExamForm({ yearId, exam, onClose }: { yearId: string; exam: Exam | null
   return (
     <Modal isOpen onClose={onClose} title={exam ? `Edit ${exam.name}` : "Add an exam"} width="max-w-3xl">
       <div className="space-y-4">
+        {!exam && !!types.data?.length && (
+          <Select label="Type (fills in the parts and weightage; Masters → Exam types)" value={typeId} onChange={chooseType} options={[{ value: "", label: "Choose…" }, ...types.data.map((t) => ({ value: t.id, label: `${t.name}${t.extra.parts ? ` · ${String(t.extra.parts)}` : ""}` }))]} />
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr_1fr] gap-4">
           <Input label="Exam" value={v.name} onChange={(e) => set({ name: e.target.value })} placeholder="e.g. Half-Yearly" maxLength={60} />
           <Input label="Short name (report card)" value={v.shortName ?? ""} onChange={(e) => set({ shortName: e.target.value || null })} placeholder="HY" maxLength={12} />
