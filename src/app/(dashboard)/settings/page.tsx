@@ -24,6 +24,7 @@ const ICONS: Record<string, string> = {
   Homework: "menu_book",
   AI: "smart_toy",
   "Question Bank": "quiz",
+  "Online Tests": "assignment",
   "Notices & Events": "campaign",
   Fees: "payments",
   Payment: "account_balance",
