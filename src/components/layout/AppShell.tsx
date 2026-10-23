@@ -24,9 +24,8 @@ interface NavItem {
   icon: string;
 }
 
-function NavLink({ item, onNavigate, badge }: { item: NavItem; onNavigate?: () => void; badge?: number }) {
-  const pathname = usePathname();
-  const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+function NavLink({ item, onNavigate, badge, activeHref }: { item: NavItem; onNavigate?: () => void; badge?: number; activeHref: string | null }) {
+  const active = item.href === activeHref;
   return (
     <Link
       href={item.href}
@@ -131,6 +130,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { me, access } = useAuth();
   const menu = access?.menu ?? [];
   const pathname = usePathname();
+  // The one item to light up: the longest link the page is under (/questions/chapters is "Chapters", not "Question Bank").
+  const activeHref =
+    menu
+      .flatMap((g) => g.items.map((i) => i.href))
+      .filter((h) => (h === "/" ? pathname === "/" : pathname === h || pathname.startsWith(`${h}/`)))
+      .sort((a, b) => b.length - a.length)[0] ?? null;
   // Notices not opened yet: the number next to "Notices" (checked every few minutes).
   const hasNotices = menu.some((g) => g.items.some((i) => i.key === "notices"));
   const unread = useQuery({ queryKey: ["notices-unread"], queryFn: noticesApi.unread, enabled: hasNotices, refetchInterval: 3 * 60_000, staleTime: 60_000 });
@@ -178,7 +183,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <p className="text-[9px] font-black uppercase tracking-[0.25em] text-on-surface-variant/40 px-4 mb-2 mt-3">{group.label}</p>
               )}
               {group.items.map((item) => (
-                <NavLink key={item.key} item={item} onNavigate={() => setNavOpen(false)} badge={item.key === "notices" ? unread.data?.unread : undefined} />
+                <NavLink key={item.key} item={item} activeHref={activeHref} onNavigate={() => setNavOpen(false)} badge={item.key === "notices" ? unread.data?.unread : undefined} />
               ))}
             </div>
           ))}
