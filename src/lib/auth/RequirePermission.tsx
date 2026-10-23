@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useAuth } from "./AuthProvider";
 
-/** Shows the page only to people holding the permission; others get a friendly "no access" page. */
-export function RequirePermission({ permission, children }: { permission: string; children: React.ReactNode }) {
+/** Shows the page only to people holding the permission (any of them, for a list); others get a friendly "no access" page. */
+export function RequirePermission({ permission, children }: { permission: string | string[]; children: React.ReactNode }) {
   const { can } = useAuth();
-  if (can(permission)) return <>{children}</>;
+  if ((Array.isArray(permission) ? permission : [permission]).some((p) => can(p))) return <>{children}</>;
   return (
     <div className="max-w-lg mx-auto text-center mt-20 space-y-4">
       <span className="material-symbols-outlined text-5xl text-on-surface-variant/40">lock</span>
