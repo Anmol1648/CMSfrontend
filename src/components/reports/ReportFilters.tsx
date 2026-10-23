@@ -8,6 +8,7 @@ import { YearSelect } from "@/components/academic/YearSelect";
 import { academicApi } from "@/lib/api/academic";
 import { ReportFilter } from "@/lib/api/reports";
 import { useCodedList } from "@/components/masters/useCodedList";
+import { ExamPicker } from "./ExamPicker";
 
 function MasterFilter({ label, master, value, onChange }: { label: string; master: string; value: string; onChange: (v: string) => void }) {
   const { options } = useCodedList(master);
@@ -57,6 +58,8 @@ export function ReportFilters({ filters, values, onChange }: { filters: ReportFi
                 options={[{ value: "", label: cls ? "All sections" : "Choose a class first" }, ...(sections.data ?? []).map((s) => ({ value: s.id, label: s.label }))]}
               />
             );
+          case "exam":
+            return <ExamPicker key={f.key} label={label} year={year} value={v} onChange={(x) => set(f.key, x)} />;
           case "master":
             return <MasterFilter key={f.key} label={label} master={f.master ?? ""} value={v} onChange={(x) => set(f.key, x)} />;
           case "select":

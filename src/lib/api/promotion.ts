@@ -25,6 +25,8 @@ export interface SectionPromotion {
     roll: number | null;
     attendance: number | null;
     dues: number;
+    /** The session's final result, once published (Passed / Needs improvement). */
+    result: string | null;
     done: { outcome: Outcome; toSection: string | null; carried: number; at: string } | null;
     suggestion: { outcome: Outcome; toSectionId: string | null };
   }[];

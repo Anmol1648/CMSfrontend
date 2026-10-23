@@ -161,7 +161,10 @@ function SectionScreen({ yearId, sectionId, onBack }: { yearId: string; sectionI
                       <td className="px-4 py-2">{s.roll ?? "—"}</td>
                       <td className="px-4 py-2">
                         <p className="font-semibold">{s.name}</p>
-                        <p className="text-[11px] text-on-surface-variant/70">{s.admissionNo}</p>
+                        <p className="text-[11px] text-on-surface-variant/70">
+                          {s.admissionNo}
+                          {s.result && <span className={cn("ml-2 font-bold", s.result === "Needs improvement" ? "text-error" : "text-emerald-700")}>· {s.result}</span>}
+                        </p>
                       </td>
                       <td className={cn("px-4 py-2", s.attendance != null && s.attendance < 75 && "text-error font-bold")}>{s.attendance == null ? "—" : `${s.attendance}%`}</td>
                       <td className={cn("px-4 py-2", s.dues > 0 && "text-amber-700 font-semibold")}>{s.dues ? rupees(s.dues) : "—"}</td>

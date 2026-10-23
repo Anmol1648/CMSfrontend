@@ -2,7 +2,7 @@ import { api, fetchFile } from './client';
 
 /** Report Center (cmsbackend/src/modules/reports): the report library, files (Jasper / built-in) and designs. */
 
-export type ReportFilterType = 'date' | 'year' | 'class' | 'section' | 'select' | 'text' | 'master';
+export type ReportFilterType = 'date' | 'year' | 'class' | 'section' | 'select' | 'text' | 'master' | 'exam';
 export type ReportColumnType = 'text' | 'number' | 'money' | 'date';
 export type ReportFormat = 'pdf' | 'xlsx' | 'docx';
 export type ReportEngine = 'auto' | 'jasper' | 'builtin';

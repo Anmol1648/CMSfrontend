@@ -1,5 +1,6 @@
 "use client";
 
+import { ExamPicker } from "./ExamPicker";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -54,7 +55,7 @@ const DATE_TOKENS = [
 const problem = (err: unknown) => (err instanceof ApiError && err.details.length ? `${err.message} (${err.details.map((d) => d.message).join("; ")})` : errorMessage(err));
 
 /** One input of the data source (session, period): a fixed value or a moving default (today, the current session). */
-function ParamInput({ p, value, onChange }: { p: DataSource["params"][number]; value: string; onChange: (v: string) => void }) {
+function ParamInput({ p, value, onChange, year }: { p: DataSource["params"][number]; value: string; onChange: (v: string) => void; year?: string }) {
   const years = useQuery({ queryKey: ["academic-year-options"], queryFn: academicApi.yearOptions, enabled: p.type === "year" });
   const v = value || p.default || "";
   if (p.type === "year")
@@ -75,6 +76,7 @@ function ParamInput({ p, value, onChange }: { p: DataSource["params"][number]; v
       </div>
     );
   }
+  if (p.type === "exam") return <ExamPicker label={p.label} year={year ?? ""} value={v} onChange={onChange} />;
   return <Input label={p.label} value={v} onChange={(e) => onChange(e.target.value)} />;
 }
 
@@ -293,7 +295,7 @@ export function ReportBuilder({ id }: { id?: string }) {
               <p className="text-xs text-on-surface-variant mb-4">These are asked every time the report is run; this is what they start with.</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {source.params.map((p) => (
-                  <ParamInput key={p.key} p={p} value={def.params[p.key] ?? ""} onChange={(v) => set({ params: { ...def.params, [p.key]: v } })} />
+                  <ParamInput key={p.key} p={p} year={def.params.year ?? "current"} value={def.params[p.key] ?? ""} onChange={(v) => set({ params: { ...def.params, [p.key]: v } })} />
                 ))}
               </div>
             </Card>
