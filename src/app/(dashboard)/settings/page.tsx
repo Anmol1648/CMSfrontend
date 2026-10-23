@@ -21,6 +21,7 @@ const ICONS: Record<string, string> = {
   Leave: "beach_access",
   Alerts: "notifications_active",
   Exams: "grading",
+  Homework: "menu_book",
   "Notices & Events": "campaign",
   Fees: "payments",
   Payment: "account_balance",
