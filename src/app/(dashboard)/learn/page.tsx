@@ -30,7 +30,9 @@ function ChatPanel({ chat, onChange }: { chat: Chat; onChange: (c: Chat) => void
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => end.current?.scrollIntoView({ behavior: "smooth", block: "end" }), [chat.messages.length, busy]);
+  useEffect(() => {
+    end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [chat.messages.length, busy]);
   const send = async () => {
     if (!text.trim()) return;
     setBusy(true);
