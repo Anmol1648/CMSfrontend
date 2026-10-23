@@ -101,7 +101,7 @@ export const questionsApi = {
   chapters: (classId: string, subjectId: string) => api.get<{ canEdit: boolean; chapters: Chapter[]; noChapter: number }>('/questions/chapters', { params: { class: classId, subject: subjectId } }),
   addChapter: (input: { classId: string; subjectId: string; name: string; topics: string[]; description?: string | null; isActive?: boolean }) => api.post<Chapter>('/questions/chapters', input),
   addChapters: (classId: string, subjectId: string, lines: string[]) => api.post<{ added: number }>('/questions/chapters/many', { classId, subjectId, lines }),
-  suggestChapters: (classId: string, subjectId: string) => api.get<{ name: string; topics: string[] }[]>('/questions/chapters/suggest', { params: { class: classId, subject: subjectId }, timeout: 120_000 }),
+  suggestChapters: (classId: string, subjectId: string) => api.get<{ name: string; topics: string[] }[]>('/questions/chapters/suggest', { params: { class: classId, subject: subjectId }, timeout: 320_000 }),
   updateChapter: (id: string, input: { name: string; topics: string[]; description?: string | null; isActive: boolean }) => api.put<Chapter>(`/questions/chapters/${id}`, input),
   moveChapter: (id: string, direction: 'up' | 'down') => api.post<{ moved: boolean }>(`/questions/chapters/${id}/move`, { direction }),
   deleteChapter: (id: string) => api.delete<{ id: string }>(`/questions/chapters/${id}`),
@@ -114,13 +114,13 @@ export const questionsApi = {
   send: (ids: string[]) => api.post<{ sent: number; status: string }>('/questions/send', { ids }),
   review: (ids: string[], approve: boolean, note?: string) => api.post<{ reviewed: number }>('/questions/review', { ids, approve, note }),
   generate: (input: { classId: string; subjectId: string; chapterId: string | null; type: QuestionType; count: number; marks: number; difficultyId: string | null; levelId: string | null; instructions?: string }) =>
-    api.post<{ made: number; skipped: number; status: string; questions: Question[] }>('/questions/generate', input, { timeout: 180_000 }),
+    api.post<{ made: number; skipped: number; status: string; questions: Question[] }>('/questions/generate', input, { timeout: 320_000 }),
   uploadImage: (file: File) => uploadFile<{ id: string; name: string }>('/questions/images', 'file', file),
   imagePath: (id: string) => `/questions/${id}/image`,
 
   aiStatus: () => api.get<AiStatus>('/ai/status'),
   aiSetup: () => api.get<AiSetup>('/ai/setup'),
   saveAiKey: (key: string) => api.put<AiSetup>('/ai/key', { key }),
-  testAi: () => api.post<{ reply: string }>('/ai/test', undefined, { timeout: 120_000 }),
+  testAi: () => api.post<{ reply: string }>('/ai/test', undefined, { timeout: 320_000 }),
   aiUsage: (month?: string) => api.get<AiUsage>('/ai/usage', { params: month ? { month } : {} }),
 };

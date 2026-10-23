@@ -186,7 +186,7 @@ export const testsApi = {
   analysis: (id: string) => api.get<Analysis>(`/tests/${id}/analysis`),
   attempt: (attemptId: string) => api.get<AttemptFull>(`/tests/attempts/${attemptId}`),
   mark: (attemptId: string, marks: Record<string, { marks: number | null; note?: string | null }>) => api.put<AttemptFull>(`/tests/attempts/${attemptId}/marks`, { marks }),
-  suggest: (attemptId: string, question: string) => api.post<{ marks: number; reason: string }>(`/tests/attempts/${attemptId}/suggest`, { question }, { timeout: 120_000 }),
+  suggest: (attemptId: string, question: string) => api.post<{ marks: number; reason: string }>(`/tests/attempts/${attemptId}/suggest`, { question }, { timeout: 320_000 }),
   examTargets: (id: string) => api.get<{ examSubjectId: string; exam: string; parts: { key: string; label: string; max: number }[] }[]>(`/tests/${id}/exam-targets`),
   toExam: (id: string, examSubjectId: string, part: string) => api.post<{ students: number; exam: string; part: string }>(`/tests/${id}/to-exam`, { examSubjectId, part }),
 
