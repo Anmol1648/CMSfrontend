@@ -225,6 +225,52 @@ export interface ChannelSetup {
   whatsapp: { on: boolean; provider: string; saved: { key: boolean; account: boolean; template: boolean } };
 }
 
+export interface CustomInput {
+  name: string;
+  reportKey: string;
+  filters: Record<string, string>;
+  sendTo: string[];
+  frequency: 'daily' | 'weekly' | 'monthly';
+  day: number | null;
+  time: string;
+  channels: Channel[];
+  type: string;
+  priority: string;
+  subject: string;
+  body: string;
+  shortText: string | null;
+  summarySubject: string;
+  summaryBody: string;
+  repeatDays: number;
+  enabled: boolean;
+}
+
+export interface CustomAlert extends CustomInput {
+  id: string;
+  report: string;
+  about: 'student' | 'staff' | null;
+  sendToLabels: string[];
+  lastRunAt: string | null;
+  lastResult: string | null;
+}
+
+export interface AlertReport {
+  key: string;
+  label: string;
+  category: string;
+  description: string;
+  about: 'student' | 'staff';
+  columns: { key: string; label: string; type: string }[];
+}
+
+export interface CustomPreview {
+  rows: number;
+  fresh: number;
+  counts: Record<string, number>;
+  sample: { subject: string; body: string } | null;
+  summarySample: { subject: string; body: string } | null;
+}
+
 const clean = (q: object) => Object.fromEntries(Object.entries(q).filter(([, v]) => v !== undefined && v !== '' && v !== null)) as Record<string, string | number>;
 
 export const alertsApi = {
@@ -262,6 +308,13 @@ export const alertsApi = {
   exportLog: (q: LogQuery) => downloadFile('/alerts/log/export', clean({ ...q, page: undefined }), 'alert-log.xlsx'),
   bouncing: () => api.get<{ address: string; channel: Channel; name: string; failures: number }[]>('/alerts/log/bouncing'),
   retry: (id: string) => api.post<{ id: string }>(`/alerts/log/${id}/retry`),
+
+  customList: () => api.get<CustomAlert[]>('/alerts/custom'),
+  customReports: () => api.get<AlertReport[]>('/alerts/custom/options'),
+  saveCustom: (id: string | null, input: CustomInput) => (id ? api.put<CustomAlert>(`/alerts/custom/${id}`, input) : api.post<CustomAlert>('/alerts/custom', input)),
+  deleteCustom: (id: string) => api.delete<{ id: string }>(`/alerts/custom/${id}`),
+  previewCustom: (input: CustomInput) => api.postRead<CustomPreview>('/alerts/custom/preview', input, { timeout: 180_000 }),
+  runCustom: (id: string) => api.post<{ result: string }>(`/alerts/custom/${id}/run`, undefined, { timeout: 300_000 }),
 
   channels: () => api.get<ChannelSetup>('/alerts/channels'),
   saveKeys: (keys: Record<string, string>) => api.put<ChannelSetup>('/alerts/channels/keys', keys),
