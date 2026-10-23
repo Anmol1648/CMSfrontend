@@ -45,6 +45,8 @@ export interface SchoolClass {
   shortName: string | null;
   group: Ref | null;
   hasStreams: boolean;
+  /** Promoted to this class (empty = the next one in order). */
+  nextClassId: string | null;
   sortOrder: number;
   isActive: boolean;
   sections: Section[];
@@ -90,6 +92,7 @@ export interface ClassInput {
   groupId?: string | null;
   hasStreams?: boolean;
   isActive?: boolean;
+  nextClassId?: string | null;
 }
 
 export interface SectionInput {

@@ -68,12 +68,14 @@ function ClassDialog({ cls, onClose, onSaved }: { cls: SchoolClass | null; onClo
   const [groupId, setGroupId] = useState(cls?.group?.id ?? "");
   const [hasStreams, setHasStreams] = useState(cls?.hasStreams ?? false);
   const [isActive, setIsActive] = useState(cls?.isActive ?? true);
+  const [nextClassId, setNextClassId] = useState(cls?.nextClassId ?? "");
+  const catalogue = useQuery({ queryKey: ["academic-classes", null], queryFn: () => academicApi.classes() });
   const { busy, error, fieldErrors, run } = useSave();
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     run(async () => {
-      const input = { name, shortName: shortName.trim() || null, groupId: groupId || null, hasStreams, isActive };
+      const input = { name, shortName: shortName.trim() || null, groupId: groupId || null, hasStreams, isActive, nextClassId: nextClassId || null };
       if (cls) await academicApi.updateClass(cls.id, input);
       else await academicApi.createClass(input);
       onSaved(cls ? `${name.trim()} saved` : `${name.trim()} added`);
@@ -90,6 +92,13 @@ function ClassDialog({ cls, onClose, onSaved }: { cls: SchoolClass | null; onClo
         </div>
         <MasterSelect master="class_group" label="Class group (optional)" value={groupId} onChange={setGroupId} placeholder="No group" error={fieldErrors.groupId} disabled={busy} />
         <Checkbox label="Has streams" hint="Sections and subjects are set per stream (Science, Commerce…), as in XI and XII." checked={hasStreams} onChange={setHasStreams} disabled={busy} />
+        <Select
+          label="Promoted to"
+          value={nextClassId}
+          onChange={setNextClassId}
+          disabled={busy}
+          options={[{ value: "", label: "The next class in order (none after the last class)" }, ...(catalogue.data ?? []).filter((c) => c.isActive && c.id !== cls?.id).map((c) => ({ value: c.id, label: c.name }))]}
+        />
         <Checkbox label="The school still has this class" hint="Untick only if the school stops it for good (it keeps its history). To leave it out of one session, untick it in that session’s classes instead." checked={isActive} onChange={setIsActive} disabled={busy} />
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
           {cls ? <DeleteButton label={cls.name} busy={busy} onDelete={() => run(async () => (await academicApi.deleteClass(cls.id), onSaved(`${cls.name} deleted`)))} /> : <span />}

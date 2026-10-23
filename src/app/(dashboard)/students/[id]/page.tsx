@@ -1,5 +1,7 @@
 "use client";
 
+import { DocumentViewer } from "@/components/documents/DocumentViewer";
+import { AskTc } from "@/components/students/AskTc";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -649,6 +651,8 @@ function StudentPage({ id }: { id: string }) {
   const student = useQuery({ queryKey: ["student", id], queryFn: () => studentsApi.get(id) });
   const [tab, setTab] = useState<(typeof TABS)[number][0]>("overview");
   const photo = useRef<HTMLInputElement>(null);
+  const [certificate, setCertificate] = useState<string | null>(null);
+  const [askingTc, setAskingTc] = useState(false);
   const reload = async () => {
     await queryClient.invalidateQueries({ queryKey: ["student", id] });
     await queryClient.invalidateQueries({ queryKey: ["students"] });
@@ -673,12 +677,41 @@ function StudentPage({ id }: { id: string }) {
                 Fees
               </Link>
             )}
+            {(can("certificate.issue") || can("tc.manage")) && (
+              <>
+                <button type="button" onClick={() => setCertificate("bonafide_certificate")} className="px-4 py-2.5 font-bold rounded-md bg-surface-high text-primary hover:bg-surface-highest transition-all">
+                  Bonafide
+                </button>
+                <button type="button" onClick={() => setCertificate("character_certificate")} className="px-4 py-2.5 font-bold rounded-md bg-surface-high text-primary hover:bg-surface-highest transition-all">
+                  Character
+                </button>
+              </>
+            )}
+            {can("tc.manage") && s.status === "active" && (
+              <button type="button" onClick={() => setAskingTc(true)} className="px-4 py-2.5 font-bold rounded-md bg-surface-high text-error hover:bg-surface-highest transition-all">
+                Ask for TC
+              </button>
+            )}
             <Link href="/students" className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
               All students
             </Link>
           </div>
         }
       />
+      {certificate && (
+        <DocumentViewer docKey={certificate} params={{ student: s.id }} title={`${certificate === "bonafide_certificate" ? "Bonafide" : "Character"} certificate · ${s.name}`} filename={`${certificate}-${s.admissionNo}.pdf`} onClose={() => setCertificate(null)} />
+      )}
+      {askingTc && (
+        <AskTc
+          studentId={s.id}
+          studentName={`${s.name} · ${s.admissionNo}`}
+          onClose={() => setAskingTc(false)}
+          onDone={() => {
+            setAskingTc(false);
+            showToast("TC asked for: clear it and issue it in Students → Transfer Certificates", "success");
+          }}
+        />
+      )}
       <div className="space-y-6 max-w-6xl">
         <Card className="flex flex-wrap items-center gap-5">
           <button type="button" disabled={!canEdit} onClick={() => photo.current?.click()} title={canEdit ? "Change photo" : undefined} className="disabled:cursor-default">
