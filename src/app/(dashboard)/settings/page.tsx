@@ -25,6 +25,7 @@ const ICONS: Record<string, string> = {
   AI: "smart_toy",
   "Question Bank": "quiz",
   "Online Tests": "assignment",
+  "AI Tutor": "school",
   "Notices & Events": "campaign",
   Fees: "payments",
   Payment: "account_balance",
