@@ -16,6 +16,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { useQuery } from "@tanstack/react-query";
 import { noticesApi } from "@/lib/api/notices";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface NavItem {
   label: string;
@@ -203,7 +204,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="hidden lg:inline">{me?.school?.legalName}</span>
             </p>
           </div>
-          <UserMenu />
+          <div className="flex items-center gap-1 sm:gap-2">
+            <NotificationBell />
+            <UserMenu />
+          </div>
         </header>
         <main className="flex-1 min-w-0 pt-20 lg:pt-28 px-4 sm:px-6 lg:px-12 pb-16 lg:pb-20">{children}</main>
       </div>

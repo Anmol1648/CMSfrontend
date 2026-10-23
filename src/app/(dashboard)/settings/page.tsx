@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils";
 const ICONS: Record<string, string> = {
   Attendance: "how_to_reg",
   Leave: "beach_access",
+  Alerts: "notifications_active",
+  Exams: "grading",
   "Notices & Events": "campaign",
   Fees: "payments",
   Payment: "account_balance",

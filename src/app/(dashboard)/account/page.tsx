@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -324,6 +325,12 @@ export default function AccountPage() {
           <div className="max-w-md">
             <ChangePasswordForm onDone={() => showToast("Password changed. Your other devices have been signed out.", "success")} />
           </div>
+        </Section>
+
+        <Section title="Notifications" description="Which kinds of messages reach you in the app, by email or SMS.">
+          <Link href="/notifications" className="text-sm font-bold text-primary hover:opacity-70">
+            Choose how you’re told (Notifications → How I’m told) →
+          </Link>
         </Section>
 
         <TwoStepSignIn />
