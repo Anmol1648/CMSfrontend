@@ -102,6 +102,18 @@ function ValueDialog({
         {info.fields.map((f) =>
           f.type === "boolean" ? (
             <Checkbox key={f.key} label={f.label} hint={f.help} checked={extra[f.key] === true} onChange={(on) => setExtra({ ...extra, [f.key]: on })} disabled={busy} />
+          ) : f.type === "select" ? (
+            <div key={f.key} className="space-y-1">
+              <Select
+                label={f.required ? f.label : `${f.label} (optional)`}
+                value={extra[f.key] == null ? "" : String(extra[f.key])}
+                onChange={(v) => setExtra({ ...extra, [f.key]: v })}
+                options={[{ value: "", label: "Choose…" }, ...(f.options ?? [])]}
+                error={fieldErrors[`extra.${f.key}`]}
+                disabled={busy}
+              />
+              {f.help && <p className="text-xs text-on-surface-variant/60 ml-1">{f.help}</p>}
+            </div>
           ) : (
             <div key={f.key} className="space-y-1">
               <Input
@@ -312,7 +324,7 @@ function ValuesPanel({ info }: { info: MasterInfo }) {
                   {parentChain.length > 0 && <td className="px-5 py-3 text-on-surface-variant">{pathOf(v) || "—"}</td>}
                   {info.fields.map((f) => (
                     <td key={f.key} className="px-5 py-3 font-mono text-xs">
-                      {v.extra[f.key] === undefined || v.extra[f.key] === null ? "—" : f.type === "boolean" ? (v.extra[f.key] ? "Yes" : "No") : String(v.extra[f.key])}
+                      {v.extra[f.key] === undefined || v.extra[f.key] === null ? "—" : f.type === "boolean" ? (v.extra[f.key] ? "Yes" : "No") : f.type === "select" ? (f.options?.find((o) => o.value === v.extra[f.key])?.label ?? String(v.extra[f.key])) : String(v.extra[f.key])}
                     </td>
                   ))}
                   <td className="px-5 py-3">{v.isActive ? <Pill tone="success">Active</Pill> : <Pill>Inactive</Pill>}</td>

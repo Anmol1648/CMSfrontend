@@ -16,11 +16,13 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { errorMessage } from "@/lib/api/client";
 import { examsApi, ScopeKind } from "@/lib/api/exams";
+import { useExamLabels } from "@/components/exams/useExamLabels";
 import { cn } from "@/lib/utils";
 
 const pct = (n: number | null) => (n == null ? "—" : `${n}%`);
 
 function Results() {
+  const labels = useExamLabels();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const confirm = useConfirm();
@@ -75,7 +77,7 @@ function Results() {
             { value: "", label: "Choose…" },
             ...(c?.exams ?? []).map((e) => ({ value: `exam:${e.id}`, label: `${e.name}${e.published ? "" : " (not published)"}` })),
             ...(c?.terms ?? []).map((t) => ({ value: `term:${t.id}`, label: `${t.name} (its exams)${t.published ? "" : " · not published"}` })),
-            ...(yearId ? [{ value: `final:${yearId}`, label: `Final result of the session${c?.finalPublished ? "" : " · not published"}` }] : []),
+            ...(yearId ? [{ value: `final:${yearId}`, label: `${labels.finalName} of the session${c?.finalPublished ? "" : " · not published"}` }] : []),
           ]}
         />
         <Select label="Section" value={section} onChange={setSection} className="w-full sm:w-48" options={(c?.sections ?? []).map((s) => ({ value: s.id, label: s.label }))} />
@@ -151,7 +153,7 @@ function Results() {
                         <td className="px-3 py-2 font-semibold whitespace-nowrap">{s.student.name}</td>
                         {s.subjects.map((x) => (
                           <td key={x.subjectId} className={cn("px-3 py-2 text-center whitespace-nowrap", x.passed === false && "text-error font-bold")}>
-                            {d.rule.descriptive ? (x.grade ?? "—") : x.percent == null ? (x.exams.some((e) => e.status === "AB") ? "AB" : "—") : `${d.exams.length === 1 ? x.exams[0]?.obtained ?? "—" : `${x.percent}%`}`}
+                            {d.rule.descriptive ? (x.grade ?? "—") : x.percent == null ? (x.exams.find((e) => e.status !== "P" && e.status !== "none")?.status ?? "—") : `${d.exams.length === 1 ? x.exams[0]?.obtained ?? "—" : `${x.percent}%`}`}
                             {!d.rule.descriptive && x.grade && <span className="block text-[10px] text-on-surface-variant/60">{x.grade}{x.grace ? ` (+${x.grace})` : ""}</span>}
                           </td>
                         ))}

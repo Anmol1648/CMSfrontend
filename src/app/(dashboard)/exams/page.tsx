@@ -19,6 +19,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { errorMessage } from "@/lib/api/client";
 import { academicApi } from "@/lib/api/academic";
 import { mastersApi } from "@/lib/api/masters";
+import { useExamLabels } from "@/components/exams/useExamLabels";
 import { Exam, EXAM_STATUS, ExamInput, ExamStatus, examsApi, ExamSubjectRow, Part } from "@/lib/api/exams";
 import { cn } from "@/lib/utils";
 
@@ -145,6 +146,7 @@ function ExamForm({ yearId, exam, onClose }: { yearId: string; exam: Exam | null
 
 /** One exam: its subjects per class (parts, date sheet), progress of marks entry, and its status. */
 function ExamDetail({ exam, onBack }: { exam: Exam; onBack: () => void }) {
+  const labels = useExamLabels();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const confirm = useConfirm();
@@ -200,7 +202,7 @@ function ExamDetail({ exam, onBack }: { exam: Exam; onBack: () => void }) {
             {exam.term ?? "No term"} · {partsText(exam.components)} · weightage {exam.weightage}% · marks by {fmt(exam.entryDeadline)}
           </p>
         </div>
-        <Pill tone={EXAM_STATUS[exam.status].tone}>{EXAM_STATUS[exam.status].label}</Pill>
+        <Pill tone={EXAM_STATUS[exam.status].tone}>{labels.stage(exam.status)}</Pill>
       </Card>
       <Tabs
         tabs={[
@@ -422,8 +424,12 @@ const NEXT: Record<ExamStatus, { to: ExamStatus; label: string; message: string;
   locked: [{ to: "published", label: "Publish results", message: "Students and parents can see the results and report cards.", perm: "exam.publish" }, { to: "open", label: "Reopen entry", message: "Teachers can change marks again.", perm: "exam.setup" }],
   published: [{ to: "locked", label: "Unpublish", message: "Students and parents no longer see these results.", perm: "exam.publish" }],
 };
+/** With locking optional (System Settings → Exams), results can be published straight from entry. */
+const stepsOf = (status: ExamStatus, lockBeforePublish: boolean) =>
+  status === "open" && !lockBeforePublish ? [...NEXT.open, { ...NEXT.locked[0], message: "Marks entry closes, and students and parents can see the results and report cards." }] : NEXT[status];
 
 function ExamsScreen() {
+  const labels = useExamLabels();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const confirm = useConfirm();
@@ -437,7 +443,7 @@ function ExamsScreen() {
     try {
       await examsApi.status(e.id, s.to);
       queryClient.invalidateQueries({ queryKey: ["exams", yearId] });
-      showToast(`${e.name}: ${EXAM_STATUS[s.to].label}`, "success");
+      showToast(`${e.name}: ${labels.stage(s.to)}`, "success");
     } catch (err) {
       showToast(errorMessage(err), "error");
     }
@@ -509,12 +515,12 @@ function ExamsScreen() {
                           <td className="px-5 py-3 text-xs">{partsText(e.components)}</td>
                           <td className="px-5 py-3 text-xs">{e.countsInResult ? `${e.weightage}%` : "not counted"}</td>
                           <td className="px-5 py-3">
-                            <Pill tone={EXAM_STATUS[e.status].tone}>{EXAM_STATUS[e.status].label}</Pill>
+                            <Pill tone={EXAM_STATUS[e.status].tone}>{labels.stage(e.status)}</Pill>
                             {e.entryDeadline && e.status === "open" && <p className="text-[11px] text-on-surface-variant/70 mt-1">marks by {fmt(e.entryDeadline)}</p>}
                           </td>
                           <td className="px-5 py-3 text-right">
                             <div className="flex flex-wrap justify-end gap-x-4 gap-y-2">
-                              {NEXT[e.status].filter((s) => can(s.perm)).map((s) => (
+                              {stepsOf(e.status, labels.lockBeforePublish).filter((s) => can(s.perm)).map((s) => (
                                 <button key={s.to} type="button" onClick={() => step(e, s)} className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
                                   {s.label}
                                 </button>

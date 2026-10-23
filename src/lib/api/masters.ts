@@ -6,7 +6,8 @@ import type { Paged } from './admin';
 export interface MasterField {
   key: string;
   label: string;
-  type: 'text' | 'number' | 'boolean';
+  type: 'text' | 'number' | 'boolean' | 'select';
+  options?: { value: string; label: string }[];
   required?: boolean;
   max?: number;
   upperCase?: boolean;

@@ -12,14 +12,15 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { errorMessage } from "@/lib/api/client";
 import { EXAM_STATUS, examsApi, MarkStatus } from "@/lib/api/exams";
+import { useExamLabels } from "@/components/exams/useExamLabels";
 import { mastersApi } from "@/lib/api/masters";
 import { cn } from "@/lib/utils";
 
 type Row = { status: MarkStatus; marks: Record<string, string> };
-const STATUS_LABEL: Record<MarkStatus, string> = { P: "Present", AB: "Absent", ML: "Medical", NA: "Not taking" };
 
 /** One subject of one section: a mark (or grade) per student, part by part. */
 function MarksSheet({ subject, section, onBack }: { subject: string; section: string; onBack: () => void }) {
+  const labels = useExamLabels();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const q = useQuery({ queryKey: ["exam-sheet", subject, section], queryFn: () => examsApi.sheet(subject, section) });
@@ -121,11 +122,14 @@ function MarksSheet({ subject, section, onBack }: { subject: string; section: st
                     </td>
                     <td className="px-4 py-1.5">
                       <select aria-label={`${st.name} present`} value={r.status} disabled={!can} onChange={(e) => set(st.id, { status: e.target.value as MarkStatus })} className="rounded-lg bg-surface-container-low px-2 py-1.5 text-xs font-bold text-primary outline-none disabled:opacity-60">
-                        {(Object.keys(STATUS_LABEL) as MarkStatus[]).map((k) => (
-                          <option key={k} value={k}>
-                            {STATUS_LABEL[k]}
-                          </option>
-                        ))}
+                        <option value="P">{labels.present}</option>
+                        {labels.statuses
+                          .filter((x) => x.active || x.code === r.status)
+                          .map((x) => (
+                            <option key={x.code} value={x.code}>
+                              {x.name} ({x.code})
+                            </option>
+                          ))}
                       </select>
                     </td>
                     {s.descriptive ? (

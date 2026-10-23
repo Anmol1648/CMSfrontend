@@ -98,7 +98,16 @@ export interface Sheets {
   sheets: { examSubjectId: string; sectionId: string; section: string; subject: string; max: number; mine: boolean; entered: number }[];
   classTeacherOf: { sectionId: string; section: string }[];
 }
-export type MarkStatus = 'P' | 'AB' | 'ML' | 'NA';
+/** "P" (present) or a code from Masters → Mark statuses (AB, ML…). */
+export type MarkStatus = string;
+export interface ExamLabels {
+  present: string;
+  stages: Record<ExamStatus, string>;
+  finalName: string;
+  kinds: { marks: string; descriptive: string };
+  lockBeforePublish: boolean;
+  statuses: { code: string; name: string; active: boolean; counts: 'zero' | 'leave_out' | 'average' }[];
+}
 export interface Sheet {
   exam: { id: string; name: string; status: ExamStatus };
   subject: string;
@@ -179,6 +188,7 @@ export const examsApi = {
   saveRule: (id: string | null, input: ResultRuleInput) => (id ? api.put<ResultRule[]>(`/exams/rules/${id}`, input) : api.post<ResultRule[]>('/exams/rules', input)),
   deleteRule: (id: string) => api.delete<ResultRule[]>(`/exams/rules/${id}`),
 
+  labels: () => api.get<ExamLabels>('/exams/labels'),
   terms: (year: string) => api.get<Term[]>('/exams/terms', y(year)),
   saveTerm: (year: string, id: string | null, input: { name: string; startDate: string | null; endDate: string | null }) => (id ? api.put<Term[]>(`/exams/terms/${id}`, input, y(year)) : api.post<Term[]>('/exams/terms', input, y(year))),
   deleteTerm: (id: string) => api.delete<Term[]>(`/exams/terms/${id}`),

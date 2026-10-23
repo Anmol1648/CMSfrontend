@@ -16,8 +16,10 @@ import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { errorMessage } from "@/lib/api/client";
 import { Band, examsApi, GradeScale, ResultRule, ResultRuleInput } from "@/lib/api/exams";
+import { useExamLabels } from "@/components/exams/useExamLabels";
 
 function ScaleForm({ scale, onClose }: { scale: GradeScale | null; onClose: () => void }) {
+  const { kinds } = useExamLabels();
   const queryClient = useQueryClient();
   const [v, setV] = useState<Omit<GradeScale, "id">>(scale ? { name: scale.name, kind: scale.kind, bands: scale.bands } : { name: "", kind: "marks", bands: [{ grade: "A", min: 75 }, { grade: "B", min: 50 }, { grade: "C", min: 33 }, { grade: "D", min: 0 }] });
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +38,7 @@ function ScaleForm({ scale, onClose }: { scale: GradeScale | null; onClose: () =
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-4">
           <Input label="Name" value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} maxLength={60} />
-          <Select label="Kind" value={v.kind} onChange={(k) => setV({ ...v, kind: k as GradeScale["kind"] })} options={[{ value: "marks", label: "By marks %" }, { value: "descriptive", label: "Grades chosen by the teacher" }]} />
+          <Select label="Kind" value={v.kind} onChange={(k) => setV({ ...v, kind: k as GradeScale["kind"] })} options={[{ value: "marks", label: kinds.marks }, { value: "descriptive", label: kinds.descriptive }]} />
         </div>
         <div className="space-y-2">
           {v.bands.map((b, i) => (
@@ -126,6 +128,7 @@ function RuleForm({ rule, scales, onClose }: { rule: ResultRule | null; scales: 
 }
 
 function Setup() {
+  const labels = useExamLabels();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const confirm = useConfirm();
@@ -208,7 +211,7 @@ function Setup() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-semibold">{s.name}</p>
-                  <p className="text-[11px] text-on-surface-variant/70">{s.kind === "marks" ? "By marks %" : "Chosen by the teacher"}</p>
+                  <p className="text-[11px] text-on-surface-variant/70">{s.kind === "marks" ? labels.kinds.marks : labels.kinds.descriptive}</p>
                 </div>
                 <div className="flex gap-4">
                   <button type="button" onClick={() => setScale(s)} className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
