@@ -201,7 +201,11 @@ function Classes() {
 
   const year = years.data?.find((y) => y.id === yearId);
   const open = year?.status === "open";
-  const list = classes.data ?? [];
+  const all = classes.data ?? [];
+  // Only the classes the chosen session runs; the others only when asked (to add one back).
+  const [showOthers, setShowOthers] = useState(false);
+  const others = all.filter((c) => c.inYear === null && c.isActive);
+  const list = showOthers ? all : all.filter((c) => c.inYear !== null);
 
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ["academic-classes"] });
@@ -216,7 +220,7 @@ function Classes() {
   /** Runs a class in this session too (the others it runs stay as they are). */
   const addToSession = async (c: SchoolClass) => {
     try {
-      const running = list.filter((x) => x.inYear).map((x) => ({ classId: x.id, admissionsOpen: x.inYear!.admissionsOpen, seats: x.inYear!.seats }));
+      const running = all.filter((x) => x.inYear).map((x) => ({ classId: x.id, admissionsOpen: x.inYear!.admissionsOpen, seats: x.inYear!.seats }));
       await academicApi.saveYearClasses(yearId, [...running, { classId: c.id, admissionsOpen: true, seats: null }]);
       showToast(`${c.name} added to ${year?.name}`, "success");
       await refresh();
@@ -267,7 +271,7 @@ function Classes() {
               Classes in {year.name}
             </Button>
           )}
-          {year && <span className="text-xs text-on-surface-variant/70">{list.filter((c) => c.inYear).length} classes run in {year.name}</span>}
+          {year && <span className="text-xs text-on-surface-variant/70">{all.filter((c) => c.inYear).length} classes run in {year.name}</span>}
           {year && !open && <FormAlert tone="info">{year.name} is closed: its sections can be seen but not changed.</FormAlert>}
           {years.data && !years.data.length && (
             <FormAlert tone="info">
@@ -277,12 +281,12 @@ function Classes() {
         </Card>
 
         {classes.isError && <FormAlert>{errorMessage(classes.error)}</FormAlert>}
-        {canManage && list.length > 1 && <OrderHint>Use ↑ ↓ to set the order classes appear in lists, forms and reports.</OrderHint>}
+        {canManage && showOthers && list.length > 1 && <OrderHint>Use ↑ ↓ to set the order classes appear in lists, forms and reports.</OrderHint>}
         <Card padding="none" className="overflow-hidden">
           {list.map((c, i) => (
             <div key={c.id} className={cn("flex flex-col md:flex-row md:items-center gap-3 px-5 py-4 border-t first:border-t-0 border-outline-variant/10", c.inYear === null && "bg-surface-container-low/50")}>
               <div className="flex items-center gap-3 md:w-80 shrink-0">
-                {canManage && <MoveButtons label={c.name} position={i + 1} first={i === 0} last={i === list.length - 1} disabled={moving} onMove={(d) => moveClass(c.id, d)} />}
+                {canManage && showOthers && <MoveButtons label={c.name} position={i + 1} first={i === 0} last={i === list.length - 1} disabled={moving} onMove={(d) => moveClass(c.id, d)} />}
                 <button type="button" disabled={!canManage} onClick={() => setEditingClass(c)} className="text-left disabled:cursor-default">
                   <p className={cn("font-bold", c.isActive ? "text-primary" : "text-on-surface-variant line-through")}>{c.name}</p>
                   <p className="text-xs text-on-surface-variant/70 space-x-2">
@@ -328,6 +332,11 @@ function Classes() {
           {classes.data && !list.length && <p className="px-5 py-12 text-center text-on-surface-variant/70">No classes yet.</p>}
           {classes.isLoading && <div className="px-5 py-6"><PageLoader compact /></div>}
         </Card>
+        {year && (others.length > 0 || showOthers) && (
+          <button type="button" onClick={() => setShowOthers((x) => !x)} className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
+            {showOthers ? `Show only the classes of ${year.name}` : `${others.length} class${others.length === 1 ? "" : "es"} not in ${year.name} (show, to add one or change the order)`}
+          </button>
+        )}
         {list.length > 0 && (
           <p className="text-xs text-on-surface-variant/60">
             {list.reduce((n, c) => n + c.sections.length, 0)} sections in {year?.name}. Click a class to rename it, a section to set its stream, room or class teacher.
