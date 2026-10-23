@@ -99,8 +99,11 @@ function CustomForm({ alert, onClose }: { alert: CustomAlert | null; onClose: ()
   const fields = [...(r?.columns ?? []).map((c) => c.key), "group", "name", "school", "alert"];
   const insert = (k: string) => setV((x) => ({ ...x, [focus]: `${x[focus] ?? ""}{{${k}}}` }));
   const fail = (err: unknown) => {
-    setError(errorMessage(err));
-    setFieldErrors(err instanceof ApiError ? err.fieldErrors() : {});
+    const fe = err instanceof ApiError ? err.fieldErrors() : {};
+    // Say which fields, also those not on screen (e.g. the message when only lists are sent).
+    const which = Object.entries(fe).filter(([k]) => !k.includes(".")).map(([k, m]) => `${k} ${m}`);
+    setError(`${errorMessage(err)}${which.length ? `: ${which.join("; ")}` : ""}`);
+    setFieldErrors(fe);
   };
   const check = async () => {
     setError(null);
