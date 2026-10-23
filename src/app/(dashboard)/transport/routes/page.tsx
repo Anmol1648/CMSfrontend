@@ -248,7 +248,24 @@ function Routes() {
                 </Button>
               )}
             </div>
+            {placing && (
+              <div className="mt-2 rounded-xl bg-primary text-white px-4 py-3 space-y-2">
+                <p className="text-sm font-bold flex items-center gap-2">
+                  <span className="material-symbols-outlined">ads_click</span>
+                  Now click the map where {placing === "new" ? "the new stop" : `“${placing.name}”`} is.
+                </p>
+                <div className="flex gap-3 text-xs font-bold">
+                  <button type="button" onClick={() => { setStopForm({ stop: placing === "new" ? null : placing, at: null }); setPlacing(null); }} className="underline">
+                    Type it in instead
+                  </button>
+                  <button type="button" onClick={() => setPlacing(null)} className="underline opacity-80">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
             <ol className="mt-2 space-y-2">
+              {!route.stops.length && !placing && <li className="text-xs text-on-surface-variant/70 px-3">No stops yet. Click “Add a stop”, then click the map where it is.</li>}
               {route.stops.map((s, i) => (
                 <li key={s.id} className={cn("rounded-xl bg-surface-container-low px-3 py-2", !s.isActive && "opacity-60")}>
                   <div className="flex items-center gap-2">

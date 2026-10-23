@@ -76,6 +76,11 @@ export default function LeafletMap({ center, zoom = 14, lines = [], markers = []
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // A crosshair while clicking the map places something.
+  useEffect(() => {
+    if (map.current) map.current.getContainer().style.cursor = onMapClick ? "crosshair" : "";
+  }, [onMapClick]);
+
   useEffect(() => {
     const g = layer.current;
     const m = map.current;
