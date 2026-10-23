@@ -63,7 +63,7 @@ function Enquiries() {
   }, [search]);
   useEffect(() => setPage(1), [year, classId, stage, source, assigned, status, due, debounced, sort]);
 
-  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: academicApi.classOptions });
+  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: () => academicApi.classOptions() });
   const staff = useQuery({ queryKey: ["staff-options"], queryFn: () => staffApi.options() });
   const summary = useQuery({ queryKey: ["enquiry-summary", year], queryFn: () => admissionsApi.summary(year || undefined), enabled: !!year });
   const query: EnquiryListQuery = {

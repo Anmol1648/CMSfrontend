@@ -48,7 +48,7 @@ function Students() {
   useEffect(() => setPage(1), [year, classId, section, gender, status, debounced, sort]);
   useEffect(() => setSection(""), [classId, year]);
 
-  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: academicApi.classOptions });
+  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: () => academicApi.classOptions() });
   const sections = useQuery({ queryKey: ["academic-section-options", year, classId], queryFn: () => academicApi.sectionOptions(year, classId || undefined), enabled: !!year });
   const config = useQuery({ queryKey: ["student-form-config"], queryFn: studentsApi.formConfig });
   const query: StudentListQuery = { page, pageSize: PAGE_SIZE, search: debounced, sort, year, class: classId, section, gender, status };

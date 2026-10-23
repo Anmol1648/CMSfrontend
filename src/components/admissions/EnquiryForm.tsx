@@ -98,7 +98,7 @@ export function EnquiryForm({
   /** The next follow-up date (on a new enquiry; later it is set by the follow-ups). */
   showFollowUp?: boolean;
 }) {
-  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: academicApi.classOptions });
+  const classes = useQuery({ queryKey: ["academic-class-options", values.academicYearId || null], queryFn: () => academicApi.classOptions(values.academicYearId || undefined) });
   const staff = useQuery({ queryKey: ["staff-options"], queryFn: () => staffApi.options() });
   const set = (k: keyof EnquiryValues) => (val: string) => onChange({ ...values, [k]: val });
   const text = (k: keyof EnquiryValues) => ({ value: values[k], onChange: (e: React.ChangeEvent<HTMLInputElement>) => set(k)(e.target.value), error: errors[k] });

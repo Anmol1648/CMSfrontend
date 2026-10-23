@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { AcademicYear, academicApi } from "@/lib/api/academic";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { useToast } from "@/components/ui/ToastProvider";
+import { SessionClasses } from "@/components/academic/SessionClasses";
 
 const showDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
@@ -23,6 +24,16 @@ function YearDialog({ year, years, onClose, onSaved }: { year: AcademicYear | nu
   const [endDate, setEndDate] = useState(year?.endDate ?? "");
   const [isCurrent, setIsCurrent] = useState(false);
   const [copyFrom, setCopyFrom] = useState(year ? "" : years.find((y) => y.isCurrent)?.id ?? years[0]?.id ?? "");
+  const [picked, setPicked] = useState<string[] | null>(null);
+  const [copyFees, setCopyFees] = useState(true);
+  const catalogue = useQuery({ queryKey: ["academic-classes", null], queryFn: () => academicApi.classes(), enabled: !year });
+  const fromClasses = useQuery({ queryKey: ["year-classes", copyFrom], queryFn: () => academicApi.yearClasses(copyFrom), enabled: !year && !!copyFrom });
+  // The ticks start as the classes of the year copied from (every active class when not copying).
+  useEffect(() => {
+    if (year) return;
+    if (copyFrom && fromClasses.data) setPicked(fromClasses.data.classes.filter((c) => c.runs && c.classActive).map((c) => c.id));
+    else if (!copyFrom && catalogue.data) setPicked(catalogue.data.filter((c) => c.isActive).map((c) => c.id));
+  }, [year, copyFrom, fromClasses.data, catalogue.data]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -50,7 +61,7 @@ function YearDialog({ year, years, onClose, onSaved }: { year: AcademicYear | nu
         await academicApi.updateYear(year.id, { name, startDate, endDate });
         onSaved(`${name} saved`);
       } else {
-        await academicApi.createYear({ name, startDate, endDate, isCurrent, ...(copyFrom ? { copyFromYearId: copyFrom } : {}) });
+        await academicApi.createYear({ name, startDate, endDate, isCurrent, ...(copyFrom ? { copyFromYearId: copyFrom, copyFees } : {}), ...(picked ? { classIds: picked } : {}) });
         onSaved(`${name} added`);
       }
     } catch (err) {
@@ -81,6 +92,19 @@ function YearDialog({ year, years, onClose, onSaved }: { year: AcademicYear | nu
                 disabled={busy}
               />
             )}
+            <div>
+              <span className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest ml-1">Classes this session runs</span>
+              <p className="text-xs text-on-surface-variant/70 mt-1 ml-1">Untick a class the school won’t have this session (e.g. Bal Vatika). Other sessions keep theirs.</p>
+              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 rounded-xl bg-surface-container-low p-3">
+                {(catalogue.data ?? [])
+                  .filter((c) => c.isActive)
+                  .map((c) => (
+                    <Checkbox key={c.id} label={c.name} checked={!!picked?.includes(c.id)} disabled={busy || !picked} onChange={(on) => setPicked((xs) => (on ? [...(xs ?? []), c.id] : (xs ?? []).filter((x) => x !== c.id)))} />
+                  ))}
+              </div>
+              {picked && <p className="text-[11px] text-on-surface-variant/60 mt-1 ml-1">{picked.length} classes</p>}
+            </div>
+            {copyFrom && <Checkbox label="Also copy the fee set-up" hint="Instalments (same months, a year on), the fee structure of the classes above and concessions. Change the amounts afterwards in Fees → Setup." checked={copyFees} onChange={setCopyFees} disabled={busy} />}
             <Checkbox label="Make it the current year now" hint="Screens open on the current year. You can switch later." checked={isCurrent} onChange={setIsCurrent} disabled={busy} />
           </>
         )}
@@ -89,7 +113,7 @@ function YearDialog({ year, years, onClose, onSaved }: { year: AcademicYear | nu
             Cancel
           </Button>
           <div className="w-32">
-            <SubmitButton busy={busy} busyLabel="Saving…" disabled={!name.trim() || !startDate || !endDate} className="py-2.5">
+            <SubmitButton busy={busy} busyLabel="Saving…" disabled={!name.trim() || !startDate || !endDate || (!year && !picked?.length)} className="py-2.5">
               {year ? "Save" : "Add"}
             </SubmitButton>
           </div>
@@ -132,7 +156,7 @@ function CopyDialog({ target, years, onClose, onDone }: { target: AcademicYear; 
         <Select label="From" value={from} onChange={setFrom} options={sources.map((y) => ({ value: y.id, label: y.name }))} disabled={busy} />
         <Checkbox label="Sections" hint="With stream, capacity, room and class teacher (teachers who have left are not copied)." checked={sections} onChange={setSections} disabled={busy} />
         <Checkbox label="Subjects of each class" checked={subjects} onChange={setSubjects} disabled={busy} />
-        <p className="text-xs text-on-surface-variant/70">Classes that already have sections or subjects in {target.name} are left as they are.</p>
+        <p className="text-xs text-on-surface-variant/70">Only the classes {target.name} runs are copied (its Classes button). Classes that already have sections or subjects there are left as they are.</p>
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose} disabled={busy}>
             Cancel
@@ -154,6 +178,7 @@ function Years() {
   const years = useQuery({ queryKey: ["academic-years"], queryFn: academicApi.years });
   const [editing, setEditing] = useState<AcademicYear | "new" | null>(null);
   const [copying, setCopying] = useState<AcademicYear | null>(null);
+  const [classesOf, setClassesOf] = useState<AcademicYear | null>(null);
   const [confirm, setConfirm] = useState<{ title: string; text: string; label: string; run: () => Promise<unknown>; done: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -229,6 +254,9 @@ function Years() {
                         Make current
                       </button>
                     )}
+                    <button className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70" onClick={() => setClassesOf(y)}>
+                      Classes
+                    </button>
                     {list.length > 1 && y.status === "open" && (
                       <button className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70" onClick={() => setCopying(y)}>
                         Copy set-up
@@ -270,6 +298,7 @@ function Years() {
 
       {editing && <YearDialog year={editing === "new" ? null : editing} years={list} onClose={() => setEditing(null)} onSaved={saved} />}
       {copying && <CopyDialog target={copying} years={list} onClose={() => setCopying(null)} onDone={saved} />}
+      {classesOf && <SessionClasses yearId={classesOf.id} onClose={() => setClassesOf(null)} />}
       {confirm && (
         <Modal isOpen onClose={() => !busy && setConfirm(null)} title={confirm.title}>
           <p className="text-sm text-on-surface-variant">{confirm.text}</p>

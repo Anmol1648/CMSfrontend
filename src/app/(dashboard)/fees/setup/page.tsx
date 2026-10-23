@@ -360,7 +360,7 @@ function ConcessionForm({ year, initial, onDone }: { year: string; initial: Conc
   const genders = useQuery({ queryKey: ["master-options", "gender", null, null], queryFn: () => mastersApi.options("gender") });
   const castes = useQuery({ queryKey: ["master-options", "caste_category", null, null], queryFn: () => mastersApi.options("caste_category") });
   const categories = useQuery({ queryKey: ["master-options", "student_category", null, null], queryFn: () => mastersApi.options("student_category") });
-  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: academicApi.classOptions });
+  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: () => academicApi.classOptions() });
   const [v, setV] = useState<ConcessionInput>(initial ? { ...initial, note: initial.note ?? "", lines: initial.lines.map(({ feeHeadId, kind, value }) => ({ feeHeadId, kind, value })) } : emptyConcession);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);

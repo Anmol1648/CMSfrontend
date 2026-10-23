@@ -37,7 +37,7 @@ function Dues() {
   }, [search]);
   useEffect(() => setSection(""), [classId, year]);
 
-  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: academicApi.classOptions });
+  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: () => academicApi.classOptions() });
   const sections = useQuery({ queryKey: ["academic-section-options", year, classId], queryFn: () => academicApi.sectionOptions(year, classId), enabled: !!year && !!classId });
   const q: DuesQuery = { year, class: classId, section, show, asOf, search: debounced };
   const report = useQuery({ queryKey: ["fee-dues", q], queryFn: () => feesApi.dues(q), enabled: !!year, placeholderData: keepPreviousData });

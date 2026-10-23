@@ -371,7 +371,7 @@ function ClassTab({ s, reload }: { s: Student; reload: () => Promise<void> }) {
   const [roll, setRoll] = useState("");
   const [houseId, setHouseId] = useState("");
   const [optional, setOptional] = useState<string[]>([]);
-  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: academicApi.classOptions });
+  const classes = useQuery({ queryKey: ["academic-class-options", year || null], queryFn: () => academicApi.classOptions(year || undefined) });
   const sections = useQuery({ queryKey: ["academic-section-options", year, classId], queryFn: () => academicApi.sectionOptions(year, classId), enabled: !!year && !!classId });
   const classSubjects = useQuery({ queryKey: ["academic-class-subjects", year, classId], queryFn: () => academicApi.classSubjects(year, classId), enabled: !!year && !!classId });
   const subjects = useQuery({ queryKey: ["academic-subject-options"], queryFn: academicApi.subjectOptions });

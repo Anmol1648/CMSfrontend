@@ -20,6 +20,7 @@ import { ApiError, errorMessage } from "@/lib/api/client";
 import { useToast } from "@/components/ui/ToastProvider";
 import { cn } from "@/lib/utils";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { SessionClasses } from "@/components/academic/SessionClasses";
 
 /** Runs a save; returns the error to show (and field errors), or null when it worked. */
 function useSave() {
@@ -89,7 +90,7 @@ function ClassDialog({ cls, onClose, onSaved }: { cls: SchoolClass | null; onClo
         </div>
         <MasterSelect master="class_group" label="Class group (optional)" value={groupId} onChange={setGroupId} placeholder="No group" error={fieldErrors.groupId} disabled={busy} />
         <Checkbox label="Has streams" hint="Sections and subjects are set per stream (Science, Commerce…), as in XI and XII." checked={hasStreams} onChange={setHasStreams} disabled={busy} />
-        <Checkbox label="Active" hint="An inactive class keeps its history but gets no new sections." checked={isActive} onChange={setIsActive} disabled={busy} />
+        <Checkbox label="The school still has this class" hint="Untick only if the school stops it for good (it keeps its history). To leave it out of one session, untick it in that session’s classes instead." checked={isActive} onChange={setIsActive} disabled={busy} />
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
           {cls ? <DeleteButton label={cls.name} busy={busy} onDelete={() => run(async () => (await academicApi.deleteClass(cls.id), onSaved(`${cls.name} deleted`)))} /> : <span />}
           <div className="flex gap-3">
@@ -196,6 +197,7 @@ function Classes() {
   const [editingClass, setEditingClass] = useState<SchoolClass | "new" | null>(null);
   const [editingSection, setEditingSection] = useState<{ cls: SchoolClass; section: Section | null } | null>(null);
   const [moving, setMoving] = useState(false);
+  const [sessionClasses, setSessionClasses] = useState(false);
 
   const year = years.data?.find((y) => y.id === yearId);
   const open = year?.status === "open";
@@ -210,6 +212,18 @@ function Classes() {
     setEditingSection(null);
     showToast(message, "success");
     await refresh();
+  };
+  /** Runs a class in this session too (the others it runs stay as they are). */
+  const addToSession = async (c: SchoolClass) => {
+    try {
+      const running = list.filter((x) => x.inYear).map((x) => ({ classId: x.id, admissionsOpen: x.inYear!.admissionsOpen, seats: x.inYear!.seats }));
+      await academicApi.saveYearClasses(yearId, [...running, { classId: c.id, admissionsOpen: true, seats: null }]);
+      showToast(`${c.name} added to ${year?.name}`, "success");
+      await refresh();
+      await queryClient.invalidateQueries({ queryKey: ["academic-class-options"] });
+    } catch (err) {
+      showToast(errorMessage(err), "error");
+    }
   };
   const moveClass = async (id: string, direction: "up" | "down") => {
     setMoving(true);
@@ -227,7 +241,7 @@ function Classes() {
     <>
       <PageHeader
         title="Classes & Sections"
-        description="Classes are the same every year; their sections, streams and class teachers are set per academic year."
+        description="The class list is the school’s; each session runs the classes ticked for it (Classes in this session). Sections, streams and class teachers are set per session."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" disabled={!yearId} onClick={() => academicApi.exportSections(yearId).catch((err) => showToast(errorMessage(err), "error"))}>
@@ -248,6 +262,12 @@ function Classes() {
           <div className="w-full sm:w-72">
             <YearSelect value={yearId} onChange={setYearId} />
           </div>
+          {canManage && year && (
+            <Button variant="secondary" onClick={() => setSessionClasses(true)}>
+              Classes in {year.name}
+            </Button>
+          )}
+          {year && <span className="text-xs text-on-surface-variant/70">{list.filter((c) => c.inYear).length} classes run in {year.name}</span>}
           {year && !open && <FormAlert tone="info">{year.name} is closed: its sections can be seen but not changed.</FormAlert>}
           {years.data && !years.data.length && (
             <FormAlert tone="info">
@@ -260,7 +280,7 @@ function Classes() {
         {canManage && list.length > 1 && <OrderHint>Use ↑ ↓ to set the order classes appear in lists, forms and reports.</OrderHint>}
         <Card padding="none" className="overflow-hidden">
           {list.map((c, i) => (
-            <div key={c.id} className="flex flex-col md:flex-row md:items-center gap-3 px-5 py-4 border-t first:border-t-0 border-outline-variant/10">
+            <div key={c.id} className={cn("flex flex-col md:flex-row md:items-center gap-3 px-5 py-4 border-t first:border-t-0 border-outline-variant/10", c.inYear === null && "bg-surface-container-low/50")}>
               <div className="flex items-center gap-3 md:w-80 shrink-0">
                 {canManage && <MoveButtons label={c.name} position={i + 1} first={i === 0} last={i === list.length - 1} disabled={moving} onMove={(d) => moveClass(c.id, d)} />}
                 <button type="button" disabled={!canManage} onClick={() => setEditingClass(c)} className="text-left disabled:cursor-default">
@@ -268,7 +288,8 @@ function Classes() {
                   <p className="text-xs text-on-surface-variant/70 space-x-2">
                     {c.group && <span>{c.group.name}</span>}
                     {c.hasStreams && <span>· Streams</span>}
-                    {!c.isActive && <span>· Inactive</span>}
+                    {!c.isActive && <span>· Stopped</span>}
+                    {c.isActive && c.inYear === null && year && <span className="font-semibold text-amber-700">· Not in {year.name}</span>}
                   </p>
                 </button>
               </div>
@@ -290,8 +311,13 @@ function Classes() {
                     <span className="block text-[11px] text-on-surface-variant/70">{s.classTeacher?.name ?? "No class teacher"}</span>
                   </button>
                 ))}
-                {!c.sections.length && <span className="text-sm text-on-surface-variant/60">No sections this year</span>}
-                {canManage && open && c.isActive && (
+                {!c.sections.length && c.inYear !== null && <span className="text-sm text-on-surface-variant/60">No sections this year</span>}
+                {canManage && open && c.isActive && c.inYear === null && (
+                  <button type="button" onClick={() => addToSession(c)} className="px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-widest text-primary hover:bg-surface-container-low">
+                    Add to this session
+                  </button>
+                )}
+                {canManage && open && c.isActive && c.inYear !== null && (
                   <button type="button" onClick={() => setEditingSection({ cls: c, section: null })} className="px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-widest text-primary hover:bg-surface-container-low">
                     + Section
                   </button>
@@ -309,6 +335,15 @@ function Classes() {
         )}
       </div>
 
+      {sessionClasses && yearId && (
+        <SessionClasses
+          yearId={yearId}
+          onClose={() => {
+            setSessionClasses(false);
+            refresh();
+          }}
+        />
+      )}
       {editingClass && <ClassDialog cls={editingClass === "new" ? null : editingClass} onClose={() => setEditingClass(null)} onSaved={saved} />}
       {editingSection && yearId && <SectionDialog cls={editingSection.cls} yearId={yearId} section={editingSection.section} onClose={() => setEditingSection(null)} onSaved={saved} />}
     </>

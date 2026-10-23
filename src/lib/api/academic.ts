@@ -48,6 +48,8 @@ export interface SchoolClass {
   sortOrder: number;
   isActive: boolean;
   sections: Section[];
+  /** In the session asked for: runs there (admissions open, seats), or null = not in that session. */
+  inYear?: { admissionsOpen: boolean; seats: number | null } | null;
 }
 
 export interface Subject {
@@ -76,6 +78,10 @@ export interface YearInput {
   endDate: string;
   isCurrent?: boolean;
   copyFromYearId?: string;
+  /** The classes the session runs (empty = those of the year copied from). */
+  classIds?: string[];
+  /** Also copy the fee set-up of the year copied from. */
+  copyFees?: boolean;
 }
 
 export interface ClassInput {
@@ -105,6 +111,22 @@ export interface SubjectInput {
   isActive?: boolean;
 }
 
+/** A session's classes: every class of the catalogue, running there or not, and what uses it. */
+export interface YearClasses {
+  year: { id: string; name: string; status: string };
+  classes: {
+    id: string;
+    name: string;
+    shortName: string | null;
+    classActive: boolean;
+    runs: boolean;
+    admissionsOpen: boolean;
+    seats: number | null;
+    seatsLeft: number | null;
+    used: { sections: number; students: number; fees: number; timetable: number; enquiries: number; subjects: number };
+  }[];
+}
+
 type Direction = 'up' | 'down';
 
 export const academicApi = {
@@ -120,8 +142,10 @@ export const academicApi = {
   copyYear: (id: string, fromYearId: string, what: { sections: boolean; subjects: boolean }) =>
     api.post<{ sections: number; subjects: number }>(`/academic/years/${id}/copy`, { fromYearId, ...what }),
 
-  /** Dropdowns (any signed-in user). */
-  classOptions: () => api.get<{ id: string; name: string; shortName: string | null; hasStreams: boolean }[]>('/academic/classes/options'),
+  /** Dropdowns (any signed-in user): the classes a session runs (the current one when no year is given). */
+  classOptions: (yearId?: string) => api.get<{ id: string; name: string; shortName: string | null; hasStreams: boolean; admissionsOpen?: boolean }[]>('/academic/classes/options', { params: yearId ? { year: yearId } : {} }),
+  yearClasses: (yearId: string) => api.get<YearClasses>(`/academic/years/${yearId}/classes`),
+  saveYearClasses: (yearId: string, classes: { classId: string; admissionsOpen: boolean; seats: number | null }[]) => api.put<YearClasses>(`/academic/years/${yearId}/classes`, { classes }),
   sectionOptions: (yearId: string, classId?: string) =>
     api.get<{ id: string; name: string; classId: string; label: string }[]>('/academic/sections/options', { params: { year: yearId, ...(classId ? { class: classId } : {}) } }),
   classes: (yearId?: string) => api.get<SchoolClass[]>('/academic/classes', { params: yearId ? { year: yearId } : {} }),

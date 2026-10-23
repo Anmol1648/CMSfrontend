@@ -24,7 +24,7 @@ export function ReportFilters({ filters, values, onChange }: { filters: ReportFi
   const year = yearKey ? values[yearKey] : "";
   const cls = classKey ? values[classKey] : "";
 
-  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: academicApi.classOptions, enabled: hasClass });
+  const classes = useQuery({ queryKey: ["academic-class-options", year || null], queryFn: () => academicApi.classOptions(year || undefined), enabled: hasClass });
   const sections = useQuery({ queryKey: ["academic-section-options", year, cls], queryFn: () => academicApi.sectionOptions(year!, cls), enabled: hasSection && !!year && !!cls });
 
   // A section belongs to a class and a session: clear it when either changes.

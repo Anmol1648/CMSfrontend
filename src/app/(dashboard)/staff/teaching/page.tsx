@@ -26,7 +26,7 @@ function Teaching() {
   const [copyFrom, setCopyFrom] = useState("");
   const [copying, setCopying] = useState(false);
   const years = useQuery({ queryKey: ["academic-year-options"], queryFn: academicApi.yearOptions });
-  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: academicApi.classOptions });
+  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: () => academicApi.classOptions() });
   const teachers = useQuery({ queryKey: ["staff-options", "teaching"], queryFn: () => staffApi.options(true) });
   const grid = useQuery({ queryKey: ["teaching-grid", year, classId], queryFn: () => staffApi.grid(year, classId), enabled: !!year && !!classId });
   useEffect(() => {

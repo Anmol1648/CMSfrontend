@@ -37,7 +37,7 @@ function Receipts() {
   }, [search]);
   useEffect(() => setPage(1), [from, to, mode, status, classId, debounced]);
 
-  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: academicApi.classOptions });
+  const classes = useQuery({ queryKey: ["academic-class-options"], queryFn: () => academicApi.classOptions() });
   const query: ReceiptListQuery = { page, pageSize: PAGE_SIZE, from, to, mode, status, class: classId, search: debounced };
   const list = useQuery({ queryKey: ["fee-receipts", query], queryFn: () => feesApi.receipts(query), placeholderData: keepPreviousData });
   const rows = list.data?.items ?? [];
