@@ -139,7 +139,11 @@ function EntryForm({ expected, onDone }: { expected: Visit | null; onDone: (v: V
         {fields.photoFileId && <p className="text-xs text-error">{fields.photoFileId}</p>}
         <div className="grid gap-4 sm:grid-cols-2">
           <Select label="Purpose" value={v.purposeId ?? ""} onChange={choosePurpose} options={[{ value: "", label: "Choose…" }, ...(purposes.data ?? []).filter((p) => p.isActive).map((p) => ({ value: p.id, label: p.name }))]} />
-          <Select label="Meeting" value={v.hostKind} onChange={(k) => { set({ hostKind: k as HostKind }); setHost(null); }} options={[{ value: "office", label: "The office" }, { value: "staff", label: "A staff member" }, { value: "student", label: "About a student (parent / relative)" }]} />
+          {expected && v.expectedVisitId ? (
+            <Input label="Meeting (expected)" value={expected.host} disabled />
+          ) : (
+            <Select label="Meeting" value={v.hostKind} onChange={(k) => { set({ hostKind: k as HostKind }); setHost(null); }} options={[{ value: "office", label: "The office" }, { value: "staff", label: "A staff member" }, { value: "student", label: "About a student (parent / relative)" }]} />
+          )}
         </div>
         {v.hostKind !== "office" && !v.expectedVisitId && (
           <div>
