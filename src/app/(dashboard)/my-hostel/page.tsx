@@ -14,6 +14,7 @@ import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { errorMessage } from "@/lib/api/client";
 import { Qr } from "@/components/library/Qr";
+import { PrintPass } from "@/components/hostel/PassSlip";
 import { LEAVE_STATUS, hostelApi, istIso, when, type MyChild } from "@/lib/api/hostel";
 
 const local = (h: number) => new Date(Date.now() + 5.5 * 3_600_000 + h * 3_600_000).toISOString().slice(0, 16);
@@ -116,9 +117,12 @@ function Child({ c, parentLeave }: { c: MyChild; parentLeave: boolean }) {
                 {l.answer && <span className="text-on-surface-variant"> · “{l.answer}”</span>}
               </span>
               {l.passCode && (
-                <Button variant="secondary" onClick={() => setPass(l.passCode)}>
-                  Pass {l.passCode}
-                </Button>
+                <>
+                  <Button variant="secondary" onClick={() => setPass(l.passCode)}>
+                    Pass {l.passCode}
+                  </Button>
+                  <PrintPass leaveId={l.id} label="Print" />
+                </>
               )}
               {(l.status === "pending" || l.status === "approved") && (
                 <Button variant="tertiary" onClick={async () => (await confirm({ title: "Cancel this leave?", message: "The warden is told; the pass stops working.", confirmLabel: "Cancel leave" })) && hostelApi.cancelLeave(l.id).then(refresh).catch((e) => showToast(errorMessage(e), "error"))}>

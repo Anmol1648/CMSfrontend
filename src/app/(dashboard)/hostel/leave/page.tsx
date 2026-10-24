@@ -17,6 +17,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { errorMessage } from "@/lib/api/client";
 import { AuthedPhoto } from "@/components/visitors/Photo";
 import { SearchPick } from "@/components/hostel/SearchPick";
+import { PrintPass } from "@/components/hostel/PassSlip";
 import { LEAVE_STATUS, hostelApi, istIso, when, type FoundStudent, type Leave } from "@/lib/api/hostel";
 
 const local = (h: number) => new Date(Date.now() + 5.5 * 3_600_000 + h * 3_600_000).toISOString().slice(0, 16);
@@ -137,7 +138,12 @@ function LeaveList() {
                         {l.inAt && ` · came back ${when(l.inAt)}`}
                       </p>
                     )}
-                    {l.passCode && <p className="mt-1 font-mono text-sm">Pass: {l.passCode}</p>}
+                    {l.passCode && (
+                      <div className="mt-2 flex items-center gap-3">
+                        <span className="font-mono text-sm">Pass: {l.passCode}</span>
+                        <PrintPass leaveId={l.id} />
+                      </div>
+                    )}
                   </div>
                 </div>
                 {warden && (l.status === "pending" || l.status === "approved") && (

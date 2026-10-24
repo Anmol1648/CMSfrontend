@@ -125,6 +125,16 @@ export interface MyChild {
   nights: { date: string; mark: string }[];
 }
 
+export interface PassSlip extends Leave {
+  passCode: string;
+  section: string;
+  room: string;
+  bed: number | null;
+  warden: string | null;
+  hostelPhone: string | null;
+  school: { legalName: string; addressLine1: string | null; city: string | null; phone: string | null } | null;
+}
+
 export type HostelInput = { name: string; gender: Hostel['gender']; wardenId: string | null; phone: string | null; isActive: boolean };
 export type RoomInput = { block: string | null; floor: number; number: string; roomTypeId: string | null; beds: number; isActive: boolean };
 export type LeaveInput = { studentId: string; fromAt: string; toAt: string; reason: string; escort?: string | null; destination?: string | null };
@@ -145,6 +155,7 @@ export const hostelApi = {
   addLeave: (b: LeaveInput) => api.post<{ id: string; status: string; passCode: string }>('/hostel/leave', b),
   answerLeave: (id: string, approve: boolean, answer: string | null) => api.post(`/hostel/leave/${id}/answer`, { approve, answer }),
   cancelLeave: (id: string) => api.post(`/hostel/leave/${id}/cancel`),
+  pass: (id: string) => api.get<PassSlip>(`/hostel/leave/${id}/pass`),
   scan: (code: string) => api.post<{ action: 'out' | 'in'; leave: Leave }>('/hostel/gate/scan', { code }),
   out: () => api.get<Leave[]>('/hostel/gate/out'),
   visitors: (studentId: string) => api.get<Visitor[]>(`/hostel/visitors/${studentId}`),
