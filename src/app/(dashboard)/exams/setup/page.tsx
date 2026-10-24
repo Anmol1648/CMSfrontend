@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -16,6 +16,8 @@ import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { errorMessage } from "@/lib/api/client";
 import { Band, examsApi, GradeScale, ResultRule, ResultRuleInput } from "@/lib/api/exams";
+import { exams2Api } from "@/lib/api/exams2";
+import { AuthedPhoto } from "@/components/visitors/Photo";
 import { useExamLabels } from "@/components/exams/useExamLabels";
 
 function ScaleForm({ scale, onClose }: { scale: GradeScale | null; onClose: () => void }) {
@@ -76,7 +78,7 @@ function RuleForm({ rule, scales, onClose }: { rule: ResultRule | null; scales: 
   const [v, setV] = useState<ResultRuleInput>(
     rule
       ? (({ id: _id, group: _g, ...r }) => r)(rule)
-      : { classGroupId: null, descriptive: false, gradeScaleId: scales.find((s) => s.kind === "marks")?.id ?? null, coScaleId: scales.find((s) => s.kind === "descriptive")?.id ?? null, passPercent: 33, passEachPart: false, graceMarks: 0, graceSubjects: 0, showRank: false, showAttendance: true }
+      : { classGroupId: null, descriptive: false, gradeScaleId: scales.find((s) => s.kind === "marks")?.id ?? null, coScaleId: scales.find((s) => s.kind === "descriptive")?.id ?? null, passPercent: 33, passEachPart: false, graceMarks: 0, graceSubjects: 0, showRank: false, showAttendance: true, cardFormat: 'cbse' }
   );
   const [error, setError] = useState<string | null>(null);
   const set = (patch: Partial<ResultRuleInput>) => setV((x) => ({ ...x, ...patch }));
@@ -115,6 +117,18 @@ function RuleForm({ rule, scales, onClose }: { rule: ResultRule | null; scales: 
           </>
         )}
         <Checkbox label="Show attendance on report cards" checked={v.showAttendance} onChange={(c) => set({ showAttendance: c })} />
+        <Select
+          label="Report card design"
+          value={v.cardFormat ?? "standard"}
+          onChange={(x) => set({ cardFormat: x })}
+          options={[
+            { value: "cbse", label: "CBSE (term-wise: each term’s exams, term total, overall) · I–VIII" },
+            { value: "cbse_senior", label: "CBSE senior (term-wise + theory / practical) · IX–XII" },
+            { value: "standard", label: "Simple (one column per exam)" },
+            { value: "state", label: "State board (simple)" },
+            { value: "preprimary", label: "Pre-primary (grades only, no marks)" },
+          ]}
+        />
         {error && <FormAlert>{error}</FormAlert>}
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose}>
@@ -235,9 +249,36 @@ function Setup() {
           ))}
         </div>
       )}
+      <Signature />
       {scale && <ScaleForm scale={scale === "new" ? null : scale} onClose={() => setScale(null)} />}
       {rule && scales.data && <RuleForm rule={rule === "new" ? null : rule} scales={scales.data} onClose={() => setRule(null)} />}
     </>
+  );
+}
+
+/** The principal's signature printed on report cards and admit cards. */
+function Signature() {
+  const { showToast } = useToast();
+  const [v, setV] = useState(0);
+  const [has, setHas] = useState(true);
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <Card className="mt-6 flex flex-wrap items-center gap-4">
+      <div className="flex-1 min-w-60">
+        <p className="font-bold">Principal’s signature</p>
+        <p className="text-xs text-on-surface-variant">Printed on report cards and admit cards. A clear signature on white, as PNG or JPG.</p>
+      </div>
+      {has && <AuthedPhoto key={v} path={`${exams2Api.signaturePath}?v=${v}`} className="h-14 w-40 object-contain bg-white rounded border" icon="draw" />}
+      <Button variant="secondary" onClick={() => ref.current?.click()}>
+        <span className="material-symbols-outlined text-lg">upload</span> Upload
+      </Button>
+      {has && (
+        <Button variant="tertiary" onClick={() => exams2Api.removeSignature().then(() => { setHas(false); showToast("Removed", "success"); }).catch((e) => showToast(errorMessage(e), "error"))}>
+          Remove
+        </Button>
+      )}
+      <input ref={ref} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return; try { await exams2Api.uploadSignature(f); setHas(true); setV((x) => x + 1); showToast("Saved", "success"); } catch (er) { showToast(errorMessage(er), "error"); } }} />
+    </Card>
   );
 }
 

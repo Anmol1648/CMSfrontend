@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -14,6 +14,8 @@ import { errorMessage } from "@/lib/api/client";
 import { EXAM_STATUS, examsApi, MarkStatus } from "@/lib/api/exams";
 import { useExamLabels } from "@/components/exams/useExamLabels";
 import { mastersApi } from "@/lib/api/masters";
+import { exams2Api, Health } from "@/lib/api/exams2";
+import { Modal } from "@/components/ui/Modal";
 import { cn } from "@/lib/utils";
 
 type Row = { status: MarkStatus; marks: Record<string, string> };
@@ -27,6 +29,8 @@ function MarksSheet({ subject, section, onBack }: { subject: string; section: st
   const [rows, setRows] = useState<Record<string, Row>>({});
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [importIssues, setImportIssues] = useState<string[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
   const s = q.data;
   useEffect(() => {
     if (s) setRows(Object.fromEntries(s.students.map((st) => [st.id, { status: st.status, marks: Object.fromEntries(Object.entries(st.marks).map(([k, v]) => [k, v == null ? "" : String(v)])) }])));
@@ -83,10 +87,55 @@ function MarksSheet({ subject, section, onBack }: { subject: string; section: st
             {s.exam.name} · {s.descriptive ? "grades" : `${s.parts.map((p) => `${p.label} ${p.max}`).join(" + ")} = ${s.max}`} · pass {s.passPercent}% · {filled} of {s.students.length} filled
           </p>
         </div>
-        <Button onClick={save} loading={busy} disabled={!can || !dirty}>
-          {dirty ? "Save" : "Saved"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => exams2Api.sheetExcel(subject, section).catch((e) => showToast(errorMessage(e), "error"))}>
+            <span className="material-symbols-outlined text-lg">download</span> Excel
+          </Button>
+          {can && (
+            <Button variant="secondary" onClick={() => fileRef.current?.click()}>
+              <span className="material-symbols-outlined text-lg">upload</span> Fill from Excel
+            </Button>
+          )}
+          {s.lock?.canUnlock && (
+            <Button variant="secondary" onClick={() => exams2Api.unlockSheet(subject, section).then(() => { void q.refetch(); queryClient.invalidateQueries({ queryKey: ["exam-sheets"] }); showToast("Unlocked", "success"); }).catch((e) => showToast(errorMessage(e), "error"))}>
+              Unlock
+            </Button>
+          )}
+          {can && !s.lock && !dirty && s.students.length > 0 && (
+            <Button variant="secondary" onClick={() => exams2Api.submitSheet(subject, section).then(() => { void q.refetch(); queryClient.invalidateQueries({ queryKey: ["exam-sheets"] }); showToast("Submitted: the marks are locked", "success"); }).catch((e) => showToast(errorMessage(e), "error"))}>
+              <span className="material-symbols-outlined text-lg">lock</span> Submit marks
+            </Button>
+          )}
+          <Button onClick={save} loading={busy} disabled={!can || !dirty}>
+            {dirty ? "Save" : "Saved"}
+          </Button>
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".xlsx"
+          className="hidden"
+          onChange={async (e) => {
+            const f = e.target.files?.[0];
+            e.target.value = "";
+            if (!f) return;
+            try {
+              const r = await exams2Api.readSheetExcel(subject, section, f);
+              setRows((cur) => {
+                const next = { ...cur };
+                for (const x of r.rows) next[x.studentId] = { status: x.status, marks: Object.fromEntries(Object.entries(x.marks).map(([k, v]) => [k, v == null ? "" : String(v)])) };
+                return next;
+              });
+              setImportIssues(r.issues);
+              showToast(`${r.rows.length} row(s) filled from the file: check them and Save`, r.issues.length ? "error" : "success");
+            } catch (er) {
+              showToast(errorMessage(er), "error");
+            }
+          }}
+        />
       </Card>
+      {s.lock && <FormAlert tone="info">Submitted by {s.lock.by} on {new Date(s.lock.at).toLocaleString("en-IN")}.{s.lock.canUnlock ? " You can unlock it to change." : ""}</FormAlert>}
+      {importIssues.length > 0 && <FormAlert tone="warning">From the file: {importIssues.slice(0, 6).join("; ")}{importIssues.length > 6 ? "…" : ""}</FormAlert>}
       {s.edit.why && <FormAlert tone={can ? "warning" : "info"}>{s.edit.why}</FormAlert>}
       <Card padding="none" className="overflow-hidden">
         <div className="overflow-x-auto">
@@ -202,6 +251,7 @@ function ClassSheet({ examId, section, onBack }: { examId: string; section: stri
   const remarks = useQuery({ queryKey: ["master-options", "report_remark"], queryFn: () => mastersApi.options("report_remark"), staleTime: 5 * 60_000 });
   const [rows, setRows] = useState<Record<string, { coGrades: Record<string, string>; discipline: string; remark: string }>>({});
   const [busy, setBusy] = useState(false);
+  const [aiBusy, setAiBusy] = useState<string | null>(null);
   const s = q.data;
   useEffect(() => {
     if (s) setRows(Object.fromEntries(s.students.map((st) => [st.id, { coGrades: st.coGrades, discipline: st.discipline, remark: st.remark }])));
@@ -277,7 +327,29 @@ function ClassSheet({ examId, section, onBack }: { examId: string; section: stri
                     ))}
                     <td className="px-4 py-1.5">{grade(r.discipline, (v) => set({ discipline: v }), `${st.name} discipline`)}</td>
                     <td className="px-4 py-1.5">
-                      <input aria-label={`${st.name} remark`} list="report-remarks" value={r.remark} disabled={!s.edit.can} maxLength={300} onChange={(e) => set({ remark: e.target.value })} className="w-64 rounded-lg bg-surface-container-low px-2 py-1.5 text-sm outline-none disabled:opacity-60" placeholder="e.g. Sincere and regular" />
+                      <div className="flex items-center gap-1">
+                        <input aria-label={`${st.name} remark`} list="report-remarks" value={r.remark} disabled={!s.edit.can} maxLength={300} onChange={(e) => set({ remark: e.target.value })} className="w-64 rounded-lg bg-surface-container-low px-2 py-1.5 text-sm outline-none disabled:opacity-60" placeholder="e.g. Sincere and regular" />
+                        {s.edit.can && (
+                          <button
+                            type="button"
+                            title="Suggest a remark with AI from the student’s result"
+                            className="p-1 text-primary disabled:opacity-40"
+                            disabled={aiBusy === st.id}
+                            onClick={async () => {
+                              setAiBusy(st.id);
+                              try {
+                                set({ remark: (await exams2Api.aiRemark("exam", examId, section, st.id)).remark.slice(0, 300) });
+                              } catch (e) {
+                                showToast(errorMessage(e), "error");
+                              } finally {
+                                setAiBusy(null);
+                              }
+                            }}
+                          >
+                            <span className="material-symbols-outlined text-lg">{aiBusy === st.id ? "hourglass_top" : "auto_awesome"}</span>
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -308,6 +380,7 @@ function Entry() {
   }, [exams.data, examId]);
   const sheets = useQuery({ queryKey: ["exam-sheets", examId], queryFn: () => examsApi.sheets(examId), enabled: !!examId });
   const d = sheets.data;
+  const [healthFor, setHealthFor] = useState<{ sectionId: string; section: string } | null>(null);
   return (
     <>
       <PageHeader title="Enter Marks" description={can("exam.marks_any") ? "Every section and subject (you can enter for anyone)." : "The subjects you teach (Staff → Subject Teachers), and, as class teacher, co-scholastic grades and remarks."} />
@@ -339,7 +412,10 @@ function Entry() {
                             {sh.section} · out of {sh.max}
                           </p>
                         </div>
-                        {sh.mine && <Pill tone="primary">Mine</Pill>}
+                        <span className="flex gap-1">
+                          {sh.submitted && <Pill tone="success">Submitted</Pill>}
+                          {sh.mine && <Pill tone="primary">Mine</Pill>}
+                        </span>
                       </div>
                       <p className={cn("text-xs font-bold mt-2", sh.entered ? "text-emerald-700" : "text-amber-700")}>{sh.entered ? `${sh.entered} marks entered` : "Not started"}</p>
                     </Card>
@@ -357,13 +433,92 @@ function Entry() {
                       </Button>
                     ))}
                   </div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-primary pt-2">Health and activities (report card)</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {d.classTeacherOf.map((c) => (
+                      <Button key={c.sectionId} variant="secondary" onClick={() => setHealthFor(c)}>
+                        {c.section}
+                      </Button>
+                    ))}
+                  </div>
                 </Card>
               )}
             </>
           )}
         </div>
       )}
+      {healthFor && <HealthSheet sectionId={healthFor.sectionId} label={healthFor.section} onClose={() => setHealthFor(null)} />}
     </>
+  );
+}
+
+/** Height, weight, vision and activities of a section for a term (shown on the report card). */
+function HealthSheet({ sectionId, label, onClose }: { sectionId: string; label: string; onClose: () => void }) {
+  const { showToast } = useToast();
+  const [term, setTerm] = useState("year");
+  const q = useQuery({ queryKey: ["exams2", "health", sectionId, term], queryFn: () => exams2Api.health(sectionId, term) });
+  const [rows, setRows] = useState<Health["students"]>([]);
+  useEffect(() => {
+    if (q.data) setRows(q.data.students);
+  }, [q.data]);
+  const set = (id: string, patch: Partial<Health["students"][number]>) => setRows((r) => r.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  const num = (v: string) => (v.trim() === "" ? null : Number(v) || null);
+  return (
+    <Modal isOpen onClose={onClose} title={`Health and activities · ${label}`} width="max-w-5xl">
+      <div className="space-y-3">
+        <Select className="max-w-xs" label="For" value={term} onChange={setTerm} options={[{ value: "year", label: "The whole session" }, ...(q.data?.terms ?? []).map((t) => ({ value: t.id, label: t.name }))]} />
+        {q.isLoading ? (
+          <PageLoader />
+        ) : q.error ? (
+          <FormAlert>{errorMessage(q.error)}</FormAlert>
+        ) : (
+          <div className="max-h-[60vh] overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
+                  <th className="py-1">Student</th>
+                  <th>Height (cm)</th>
+                  <th>Weight (kg)</th>
+                  <th>Vision</th>
+                  <th>Activities / sports / clubs</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.id} className="border-t border-outline-variant/10">
+                    <td className="py-1 font-semibold whitespace-nowrap">
+                      {r.roll ? `${r.roll}. ` : ""}
+                      {r.name}
+                    </td>
+                    <td><input inputMode="decimal" value={r.heightCm ?? ""} onChange={(e) => set(r.id, { heightCm: num(e.target.value) })} className="w-20 rounded-lg bg-surface-container-low px-2 py-1" aria-label={`${r.name} height`} /></td>
+                    <td><input inputMode="decimal" value={r.weightKg ?? ""} onChange={(e) => set(r.id, { weightKg: num(e.target.value) })} className="w-20 rounded-lg bg-surface-container-low px-2 py-1" aria-label={`${r.name} weight`} /></td>
+                    <td><input value={r.vision} onChange={(e) => set(r.id, { vision: e.target.value })} maxLength={40} className="w-20 rounded-lg bg-surface-container-low px-2 py-1" aria-label={`${r.name} vision`} /></td>
+                    <td><input value={r.activities} onChange={(e) => set(r.id, { activities: e.target.value })} maxLength={300} className="w-full min-w-48 rounded-lg bg-surface-container-low px-2 py-1" aria-label={`${r.name} activities`} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+          <Button
+            onClick={async () => {
+              try {
+                await exams2Api.saveHealth(sectionId, term, rows.map((r) => ({ studentId: r.id, heightCm: r.heightCm, weightKg: r.weightKg, vision: r.vision, activities: r.activities })));
+                showToast("Saved", "success");
+              } catch (e) {
+                showToast(errorMessage(e), "error");
+              }
+            }}
+          >
+            Save
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 

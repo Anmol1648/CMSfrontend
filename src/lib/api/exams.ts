@@ -33,6 +33,7 @@ export interface ResultRule {
   graceSubjects: number;
   showRank: boolean;
   showAttendance: boolean;
+  cardFormat?: string;
 }
 export type ResultRuleInput = Omit<ResultRule, 'id' | 'group'>;
 export interface Term {
@@ -95,7 +96,7 @@ export interface EditState {
 export interface Sheets {
   exam: { id: string; name: string; status: ExamStatus; entryDeadline: string | null };
   edit: EditState;
-  sheets: { examSubjectId: string; sectionId: string; section: string; subject: string; max: number; mine: boolean; entered: number }[];
+  sheets: { examSubjectId: string; sectionId: string; section: string; subject: string; max: number; mine: boolean; entered: number; submitted?: boolean }[];
   classTeacherOf: { sectionId: string; section: string }[];
 }
 /** "P" (present) or a code from Masters → Mark statuses (AB, ML…). */
@@ -118,6 +119,7 @@ export interface Sheet {
   grades: string[];
   passPercent: number;
   edit: EditState;
+  lock?: { by: string; at: string; canUnlock: boolean } | null;
   students: { id: string; name: string; admissionNo: string; roll: number | null; status: MarkStatus; marks: Record<string, number | string | null>; total: number | null; entered: boolean }[];
 }
 export interface ClassSheet {
@@ -155,7 +157,7 @@ export interface Results {
   scope: { kind: ScopeKind; id: string; label: string; published: boolean };
   year: string;
   section: { id: string; label: string; className: string; classTeacher: string | null };
-  rule: { descriptive: boolean; passPercent: number; showRank: boolean; showAttendance: boolean };
+  rule: { descriptive: boolean; passPercent: number; showRank: boolean; showAttendance: boolean; cardFormat?: string };
   exams: { id: string; name: string; shortName: string; weightage: number }[];
   subjects: { id: string; name: string }[];
   areas: string[];
@@ -214,7 +216,7 @@ export const examsApi = {
   choices: (year: string) => api.get<ResultChoices>('/exams/results/choices', y(year)),
   results: (scope: ScopeKind, id: string, section: string) => api.get<Results>('/exams/results', { params: { scope, id, section } }),
   publishScope: (year: string, scope: 'term' | 'final', termId: string | null, publish: boolean) => api.post<{ published: boolean }>('/exams/results/publish', { year, scope, termId, publish }),
-  mine: () => api.get<{ student: { id: string; name: string }; cards: { scope: ScopeKind; id: string; label: string; year: string; sectionId: string }[] }[]>('/exams/mine'),
+  mine: () => api.get<{ student: { id: string; name: string }; cards: { scope: ScopeKind; id: string; label: string; year: string; sectionId: string; cardFormat?: string }[] }[]>('/exams/mine'),
 };
 
 export const EXAM_STATUS: Record<ExamStatus, { label: string; tone: 'neutral' | 'primary' | 'warning' | 'success' }> = {

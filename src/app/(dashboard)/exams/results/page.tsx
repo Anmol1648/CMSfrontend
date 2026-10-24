@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/layout/AppShell";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { YearSelect } from "@/components/academic/YearSelect";
 import { DocumentViewer } from "@/components/documents/DocumentViewer";
+import { CARD_DOC } from "@/lib/api/exams2";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
@@ -31,7 +32,7 @@ function Results() {
   const [scope, setScope] = useState<string>("");
   const [section, setSection] = useState("");
   const [tab, setTab] = useState("students");
-  const [card, setCard] = useState<{ student?: string; name: string } | null>(
+  const [card, setCard] = useState<{ student?: string; name: string; progress?: boolean } | null>(
     null,
   );
   const choices = useQuery({
@@ -165,6 +166,11 @@ function Results() {
               disabled={!d?.students.length}
             >
               Report cards ({d?.students.length ?? 0})
+            </Button>
+          )}
+          {!limited && kind === "final" && (
+            <Button variant="secondary" onClick={() => setCard({ name: d?.section.label ?? "", progress: true })} disabled={!d?.students.length}>
+              Progress cards
             </Button>
           )}
         </div>
@@ -496,9 +502,9 @@ function Results() {
       )}
       {card && d && !limited && (
         <DocumentViewer
-          docKey="report_card"
+          docKey={card.progress ? "progress_card" : (CARD_DOC[d.rule.cardFormat ?? "standard"] ?? "report_card")}
           params={docParams(card.student)}
-          title={`Report card · ${card.name}`}
+          title={`${card.progress ? "Progress card" : "Report card"} · ${card.name}`}
           filename={`report-card-${card.name}.pdf`}
           onClose={() => setCard(null)}
         />
