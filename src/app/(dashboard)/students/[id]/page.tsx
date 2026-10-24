@@ -677,6 +677,11 @@ function StudentPage({ id }: { id: string }) {
                 Fees
               </Link>
             )}
+            {(can("library.manage") || can("library.issue")) && (
+              <Link href={`/library/cards?student=${s.id}`} target="_blank" className="px-4 py-2.5 font-bold rounded-md bg-surface-high text-primary hover:bg-surface-highest transition-all">
+                Library card
+              </Link>
+            )}
             {(can("certificate.issue") || can("tc.manage")) && (
               <>
                 <button type="button" onClick={() => setCertificate("bonafide_certificate")} className="px-4 py-2.5 font-bold rounded-md bg-surface-high text-primary hover:bg-surface-highest transition-all">

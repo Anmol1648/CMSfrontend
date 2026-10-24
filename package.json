@@ -9,6 +9,8 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.99.0",
+    "@zxing/browser": "^0.1.5",
+    "@zxing/library": "^0.21.3",
     "autoprefixer": "^10.5.0",
     "axios": "^1.15.0",
     "clsx": "^2.1.1",

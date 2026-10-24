@@ -381,9 +381,16 @@ function StaffProfile({ id }: { id: string }) {
         title={s.name}
         description={`${s.employeeCode}${s.designation ? ` · ${s.designation.name}` : ""}${s.department ? ` · ${s.department.name}` : ""}`}
         actions={
-          <Link href="/staff" className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
-            All staff
-          </Link>
+          <div className="flex flex-wrap items-center gap-4">
+            {(can("library.manage") || can("library.issue")) && (
+              <Link href={`/library/cards?staffId=${s.id}`} target="_blank" className="px-4 py-2.5 font-bold rounded-md bg-surface-high text-primary hover:bg-surface-highest transition-all">
+                Library card
+              </Link>
+            )}
+            <Link href="/staff" className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
+              All staff
+            </Link>
+          </div>
         }
       />
       <div className="space-y-6 max-w-6xl">

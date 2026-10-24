@@ -212,6 +212,11 @@ export const libraryApi = {
   coverPath: (id: string) => `/library/books/${id}/cover`,
   filePath: (id: string) => `/library/books/${id}/file`,
 
+  cards: (q: { section?: string; staff?: '1'; student?: string; staffId?: string }) =>
+    api.get<{ school: { name: string; fullName: string; phone: string | null; hasLogo: boolean }; validTill: string | null; session: string | null; cards: { kind: MemberKind; id: string; name: string; code: string; detail: string; type: string; books: number; days: number; hasPhoto: boolean }[] }>('/library/cards', { params: clean(q) }),
+  photoPath: (kind: MemberKind, id: string) => `/library/members/${kind}/${id}/photo`,
+  logoPath: '/library/cards/logo',
+
   summary: () => api.get<Summary>('/library/summary', { quiet: true }),
   members: (q: string) => api.get<MemberHit[]>('/library/members', { params: { q }, quiet: true }),
   member: (kind: MemberKind, id: string) => api.get<Member>(`/library/members/${kind}/${id}`),

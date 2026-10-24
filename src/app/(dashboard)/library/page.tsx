@@ -10,6 +10,7 @@ import { Checkbox, FormAlert, Pill } from "@/components/forms";
 import { MasterSelect } from "@/components/masters/MasterSelect";
 import { PageHeader } from "@/components/layout/AppShell";
 import { FindMember } from "@/components/library/FindMember";
+import { CameraScan } from "@/components/library/CameraScan";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
@@ -67,8 +68,8 @@ function MemberPanel({ member, onChange, onClear }: { member: Member; onChange: 
     ref.current?.focus();
   }, [member.id]);
   const reload = async () => onChange(await libraryApi.member(member.kind, member.id));
-  const issue = async (override = false) => {
-    const acc = accession.trim();
+  const issue = async (override = false, scanned?: string) => {
+    const acc = (scanned ?? accession).trim();
     if (!acc) return;
     setError(null);
     try {
@@ -81,7 +82,7 @@ function MemberPanel({ member, onChange, onClear }: { member: Member; onChange: 
     } catch (err) {
       const fields = err instanceof ApiError ? err.fieldErrors() : {};
       if (fields.override && !override) {
-        if (await confirm({ title: "Lend anyway?", message: errorMessage(err), confirmLabel: "Lend anyway" })) return issue(true);
+        if (await confirm({ title: "Lend anyway?", message: errorMessage(err), confirmLabel: "Lend anyway" })) return issue(true, acc);
         return;
       }
       setError(errorMessage(err));
@@ -126,6 +127,7 @@ function MemberPanel({ member, onChange, onClear }: { member: Member; onChange: 
         </div>
         <div className="mt-5 flex items-end gap-3">
           <Input ref={ref} label="Book: scan or type its accession number" value={accession} onChange={(e) => setAccession(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void issue()} icon="qr_code_scanner" placeholder="LIB-00012" />
+          <CameraScan onScan={(code) => void issue(false, code)} label="Scan the book with the camera" />
           <Button onClick={() => issue()} disabled={!accession.trim()}>
             Issue
           </Button>
@@ -203,8 +205,8 @@ function ReturnDesk() {
   useEffect(() => {
     ref.current?.focus();
   }, []);
-  const back = async () => {
-    const acc = accession.trim();
+  const back = async (scanned?: string) => {
+    const acc = (scanned ?? accession).trim();
     if (!acc) return;
     setError(null);
     try {
@@ -228,9 +230,12 @@ function ReturnDesk() {
       <div className="grid gap-4 sm:grid-cols-[1fr_220px_auto] items-end">
         <Input ref={ref} label="Book: scan or type its accession number" value={accession} onChange={(e) => setAccession(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void back()} icon="qr_code_scanner" placeholder="LIB-00012" />
         <MasterSelect master="book_condition" label="Condition now (if changed)" value={conditionId} onChange={(id) => setConditionId(id)} />
-        <Button onClick={back} disabled={!accession.trim()}>
-          Return
-        </Button>
+        <div className="flex gap-2">
+          <CameraScan onScan={(code) => void back(code)} label="Scan the book with the camera" />
+          <Button onClick={() => back()} disabled={!accession.trim()}>
+            Return
+          </Button>
+        </div>
       </div>
       {can("library.fines") && (
         <div className="mt-3">

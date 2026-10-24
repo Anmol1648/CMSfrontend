@@ -13,6 +13,7 @@ import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { errorMessage } from "@/lib/api/client";
 import { libraryApi } from "@/lib/api/library";
+import { CameraScan } from "@/components/library/CameraScan";
 
 function Check({ id, onBack }: { id: string; onBack: () => void }) {
   const queryClient = useQueryClient();
@@ -27,8 +28,8 @@ function Check({ id, onBack }: { id: string; onBack: () => void }) {
     ref.current?.focus();
   }, []);
   const c = q.data;
-  const scan = async () => {
-    const acc = code.trim();
+  const scan = async (scanned?: string) => {
+    const acc = (scanned ?? code).trim();
     if (!acc) return;
     setCode("");
     try {
@@ -70,7 +71,8 @@ function Check({ id, onBack }: { id: string; onBack: () => void }) {
         {c.status === "open" && (
           <div className="mt-4 flex items-end gap-3">
             <Input ref={ref} label="Scan each book on the shelves" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void scan()} icon="qr_code_scanner" placeholder="LIB-00012" />
-            <Button onClick={scan}>Add</Button>
+            <CameraScan onScan={(c) => void scan(c)} label="Scan the book with the camera" />
+            <Button onClick={() => scan()}>Add</Button>
           </div>
         )}
         {log.length > 0 && (
