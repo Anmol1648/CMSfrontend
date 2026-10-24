@@ -5,7 +5,7 @@
  * The sidebar comes from the server: only pages the person's permissions allow (/api/me/access).
  */
 import { UserPhoto } from "@/components/account/UserPhoto";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -20,33 +20,8 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { FeedbackGate } from "@/components/feedback/FeedbackGate";
 import { AssistantLauncher } from "@/components/assistant/AssistantLauncher";
 import { PlatformNotices } from "@/components/platform/PlatformNotices";
+import { SidebarNav } from "@/components/layout/SidebarNav";
 
-interface NavItem {
-  label: string;
-  href: string;
-  icon: string;
-}
-
-function NavLink({ item, onNavigate, badge, activeHref }: { item: NavItem; onNavigate?: () => void; badge?: number; activeHref: string | null }) {
-  const active = item.href === activeHref;
-  return (
-    <Link
-      href={item.href}
-      onClick={onNavigate}
-      className={cn(
-        "flex items-center gap-3 px-4 py-3 transition-all duration-200 relative rounded-r-full",
-        active ? "text-primary font-bold bg-surface-container-high shadow-sm" : "text-on-surface-variant hover:text-primary hover:bg-surface-container-high/50"
-      )}
-    >
-      <span className="material-symbols-outlined shrink-0" style={{ fontVariationSettings: `'FILL' ${active ? 1 : 0}` }}>
-        {item.icon}
-      </span>
-      <span className="text-sm tracking-tight flex-1">{item.label}</span>
-      {!!badge && <span className="min-w-[20px] rounded-full bg-primary px-1.5 py-0.5 text-center text-[10px] font-black text-white">{badge > 99 ? "99+" : badge}</span>}
-      {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-full" />}
-    </Link>
-  );
-}
 
 function UserMenu() {
   const { me, signOut } = useAuth();
@@ -145,6 +120,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Phones and tablets: the sidebar is a drawer opened from the top bar.
   const [navOpen, setNavOpen] = useState(false);
   useEffect(() => setNavOpen(false), [pathname]);
+  const closeNav = useCallback(() => setNavOpen(false), []);
+  // Only phones and tablets have the sidebar as a drawer (on a laptop it is always there).
+  const openNav = useCallback(() => window.matchMedia("(max-width: 1023px)").matches && setNavOpen(true), []);
   useEffect(() => {
     if (!navOpen) return;
     document.body.style.overflow = "hidden";
@@ -179,18 +157,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
-        <nav className="flex-1 space-y-1 pr-2" aria-label="Main">
-          {menu.map((group) => (
-            <div key={group.key} className="mb-3">
-              {group.label && (
-                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-on-surface-variant/40 px-4 mb-2 mt-3">{group.label}</p>
-              )}
-              {group.items.map((item) => (
-                <NavLink key={item.key} item={item} activeHref={activeHref} onNavigate={() => setNavOpen(false)} badge={item.key === "notices" ? unread.data?.unread : undefined} />
-              ))}
-            </div>
-          ))}
-        </nav>
+        <SidebarNav menu={menu} activeHref={activeHref} onNavigate={closeNav} onOpenNav={openNav} badges={{ notices: unread.data?.unread }} />
         <PoweredBy compact className="mt-6 px-4 pt-5 border-t border-outline-variant/15" />
       </aside>
 
