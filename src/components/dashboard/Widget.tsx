@@ -304,3 +304,20 @@ export function Widget({ w, editing, onFilter }: { w: DashboardWidget; editing?:
     </div>
   );
 }
+
+/** A widget drawn from data already in hand (the Widget Builder's live preview). */
+export function WidgetPreview({ label, type, size, d }: { label: string; type: DashboardWidget["type"]; size: DashboardWidget["size"]; d: WidgetData }) {
+  return (
+    <Card className={cn("flex flex-col min-w-0", SPAN[size])}>
+      <p className="mb-4 text-xs font-black uppercase tracking-widest text-primary">{label || "Untitled widget"}</p>
+      {d.note && <p className="-mt-3 mb-3 text-[11px] text-on-surface-variant/60">{d.note}</p>}
+      <div className="flex-1 min-w-0">
+        {d.hidden && <p className="text-sm text-on-surface-variant/70">You can’t see this data.</p>}
+        {!d.hidden && type === "stat" && <Stat d={d} />}
+        {!d.hidden && type === "chart" && (d.kind === "line" ? <Line d={d} /> : <Bars d={d} />)}
+        {!d.hidden && type === "donut" && <Donut d={d} />}
+        {!d.hidden && type === "list" && <List d={d} />}
+      </div>
+    </Card>
+  );
+}

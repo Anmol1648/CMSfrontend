@@ -22,6 +22,7 @@ export interface MyDashboard {
   canCustomise: boolean;
   actionCentre: boolean;
   canSetUp: boolean;
+  canBuild: boolean;
 }
 export interface Action {
   key: string;

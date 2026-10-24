@@ -118,6 +118,12 @@ export default function HomePage() {
                 Customise
               </button>
             )}
+            {q.data?.canBuild && (
+              <Link href="/dashboard/widgets" className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
+                <span className="material-symbols-outlined text-base">widgets</span>
+                Widget Builder
+              </Link>
+            )}
             {q.data?.canSetUp && (
               <Link href="/dashboard/setup" className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
                 <span className="material-symbols-outlined text-base">dashboard_customize</span>
