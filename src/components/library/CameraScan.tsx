@@ -12,58 +12,92 @@ import { FormAlert } from "@/components/forms";
  * types the code into the box and presses Enter.
  */
 function Reader({ onScan, onClose }: { onScan: (code: string) => void; onClose: () => void }) {
-  const video = useRef<HTMLVideoElement>(null);
+  // The <video> element, once it is on the screen (the camera starts only then).
+  const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const done = useRef(false);
   const [error, setError] = useState<string | null>(null);
+  const [live, setLive] = useState(false);
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [camera, setCamera] = useState<string | undefined>(undefined);
 
   useEffect(() => {
+    if (!video) return;
     let controls: IScannerControls | null = null;
-    let stopped = false;
+    let stream: MediaStream | null = null;
+    let cancelled = false;
     done.current = false;
-    (async () => {
+    setError(null);
+    setLive(false);
+    const release = () => {
+      controls?.stop();
+      stream?.getTracks().forEach((t) => t.stop());
+      video.srcObject = null;
+    };
+    // A short wait: opening the camera twice at once (React starts effects twice in development)
+    // leaves many webcams black.
+    const timer = setTimeout(async () => {
       if (!navigator.mediaDevices?.getUserMedia) {
         setError("This browser can’t use the camera here. Open the site on https (or localhost), or type the code.");
         return;
       }
       try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: camera ? { deviceId: { exact: camera } } : { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } });
+        if (cancelled) return release();
+        video.srcObject = stream;
+        video.muted = true;
+        await video.play().catch(() => undefined);
         const { BrowserMultiFormatReader } = await import("@zxing/browser");
-        const reader = new BrowserMultiFormatReader();
-        const constraints: MediaStreamConstraints = { video: camera ? { deviceId: { exact: camera } } : { facingMode: { ideal: "environment" } } };
-        controls = await reader.decodeFromConstraints(constraints, video.current!, (result) => {
+        if (cancelled) return release();
+        controls = await new BrowserMultiFormatReader().decodeFromStream(stream, video, (result) => {
           if (!result || done.current) return;
           done.current = true;
           navigator.vibrate?.(80);
-          controls?.stop();
+          release();
           onScan(result.getText().trim());
         });
-        if (stopped) controls.stop();
+        if (cancelled) return release();
         if (!cameras.length) setCameras((await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput"));
       } catch (err) {
         const name = (err as { name?: string }).name;
-        setError(name === "NotAllowedError" ? "The camera is blocked: allow it for this site in the browser, then try again." : name === "NotFoundError" ? "No camera found on this device." : "The camera couldn’t be started. Type the code instead.");
+        setError(
+          name === "NotAllowedError"
+            ? "The camera is blocked: allow it for this site (the camera icon in the address bar), then try again."
+            : name === "NotFoundError" || name === "OverconstrainedError"
+              ? "No camera found on this device."
+              : name === "NotReadableError"
+                ? "The camera is being used by another app (Zoom, Teams, the Camera app…). Close it and try again."
+                : "The camera couldn’t be started. Type the code instead."
+        );
       }
-    })();
+    }, 250);
+    // No picture after a while: say so instead of a black box.
+    const watchdog = setTimeout(() => {
+      if (!cancelled && !done.current && video.videoWidth === 0) setError("No picture from the camera. Close other apps using it, choose another camera below, or type the code.");
+    }, 9000);
+    const onPlaying = () => setLive(video.videoWidth > 0);
+    video.addEventListener("playing", onPlaying);
+    video.addEventListener("loadeddata", onPlaying);
     return () => {
-      stopped = true;
-      controls?.stop();
+      cancelled = true;
+      clearTimeout(timer);
+      clearTimeout(watchdog);
+      video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("loadeddata", onPlaying);
+      release();
     };
-    // Starting again only when another camera is chosen.
+    // Starts again only for another camera (or when the video element appears).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [camera]);
+  }, [video, camera]);
 
   return (
     <Modal isOpen onClose={onClose} title="Scan with the camera" width="max-w-lg">
       <div className="space-y-3">
-        {error ? (
-          <FormAlert>{error}</FormAlert>
-        ) : (
-          <div className="relative rounded-2xl overflow-hidden bg-black">
-            <video ref={video} className="w-full aspect-[4/3] object-cover" muted playsInline />
-            <div className="pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 h-24 border-2 border-white/80 rounded-xl" />
-          </div>
-        )}
+        {error && <FormAlert>{error}</FormAlert>}
+        <div className={error ? "hidden" : "relative rounded-2xl overflow-hidden bg-black"}>
+          <video ref={setVideo} className="w-full aspect-[4/3] object-cover" muted playsInline autoPlay />
+          <div className="pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 h-24 border-2 border-white/80 rounded-xl" />
+          {!live && <p className="absolute inset-0 flex items-center justify-center text-sm text-white/80">Starting the camera… (allow it if the browser asks)</p>}
+        </div>
         <p className="text-xs text-on-surface-variant/70">Hold the barcode inside the box, about a hand away from the camera, in good light.</p>
         <div className="flex items-center justify-between gap-3">
           {cameras.length > 1 ? (
