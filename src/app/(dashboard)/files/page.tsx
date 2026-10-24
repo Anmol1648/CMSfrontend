@@ -195,6 +195,74 @@ function AddFiles({ folder, roles, manage, mySections, onClose }: { folder: Fold
   );
 }
 
+/** A shared file's details: title, description, folder, tags, who sees it, hide-after date, read confirmation. */
+function EditItem({ item, inFolder, folders, roles, manage, mySections, onClose }: { item: Item; inFolder: string; folders: Folder[]; roles: { slug: string; name: string }[]; manage: boolean; mySections: string[]; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const tags = useQuery({ queryKey: ["master-options", "upload_tag"], queryFn: () => mastersApi.options("upload_tag"), staleTime: 5 * 60_000 });
+  const [title, setTitle] = useState(item.title);
+  const [description, setDescription] = useState(item.description ?? "");
+  const [folderId, setFolderId] = useState(inFolder);
+  const [tagIds, setTagIds] = useState<string[]>(item.tagIds);
+  const [rule, setRule] = useState<Rule>({ inherit: item.inherit, audience: item.audience, roleSlugs: item.roleSlugs, sectionIds: item.sectionIds, userIds: item.userIds, withParents: item.withParents });
+  const [validUntil, setValidUntil] = useState(item.validUntil ?? "");
+  const [needsAck, setNeedsAck] = useState(item.needsAck);
+  const [saving, setSaving] = useState(false);
+  return (
+    <Modal isOpen onClose={onClose} title="Edit details" width="max-w-3xl">
+      <div className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
+          <Select label="Folder" value={folderId} onChange={setFolderId} options={folders.map((f) => ({ value: f.id, label: f.name }))} />
+        </div>
+        <label className="flex flex-col gap-2">
+          <span className={label}>Description (optional)</span>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} className="min-h-[4rem] rounded-xl border border-outline-variant/40 bg-transparent px-3 py-2 text-sm" />
+        </label>
+        <div>
+          <p className={label}>Tags</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {(tags.data ?? []).filter((t) => t.isActive || tagIds.includes(t.id)).map((t) => (
+              <button key={t.id} type="button" onClick={() => setTagIds((x) => (x.includes(t.id) ? x.filter((y) => y !== t.id) : [...x, t.id]))} className={cn("rounded-full px-3 py-1 text-xs font-bold border", tagIds.includes(t.id) ? "bg-primary/15 text-primary border-primary/40" : "border-outline-variant/30 text-on-surface-variant")}>
+                {t.name}
+              </button>
+            ))}
+          </div>
+        </div>
+        <VisibilityEditor value={rule} onChange={setRule} roles={roles} onlySections={manage ? undefined : mySections} />
+        <div className="grid gap-4 sm:grid-cols-2 items-end">
+          <Input label="Hide after (optional)" type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
+          <Checkbox checked={needsAck} onChange={setNeedsAck} label="People must confirm they have read it" />
+        </div>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            loading={saving}
+            disabled={!title.trim()}
+            onClick={async () => {
+              setSaving(true);
+              try {
+                await sharedApi.editItem(item.id, { ...rule, folderId, title: title.trim(), description: description.trim() || null, tagIds, validUntil: validUntil || null, needsAck });
+                queryClient.invalidateQueries({ queryKey: ["shared"] });
+                showToast("Saved", "success");
+                onClose();
+              } catch (err) {
+                showToast(errorMessage(err), "error");
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            Save
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 function TrackingModal({ item, onClose }: { item: Item; onClose: () => void }) {
   const { showToast } = useToast();
   const q = useQuery({ queryKey: ["shared", "tracking", item.id], queryFn: () => sharedApi.tracking(item.id) });
@@ -272,6 +340,7 @@ function Library() {
   const [folderForm, setFolderForm] = useState<{ folder: Folder | null; parentId: string | null } | null>(null);
   const [adding, setAdding] = useState(false);
   const [tracking, setTracking] = useState<Item | null>(null);
+  const [editing, setEditing] = useState<Item | null>(null);
   const versionInput = useRef<HTMLInputElement>(null);
   const [versionFor, setVersionFor] = useState<Item | null>(null);
   const folders = lib.data?.folders ?? [];
@@ -395,6 +464,11 @@ function Library() {
                         Who opened
                       </Button>
                     )}
+                    {i.canEdit && (
+                      <Button variant="tertiary" onClick={() => setEditing(i)}>
+                        Edit details
+                      </Button>
+                    )}
                     {i.canEdit && i.kind === "file" && (
                       <Button variant="tertiary" onClick={() => { setVersionFor(i); versionInput.current?.click(); }}>
                         New version
@@ -415,6 +489,7 @@ function Library() {
       {folderForm && <FolderForm folder={folderForm.folder} parentId={folderForm.parentId} roles={lib.data!.roles} onClose={() => setFolderForm(null)} />}
       {adding && folder && <AddFiles folder={folder} roles={lib.data!.roles} manage={manage} mySections={lib.data!.mySections} onClose={() => setAdding(false)} />}
       {tracking && <TrackingModal item={tracking} onClose={() => setTracking(null)} />}
+      {editing && folder && <EditItem item={editing} inFolder={folder.id} folders={folders} roles={lib.data!.roles} manage={manage} mySections={lib.data!.mySections} onClose={() => setEditing(null)} />}
     </div>
   );
 }
