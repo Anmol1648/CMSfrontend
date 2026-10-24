@@ -12,7 +12,27 @@ export interface DashboardWidget {
   type: WidgetType;
   size: WidgetSize;
   href: string | null;
+  /** The person's saved choice on the widget's filter. */
+  filter?: string | null;
 }
+export interface MyDashboard {
+  widgets: DashboardWidget[];
+  /** The person arranged it themselves. */
+  personal: boolean;
+  canCustomise: boolean;
+  actionCentre: boolean;
+  canSetUp: boolean;
+}
+export interface Action {
+  key: string;
+  label: string;
+  icon: string;
+  href: string;
+  count: number;
+  value: string;
+  tone: 'warn' | 'bad';
+}
+export type Shortcut = { label: string; href: string };
 
 export interface StatData {
   value: string | number;
@@ -38,7 +58,7 @@ export interface ListData {
   empty: string;
   more?: { label: string; href: string };
 }
-export type WidgetData = Partial<StatData & ChartData & DonutData & ListData> & { hidden?: boolean; note?: string; updatedAt: string };
+export type WidgetData = Partial<StatData & ChartData & DonutData & ListData> & { hidden?: boolean; note?: string; filter?: { value: string; options: { value: string; label: string }[] }; updatedAt: string };
 
 export interface CatalogueWidget {
   key: string;
@@ -58,8 +78,14 @@ export interface RoleLayout {
 }
 
 export const dashboardApi = {
-  mine: () => api.get<{ widgets: DashboardWidget[]; canSetUp: boolean }>('/dashboard'),
-  widget: (key: string, fresh = false) => api.get<WidgetData>(`/dashboard/widgets/${key}`, { params: fresh ? { fresh: '1' } : {}, quiet: true }),
+  mine: () => api.get<MyDashboard>('/dashboard'),
+  widget: (key: string, fresh = false, filter?: string | null) => api.get<WidgetData>(`/dashboard/widgets/${key}`, { params: { ...(fresh ? { fresh: '1' } : {}), ...(filter ? { filter } : {}) }, quiet: true }),
+  actions: (fresh = false) => api.get<Action[]>('/dashboard/actions', { params: fresh ? { fresh: '1' } : {}, quiet: true }),
+  myCatalogue: () => api.get<CatalogueWidget[]>('/dashboard/mine/catalogue'),
+  saveMine: (widgets: { key: string; size: WidgetSize; filter?: string | null }[]) => api.put<MyDashboard>('/dashboard/mine', { widgets }),
+  resetMine: () => api.delete<MyDashboard>('/dashboard/mine'),
+  links: () => api.get<Shortcut[]>('/dashboard/mine/links'),
+  saveLinks: (links: Shortcut[]) => api.put<Shortcut[]>('/dashboard/mine/links', { links }),
   catalogue: () => api.get<CatalogueWidget[]>('/dashboard/setup/catalogue'),
   roles: () => api.get<{ id: string; name: string; slug: string; customised: boolean; hasDefault: boolean }[]>('/dashboard/setup/roles'),
   layout: (roleId: string) => api.get<RoleLayout>(`/dashboard/setup/roles/${roleId}`),

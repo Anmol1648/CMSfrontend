@@ -15,6 +15,7 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { errorMessage } from "@/lib/api/client";
 import { CatalogueWidget, dashboardApi, SIZE_LABEL, WidgetSize } from "@/lib/api/dashboard";
 import { cn } from "@/lib/utils";
+import { Widget } from "@/components/dashboard/Widget";
 
 const TYPE_ICON: Record<CatalogueWidget["type"], string> = { stat: "looks_one", chart: "bar_chart", donut: "donut_large", list: "list" };
 const SPAN: Record<WidgetSize, string> = { sm: "col-span-1", md: "col-span-2", lg: "col-span-4" };
@@ -32,6 +33,7 @@ function Setup() {
   const layout = useQuery({ queryKey: ["dash-layout", roleId], queryFn: () => dashboardApi.layout(roleId), enabled: !!roleId });
   const [items, setItems] = useState<Item[] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [live, setLive] = useState(false);
 
   useEffect(() => {
     if (!roleId && roles.data?.length) setRoleId((roles.data.find((r) => r.slug === "principal") ?? roles.data[0]).id);
@@ -170,7 +172,24 @@ function Setup() {
                 ))}
               </div>
               <p className="text-[11px] text-on-surface-variant/60 mt-2">On a laptop: four columns. On a phone the widgets stack one under another.</p>
+              <button type="button" onClick={() => setLive((v) => !v)} className="mt-3 text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
+                {live ? "Hide live preview" : "Show live preview"}
+              </button>
             </Card>
+          )}
+
+          {live && items && (
+            <div className="space-y-3">
+              <FormAlert tone="info">The widgets this role sees, in this order and size. The numbers are worked out for you (a teacher sees their own classes, a parent their children).</FormAlert>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
+                {items
+                  .filter((it) => !hiddenFor.get(it.key) && byKey.get(it.key))
+                  .map((it) => {
+                    const w = byKey.get(it.key)!;
+                    return <Widget key={`${roleId}-${it.key}`} w={{ key: w.key, label: w.label, type: w.type, size: it.size, href: w.href }} />;
+                  })}
+              </div>
+            </div>
           )}
         </div>
 
