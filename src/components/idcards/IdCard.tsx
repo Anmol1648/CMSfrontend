@@ -164,7 +164,7 @@ function PrintPortal({ css, children }: { css: string; children: React.ReactNode
   if (!el) return null;
   return createPortal(
     <>
-      <style>{`.idprint-portal { display: none; } @media print { body > *:not(.idprint-portal) { display: none !important; } .idprint-portal { display: block; } .idpage { break-after: page; } .idpage:last-child { break-after: auto; } } ${css}`}</style>
+      <style>{`.idprint-portal { display: none; } @media print { body > *:not(.idprint-portal) { display: none !important; } .idprint-portal { display: block; position: static !important; } .idprint-portal, .idprint-portal * { visibility: visible !important; } .idpage { break-after: page; } .idpage:last-child { break-after: auto; } } ${css}`}</style>
       {children}
     </>,
     el
