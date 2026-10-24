@@ -33,6 +33,7 @@ const ICONS: Record<string, string> = {
   Assets: "inventory_2",
   "ID cards": "badge",
   Inventory: "inventory",
+  Payroll: "payments",
   AI: "smart_toy",
   "Question Bank": "quiz",
   "Online Tests": "assignment",
