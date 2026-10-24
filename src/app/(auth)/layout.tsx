@@ -10,6 +10,7 @@ import { logoSrc, PublicSchool, readCachedBranding, saveCachedBranding, schoolAp
 import { LoginBrandPanel } from "@/components/branding/LoginBrandPanel";
 import { ApiError } from "@/lib/api/client";
 import { PoweredBy } from "@/components/branding/PoweredBy";
+import { ChangeSchoolLink, SchoolCodePicker } from "@/components/branding/SchoolCodePicker";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const school = useQuery({ queryKey: ["public-school"], queryFn: schoolApi.publicInfo, staleTime: Infinity });
@@ -38,14 +39,18 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       />
       <div className="flex-1 flex items-center justify-center p-5 sm:p-8 lg:p-16 bg-surface-lowest">
         <div className="w-full max-w-[420px] space-y-8">
-          {school.isError && (
-            <p className="text-xs font-semibold text-error">
-              {school.error instanceof ApiError && school.error.status === 404
-                ? "This school isn't set up yet. Please contact the school office."
-                : "Can't reach the school's server right now. Please try again in a moment."}
-            </p>
+          {school.isError && !(school.error instanceof ApiError && school.error.status === 404) && <p className="text-xs font-semibold text-error">Can&apos;t reach the school&apos;s server right now. Please try again in a moment.</p>}
+          {/* No school at this address (a shared one): ask for the school code. */}
+          {school.isError && school.error instanceof ApiError && school.error.status === 404 ? (
+            <SchoolCodePicker />
+          ) : (
+            <>
+              {children}
+              <div className="text-center">
+                <ChangeSchoolLink />
+              </div>
+            </>
           )}
-          {children}
           <PoweredBy className="justify-center pt-6 border-t border-outline-variant/15" />
         </div>
       </div>

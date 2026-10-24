@@ -15,6 +15,7 @@ import { dashboardApi, DashboardWidget } from "@/lib/api/dashboard";
 import { Widget } from "@/components/dashboard/Widget";
 import { ActionCentre } from "@/components/dashboard/ActionCentre";
 import { AddWidgets, Shortcuts } from "@/components/dashboard/Customise";
+import { SetupChecklist } from "@/components/platform/SetupChecklist";
 
 const greeting = () => {
   const h = Number(new Date().toLocaleString("en-IN", { hour: "numeric", hour12: false, timeZone: "Asia/Kolkata" }));
@@ -24,7 +25,7 @@ const toSave = (xs: DashboardWidget[]) => xs.map((x) => ({ key: x.key, size: x.s
 
 /** Home: the person's dashboard. "Waiting for you" on top; widgets they may arrange for themselves. */
 export default function HomePage() {
-  const { me } = useAuth();
+  const { me, can } = useAuth();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const confirm = useConfirm();
@@ -134,6 +135,7 @@ export default function HomePage() {
         )}
       </div>
       {editing && <FormAlert tone="info">Drag widgets (or use the arrows) to move them, S / M / L to resize, × to remove. Press Done to keep it.</FormAlert>}
+      {!editing && can("school_profile.update") && <SetupChecklist />}
       {q.data?.actionCentre && !editing && <ActionCentre />}
       {q.isError && <FormAlert>{errorMessage(q.error)}</FormAlert>}
       {!q.data && !q.isError && <PageLoader />}

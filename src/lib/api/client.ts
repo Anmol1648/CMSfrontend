@@ -74,8 +74,23 @@ const http = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+/**
+ * On a shared address (not the school's own), the school code chosen on the login page tells the
+ * server which school this is. Kept in this browser.
+ */
+export const SCHOOL_CODE_KEY = 'school-code';
+export const savedSchoolCode = () => {
+  try {
+    return localStorage.getItem(SCHOOL_CODE_KEY);
+  } catch {
+    return null;
+  }
+};
+
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+  const code = savedSchoolCode();
+  if (code) config.headers['X-School'] = code;
   return config;
 });
 
