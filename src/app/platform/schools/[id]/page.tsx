@@ -98,6 +98,79 @@ function Details({ s, owner, onSaved }: { s: School; owner: boolean; onSaved: (x
   );
 }
 
+function MenuNames({ s }: { s: School }) {
+  const qc = useQueryClient();
+  const { showToast } = useToast();
+  const confirm = useConfirm();
+  const t = useQuery({ queryKey: ["platform", "menu-templates"], queryFn: platformApi.menuTemplates });
+  const [templateId, setTemplateId] = useState("");
+  const [name, setName] = useState("");
+  return (
+    <Card className="space-y-3">
+      <p className="font-bold">Menu names</p>
+      <p className="text-sm text-on-surface-variant">The school can rename, reorder and regroup its menu itself (Setup → Menu Setup). Here you can give it a ready-made set of names, or keep this school’s set as a template for others.</p>
+      <div className="flex flex-wrap items-end gap-2">
+        <Select className="max-w-xs" label="Template" value={templateId} onChange={setTemplateId} options={[{ value: "", label: "Choose…" }, ...(t.data ?? []).map((x) => ({ value: x.id, label: `${x.name} (${x.items.length} items, ${x.groups.length} groups)` }))]} />
+        <Button
+          variant="secondary"
+          disabled={!templateId}
+          onClick={async () => {
+            if (!(await confirm({ title: "Apply this template?", message: `${s.name}'s own menu names and places are replaced.`, confirmLabel: "Apply" }))) return;
+            try {
+              await platformApi.applyMenu(s.id, templateId);
+              showToast("Applied: the school sees it at its next page load", "success");
+            } catch (e) {
+              showToast(errorMessage(e), "error");
+            }
+          }}
+        >
+          Apply
+        </Button>
+        <Button
+          variant="tertiary"
+          onClick={async () => {
+            if (!(await confirm({ title: "Built-in menu for this school?", message: "Its own menu names and places are removed.", confirmLabel: "Reset" }))) return;
+            await platformApi.applyMenu(s.id, null).then(() => showToast("Back to the built-in menu", "success")).catch((e) => showToast(errorMessage(e), "error"));
+          }}
+        >
+          Built-in menu
+        </Button>
+      </div>
+      <div className="flex flex-wrap items-end gap-2">
+        <Input className="max-w-xs" label="Save this school’s menu as a template" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Boarding school" />
+        <Button
+          variant="secondary"
+          disabled={name.trim().length < 2}
+          onClick={async () => {
+            try {
+              qc.setQueryData(["platform", "menu-templates"], await platformApi.saveMenuTemplate(s.id, name.trim(), ""));
+              setName("");
+              showToast("Template saved", "success");
+            } catch (e) {
+              showToast(errorMessage(e), "error");
+            }
+          }}
+        >
+          Save template
+        </Button>
+        {templateId && (
+          <button
+            type="button"
+            className="pb-2 text-xs font-bold uppercase tracking-widest text-error"
+            onClick={async () => {
+              if (!(await confirm({ title: "Delete this template?", message: "Schools that used it keep their menus.", confirmLabel: "Delete", danger: true }))) return;
+              qc.setQueryData(["platform", "menu-templates"], await platformApi.deleteMenuTemplate(templateId));
+              setTemplateId("");
+            }}
+          >
+            Delete template
+          </button>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 function Mail({ s, onSaved }: { s: School; onSaved: (x: School) => void }) {
   const { showToast } = useToast();
   const [f, setF] = useState({ host: s.mail?.host ?? "", port: s.mail?.port ?? "587", user: s.mail?.user ?? "", password: "", from: s.mail?.from ?? "" });
@@ -273,6 +346,7 @@ export default function SchoolPage() {
         </div>
       </div>
 
+      {owner && <MenuNames s={s} />}
       {owner && <Mail s={s} onSaved={saved} />}
 
       {owner && (

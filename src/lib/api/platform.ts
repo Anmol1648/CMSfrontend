@@ -145,6 +145,15 @@ export interface Notice {
   endsAt: string | null;
 }
 
+export interface MenuTemplate {
+  id: string;
+  name: string;
+  description: string;
+  items: unknown[];
+  groups: unknown[];
+  updatedAt: string;
+}
+
 export type SchoolUpdate = Pick<School, 'name' | 'domain' | 'city' | 'contactName' | 'contactEmail' | 'contactPhone' | 'notes' | 'planId' | 'modulesAll' | 'modules' | 'limits'>;
 
 export const platformApi = {
@@ -175,6 +184,10 @@ export const platformApi = {
       throw new ApiError('The export failed. Try again.', 0, 'ERROR');
     }
   },
+  menuTemplates: () => call<MenuTemplate[]>(http.get('/menu-templates')),
+  saveMenuTemplate: (schoolId: string, name: string, description: string) => call<MenuTemplate[]>(http.post(`/schools/${schoolId}/menu-template`, { name, description })),
+  applyMenu: (schoolId: string, templateId: string | null) => call<{ ok: boolean }>(http.post(`/schools/${schoolId}/menu`, { templateId })),
+  deleteMenuTemplate: (id: string) => call<MenuTemplate[]>(http.delete(`/menu-templates/${id}`)),
   plans: () => call<{ modules: ModuleInfo[]; plans: Plan[] }>(http.get('/plans')),
   savePlan: (id: string | null, b: Omit<Plan, 'id' | 'schools'>) => call<{ modules: ModuleInfo[]; plans: Plan[] }>(id ? http.put(`/plans/${id}`, b) : http.post('/plans', b)),
   applyPlan: (id: string) => call<{ schools: number }>(http.post(`/plans/${id}/apply`)),
