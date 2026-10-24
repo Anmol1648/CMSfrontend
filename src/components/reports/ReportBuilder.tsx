@@ -1,6 +1,7 @@
 "use client";
 
 import { ExamPicker } from "./ExamPicker";
+import { PtmPicker } from "./PtmPicker";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -76,6 +77,7 @@ function ParamInput({ p, value, onChange, year }: { p: DataSource["params"][numb
       </div>
     );
   }
+  if (p.type === "ptm") return <PtmPicker label={p.label} value={v} onChange={onChange} />;
   if (p.type === "exam") return <ExamPicker label={p.label} year={year ?? ""} value={v} onChange={onChange} />;
   return <Input label={p.label} value={v} onChange={(e) => onChange(e.target.value)} />;
 }
