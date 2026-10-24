@@ -19,6 +19,7 @@ function Reader({ onScan, onClose }: { onScan: (code: string) => void; onClose: 
   const [live, setLive] = useState(false);
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [camera, setCamera] = useState<string | undefined>(undefined);
+  const [typed, setTyped] = useState("");
 
   useEffect(() => {
     if (!video) return;
@@ -46,9 +47,14 @@ function Reader({ onScan, onClose }: { onScan: (code: string) => void; onClose: 
         video.srcObject = stream;
         video.muted = true;
         await video.play().catch(() => undefined);
-        const { BrowserMultiFormatReader } = await import("@zxing/browser");
+        const [{ BrowserMultiFormatReader }, { BarcodeFormat, DecodeHintType }] = await Promise.all([import("@zxing/browser"), import("@zxing/library")]);
         if (cancelled) return release();
-        controls = await new BrowserMultiFormatReader().decodeFromStream(stream, video, (result) => {
+        // Only the codes the school uses, and look hard (webcams give small, soft pictures).
+        const hints = new Map<number, unknown>([
+          [DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.QR_CODE, BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.EAN_13]],
+          [DecodeHintType.TRY_HARDER, true],
+        ]);
+        controls = await new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 120 }).decodeFromStream(stream, video, (result) => {
           if (!result || done.current) return;
           done.current = true;
           navigator.vibrate?.(80);
@@ -98,7 +104,19 @@ function Reader({ onScan, onClose }: { onScan: (code: string) => void; onClose: 
           <div className="pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 h-24 border-2 border-white/80 rounded-xl" />
           {!live && <p className="absolute inset-0 flex items-center justify-center text-sm text-white/80">Starting the camera… (allow it if the browser asks)</p>}
         </div>
-        <p className="text-xs text-on-surface-variant/70">Hold the barcode inside the box, about a hand away from the camera, in good light.</p>
+        <p className="text-xs text-on-surface-variant/70">Hold the <b>QR code</b> (or the barcode) inside the box, 15–25 cm from the camera, flat and in good light. QR codes read best on laptop webcams.</p>
+        <form
+          className="flex items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (typed.trim()) onScan(typed.trim());
+          }}
+        >
+          <input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Or type the number here" className="flex-1 rounded-xl bg-surface-container-low px-4 py-2.5 text-sm outline-none" aria-label="Type the number" />
+          <Button type="submit" variant="secondary" disabled={!typed.trim()}>
+            Use
+          </Button>
+        </form>
         <div className="flex items-center justify-between gap-3">
           {cameras.length > 1 ? (
             <select value={camera ?? ""} onChange={(e) => setCamera(e.target.value || undefined)} className="rounded-xl bg-surface-container-low px-3 py-2 text-sm" aria-label="Camera">

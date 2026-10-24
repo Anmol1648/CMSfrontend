@@ -13,18 +13,22 @@ import { PageLoader } from "@/components/ui/PageLoader";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { errorMessage } from "@/lib/api/client";
 import { libraryApi } from "@/lib/api/library";
+import { Qr } from "@/components/library/Qr";
 
 /** One spine / inside-cover label: the school, the book, its shelf and the accession number as a barcode. */
 function Label({ l, school }: { l: { accessionNo: string; title: string; callNumber: string | null; location: string | null }; school: string }) {
   const svg = useRef<SVGSVGElement>(null);
   useEffect(() => {
-    if (svg.current) JsBarcode(svg.current, l.accessionNo, { format: "CODE128", height: 36, width: 1.4, fontSize: 11, margin: 0, displayValue: true });
+    if (svg.current) JsBarcode(svg.current, l.accessionNo, { format: "CODE128", height: 40, width: 1.8, fontSize: 11, margin: 0, displayValue: true });
   }, [l.accessionNo]);
   return (
     <div className="label border border-dashed border-outline-variant/60 rounded-md p-2 text-center break-inside-avoid">
       <p className="text-[9px] font-bold uppercase tracking-wider truncate">{school} Library</p>
       <p className="text-[10px] font-semibold truncate">{l.title}</p>
-      <svg ref={svg} className="mx-auto max-w-full" />
+      <div className="flex items-center justify-center gap-2">
+        <Qr text={l.accessionNo} size={52} />
+        <svg ref={svg} className="max-w-[70%]" />
+      </div>
       <p className="text-[9px] truncate">{[l.callNumber, l.location].filter(Boolean).join(" · ")}</p>
     </div>
   );

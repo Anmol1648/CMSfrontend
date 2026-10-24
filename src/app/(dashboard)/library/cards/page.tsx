@@ -14,6 +14,7 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { authedImageUrl, errorMessage } from "@/lib/api/client";
 import { academicApi } from "@/lib/api/academic";
 import { libraryApi, MemberKind, showDate } from "@/lib/api/library";
+import { Qr } from "@/components/library/Qr";
 
 type CardRow = { kind: MemberKind; id: string; name: string; code: string; detail: string; type: string; books: number; days: number; hasPhoto: boolean };
 
@@ -33,7 +34,7 @@ function LibraryCard({ c, school, logo, validTill, session }: { c: CardRow; scho
   const svg = useRef<SVGSVGElement>(null);
   const photo = useImage(c.hasPhoto ? libraryApi.photoPath(c.kind, c.id) : null);
   useEffect(() => {
-    if (svg.current) JsBarcode(svg.current, c.code, { format: "CODE128", height: 30, width: 1.3, fontSize: 10, margin: 0, displayValue: true });
+    if (svg.current) JsBarcode(svg.current, c.code, { format: "CODE128", height: 30, width: 1.6, fontSize: 10, margin: 0, displayValue: true });
   }, [c.code]);
   return (
     <div className="library-card relative overflow-hidden rounded-xl border border-outline-variant/50 bg-white text-[#1a202c]" style={{ width: "85.6mm", height: "54mm" }}>
@@ -52,6 +53,7 @@ function LibraryCard({ c, school, logo, validTill, session }: { c: CardRow; scho
             <span className="material-symbols-outlined">person</span>
           </span>
         )}
+        <Qr text={c.code} size={64} className="order-last shrink-0" />
         <div className="min-w-0 flex-1 leading-tight">
           <p className="text-[11px] font-extrabold truncate">{c.name}</p>
           <p className="text-[9px] truncate">{c.detail}</p>
@@ -62,7 +64,7 @@ function LibraryCard({ c, school, logo, validTill, session }: { c: CardRow; scho
         </div>
       </div>
       <div className="absolute inset-x-0 bottom-1.5 flex justify-center">
-        <svg ref={svg} className="max-w-[75mm]" />
+        <svg ref={svg} className="max-w-[60mm]" />
       </div>
     </div>
   );
