@@ -32,6 +32,7 @@ const ICONS: Record<string, string> = {
   "Shared files": "folder_shared",
   Assets: "inventory_2",
   "ID cards": "badge",
+  Inventory: "inventory",
   AI: "smart_toy",
   "Question Bank": "quiz",
   "Online Tests": "assignment",
