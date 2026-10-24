@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/Button";
 import { useQuery } from "@tanstack/react-query";
 import { noticesApi } from "@/lib/api/notices";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { FeedbackGate } from "@/components/feedback/FeedbackGate";
 
 interface NavItem {
   label: string;
@@ -214,7 +215,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <UserMenu />
           </div>
         </header>
-        <main className="flex-1 min-w-0 pt-20 lg:pt-28 px-4 sm:px-6 lg:px-12 pb-16 lg:pb-20">{children}</main>
+        <main className="flex-1 min-w-0 pt-20 lg:pt-28 px-4 sm:px-6 lg:px-12 pb-16 lg:pb-20">
+          <FeedbackGate>{children}</FeedbackGate>
+        </main>
       </div>
     </div>
   );

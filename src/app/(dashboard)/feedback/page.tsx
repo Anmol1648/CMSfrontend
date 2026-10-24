@@ -30,11 +30,11 @@ function RoundForm({ forms, onClose }: { forms: Form[]; onClose: () => void }) {
   const yearId = years.data?.find((y) => y.isCurrent)?.id;
   const sections = useQuery({ queryKey: ["academic", "section-options", yearId], queryFn: () => academicApi.sectionOptions(yearId!), enabled: !!yearId });
   const active = forms.filter((f) => f.isActive);
-  const [v, setV] = useState<RoundInput>({ formId: active[0]?.id ?? "", name: "", audience: (active[0]?.audience === "parent" ? "parent" : "student") as Audience, sectionIds: [], anonymous: true, opensOn: today(), closesOn: plus(10) });
+  const [v, setV] = useState<RoundInput>({ formId: active[0]?.id ?? "", name: "", audience: (active[0]?.audience === "parent" ? "parent" : "student") as Audience, sectionIds: [], anonymous: true, mustFill: false, opensOn: today(), closesOn: plus(10) });
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
   useEffect(() => {
-    if (defaults.data) setV((x) => ({ ...x, anonymous: defaults.data.anonymous }));
+    if (defaults.data) setV((x) => ({ ...x, anonymous: defaults.data.anonymous, mustFill: defaults.data.mustFill }));
   }, [defaults.data]);
   const set = (p: Partial<RoundInput>) => setV((x) => ({ ...x, ...p }));
   const form = forms.find((f) => f.id === v.formId);
@@ -76,6 +76,7 @@ function RoundForm({ forms, onClose }: { forms: Form[]; onClose: () => void }) {
           </div>
         </div>
         <Checkbox checked={v.anonymous} onChange={(a) => set({ anonymous: a })} label="Anonymous (recommended)" hint="No one, not even the principal, sees who wrote what." />
+        <Checkbox checked={v.mustFill} onChange={(m) => set({ mustFill: m })} label="Must be filled before using the app" hint="While the round is open, students / parents with forms left are taken to Teacher Feedback from any page until every teacher is done." />
         {error && <FormAlert>{error}</FormAlert>}
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose}>
@@ -255,7 +256,7 @@ function Rounds() {
                 <div className="flex-1 min-w-[14rem]">
                   <p className="font-extrabold">{r.name}</p>
                   <p className="text-xs text-on-surface-variant/70">
-                    {r.form} · {AUDIENCE[r.audience]} · {r.sections} sections · {r.opensOn} – {r.closesOn} · {r.anonymous ? "anonymous" : "named"}
+                    {r.form} · {AUDIENCE[r.audience]} · {r.sections} sections · {r.opensOn} – {r.closesOn} · {r.anonymous ? "anonymous" : "named"}{r.mustFill ? " · must fill before using the app" : ""}
                   </p>
                 </div>
                 <Pill tone={ROUND_STATUS[r.status].tone}>{ROUND_STATUS[r.status].label}</Pill>
@@ -271,6 +272,11 @@ function Rounds() {
               <div className="mt-3 flex flex-wrap gap-2">
                 {(r.status === "draft" || r.status === "closed") && <Button onClick={async () => (await confirm({ title: `Open “${r.name}”?`, message: "Those asked are told and can fill it in until the closing day.", confirmLabel: "Open" })) && act(() => feedbackApi.open(r.id), "Opened: people are told")}>Open</Button>}
                 {r.status === "open" && <Button variant="secondary" onClick={() => act(() => feedbackApi.close(r.id), "Closed")}>Close now</Button>}
+                {(r.status === "draft" || r.status === "open") && (
+                  <Button variant="tertiary" onClick={() => act(() => feedbackApi.setMustFill(r.id, !r.mustFill), r.mustFill ? "No longer required before using the app" : "Now required before using the app")}>
+                    {r.mustFill ? "Don’t require before using the app" : "Require before using the app"}
+                  </Button>
+                )}
                 {r.status !== "draft" && (
                   <Button variant="tertiary" onClick={() => setScreening(r)}>
                     Screen comments

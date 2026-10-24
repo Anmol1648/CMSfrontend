@@ -86,8 +86,10 @@ function Give() {
   if (q.error) return <FormAlert>{errorMessage(q.error)}</FormAlert>;
   const d = q.data!;
   if (!d.rounds.length) return <FormAlert tone="info">No teacher feedback is open right now. You’ll get a notification when it is.</FormAlert>;
+  const mustLeft = d.rounds.filter((r) => r.mustFill).reduce((a, r) => a + r.children.reduce((b, c) => b + c.teachers.filter((t) => !t.done).length, 0), 0);
   return (
     <div className="space-y-4 max-w-3xl">
+      {mustLeft > 0 && <FormAlert tone="warning">The school asks you to finish this feedback before using the rest of the app: {mustLeft} teacher{mustLeft === 1 ? "" : "s"} left.</FormAlert>}
       {d.rounds.map((r) => (
         <Card key={r.id}>
           <p className="text-lg font-extrabold">{r.name}</p>

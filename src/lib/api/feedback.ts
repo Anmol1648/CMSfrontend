@@ -25,6 +25,7 @@ export interface RoundRow {
   audience: Audience;
   sections: number;
   anonymous: boolean;
+  mustFill: boolean;
   opensOn: string;
   closesOn: string;
   status: 'draft' | 'open' | 'closed' | 'released';
@@ -38,6 +39,7 @@ export interface RoundInput {
   audience: Audience;
   sectionIds: string[];
   anonymous: boolean;
+  mustFill: boolean;
   opensOn: string;
   closesOn: string;
 }
@@ -65,6 +67,7 @@ export interface GiveRound {
   name: string;
   closesOn: string;
   anonymous: boolean;
+  mustFill: boolean;
   questions: Question[];
   children: { studentId: string; as: 'student' | 'parent'; name: string; section: string; teachers: { staffId: string; name: string; role: string; done: boolean }[] }[];
 }
@@ -73,11 +76,12 @@ export const feedbackApi = {
   forms: () => api.get<Form[]>('/feedback/forms'),
   saveForm: (id: string | null, input: Omit<Form, 'id' | 'rounds'>) => (id ? api.put<{ id: string }>(`/feedback/forms/${id}`, input) : api.post<{ id: string }>('/feedback/forms', input)),
   rounds: () => api.get<RoundRow[]>('/feedback/rounds'),
-  roundDefaults: () => api.get<{ anonymous: boolean }>('/feedback/rounds/defaults'),
+  roundDefaults: () => api.get<{ anonymous: boolean; mustFill: boolean }>('/feedback/rounds/defaults'),
   saveRound: (id: string | null, input: RoundInput) => (id ? api.put<{ id: string }>(`/feedback/rounds/${id}`, input) : api.post<{ id: string }>('/feedback/rounds', input)),
   deleteRound: (id: string) => api.delete(`/feedback/rounds/${id}`),
   open: (id: string) => api.post(`/feedback/rounds/${id}/open`),
   close: (id: string) => api.post(`/feedback/rounds/${id}/close`),
+  setMustFill: (id: string, mustFill: boolean) => api.put(`/feedback/rounds/${id}/must-fill`, { mustFill }),
   release: (id: string) => api.post(`/feedback/rounds/${id}/release`),
   comments: (id: string) => api.get<{ id: string; teacher: string; kind: string; status: 'pending' | 'hidden'; texts: string[] }[]>(`/feedback/rounds/${id}/comments`),
   screen: (ids: string[], status: 'shown' | 'hidden') => api.post('/feedback/comments', { ids, status }),
