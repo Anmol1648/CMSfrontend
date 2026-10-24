@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { errorMessage } from "@/lib/api/client";
 import { idCardsApi, Mine } from "@/lib/api/idcards";
-import { IdCardSide } from "@/components/idcards/IdCard";
+import { IdCardSide, PrintCards } from "@/components/idcards/IdCard";
 import { PassportCamera } from "@/components/idcards/PassportCamera";
 import { cn } from "@/lib/utils";
 
@@ -71,7 +71,6 @@ function MyCards() {
   const p = d.people.find((x) => x.id === pick) ?? d.people[0];
   return (
     <div className="space-y-4 max-w-3xl">
-      <style>{`@media print { body * { visibility: hidden; } #mycard, #mycard * { visibility: visible; } #mycard { position: absolute; left: 0; top: 0; } }`}</style>
       {d.people.length > 1 && (
         <div className="flex flex-wrap gap-2">
           {d.people.map((x) => (
@@ -93,7 +92,7 @@ function MyCards() {
         ) : (
           <div className="space-y-3">
             <div className="flex justify-center">
-              <div id="mycard" className="origin-top scale-[1.35] sm:scale-150 mb-[45%] sm:mb-[55%]">
+              <div className="origin-top scale-[1.35] sm:scale-150 mb-[45%] sm:mb-[55%]">
                 <IdCardSide design={p.design} holder={p} school={d.school} side={side} />
               </div>
             </div>
@@ -107,6 +106,7 @@ function MyCards() {
                 <span className="material-symbols-outlined text-lg">download</span> Save / print
               </Button>
             </div>
+            <PrintCards design={p.design} holders={[p]} school={d.school} mode="single" backs />
             {!p.card && <p className="text-center text-xs text-on-surface-variant">This is how the card will look; it gets its number when the school prints it.</p>}
           </div>
         )}

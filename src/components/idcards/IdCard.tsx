@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import JsBarcode from "jsbarcode";
 import { Qr } from "@/components/library/Qr";
 import { authedImageUrl } from "@/lib/api/client";
@@ -150,59 +151,104 @@ export function IdCardSide({ design, holder, school, side }: { design: CardDesig
   );
 }
 
-/** Cards laid out for printing: A4 sheets (fronts, then mirrored backs for two-sided printing) or one card per page. */
-export function CardSheet({ design, holders, school, mode, backs }: { design: CardDesign; holders: Holder[]; school: School; mode: "sheet" | "single"; backs: boolean }) {
+/** Renders its children straight under <body> and prints only them (the app is hidden while printing). */
+function PrintPortal({ css, children }: { css: string; children: React.ReactNode }) {
+  const [el, setEl] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const d = document.createElement("div");
+    d.className = "idprint-portal";
+    document.body.appendChild(d);
+    setEl(d);
+    return () => d.remove();
+  }, []);
+  if (!el) return null;
+  return createPortal(
+    <>
+      <style>{`.idprint-portal { display: none; } @media print { body > *:not(.idprint-portal) { display: none !important; } .idprint-portal { display: block; } .idpage { break-after: page; } .idpage:last-child { break-after: auto; } } ${css}`}</style>
+      {children}
+    </>,
+    el
+  );
+}
+
+type SheetProps = { design: CardDesign; holders: Holder[]; school: School; mode: "sheet" | "single"; backs: boolean };
+
+/** The pages: A4 sheets (fronts, then mirrored backs for two-sided printing) or one card side per page. */
+function Pages({ design, holders, school, mode, backs, screen }: SheetProps & { screen: boolean }) {
   const portrait = design.orientation === "portrait";
   const w = portrait ? 54 : 85.6;
-  const h = portrait ? 85.6 : 54;
   const across = portrait ? 3 : 2;
   const perPage = portrait ? 9 : 10;
   const gap = 4;
   const width = across * w + (across - 1) * gap;
   const withBack = backs && design.back;
+  const space = (h: number) => (screen ? <div style={{ height: h }} /> : null);
+  if (mode === "single") {
+    return (
+      <>
+        {holders.map((x) => (
+          <div key={x.id} style={screen ? { display: "flex", gap: 12, marginBottom: 12 } : undefined}>
+            <div className="idpage">
+              <IdCardSide design={design} holder={x} school={school} side="front" />
+            </div>
+            {withBack && (
+              <div className="idpage">
+                <IdCardSide design={design} holder={x} school={school} side="back" />
+              </div>
+            )}
+          </div>
+        ))}
+      </>
+    );
+  }
   const pages: Holder[][] = [];
   for (let i = 0; i < holders.length; i += perPage) pages.push(holders.slice(i, i + perPage));
-  const css =
-    mode === "single"
-      ? `@page { size: ${w}mm ${h}mm; margin: 0; } @media print { .idpage { break-after: page; } .idpage:last-child { break-after: auto; } .idcard { border: none !important; border-radius: 0 !important; } }`
-      : `@page { size: A4; margin: 10mm; } @media print { .idpage { break-after: page; } .idpage:last-child { break-after: auto; } }`;
   return (
-    <div id="idprint">
-      <style>{`${css} @media print { body * { visibility: hidden; } #idprint, #idprint * { visibility: visible; } #idprint { position: absolute; left: 0; top: 0; } .idsheet-gap { display: none; } }`}</style>
-      {mode === "single"
-        ? holders.map((x) => (
-            <div key={x.id}>
-              <div className="idpage">
-                <IdCardSide design={design} holder={x} school={school} side="front" />
-              </div>
-              {withBack && (
-                <div className="idpage">
-                  <IdCardSide design={design} holder={x} school={school} side="back" />
-                </div>
-              )}
-              <div className="idsheet-gap h-3" />
-            </div>
-          ))
-        : pages.map((p, i) => (
-            <div key={i}>
-              <div className="idpage" style={{ width: MM(width), display: "flex", flexWrap: "wrap", gap: MM(gap) }}>
+    <>
+      {pages.map((p, i) => (
+        <div key={i}>
+          <div className="idpage" style={{ width: MM(width), display: "flex", flexWrap: "wrap", gap: MM(gap) }}>
+            {p.map((x) => (
+              <IdCardSide key={x.id} design={design} holder={x} school={school} side="front" />
+            ))}
+          </div>
+          {space(16)}
+          {withBack && (
+            <>
+              <div className="idpage" style={{ width: MM(width), display: "flex", flexWrap: "wrap", flexDirection: "row-reverse", gap: MM(gap) }}>
                 {p.map((x) => (
-                  <IdCardSide key={x.id} design={design} holder={x} school={school} side="front" />
+                  <IdCardSide key={x.id} design={design} holder={x} school={school} side="back" />
                 ))}
               </div>
-              <div className="idsheet-gap h-4" />
-              {withBack && (
-                <>
-                  <div className="idpage" style={{ width: MM(width), display: "flex", flexWrap: "wrap", flexDirection: "row-reverse", gap: MM(gap) }}>
-                    {p.map((x) => (
-                      <IdCardSide key={x.id} design={design} holder={x} school={school} side="back" />
-                    ))}
-                  </div>
-                  <div className="idsheet-gap h-6" />
-                </>
-              )}
-            </div>
-          ))}
+              {space(24)}
+            </>
+          )}
+        </div>
+      ))}
+    </>
+  );
+}
+
+/** What window.print() prints: the cards at real size, nothing else. */
+export function PrintCards(props: SheetProps) {
+  const portrait = props.design.orientation === "portrait";
+  const css =
+    props.mode === "single"
+      ? `@page { size: ${portrait ? "54mm 85.6mm" : "85.6mm 54mm"}; margin: 0; } @media print { .idprint-portal .idcard { border: none !important; border-radius: 0 !important; } }`
+      : `@page { size: A4; margin: 10mm; }`;
+  return (
+    <PrintPortal css={css}>
+      <Pages {...props} screen={false} />
+    </PrintPortal>
+  );
+}
+
+/** Cards laid out on screen, and ready for window.print(). */
+export function CardSheet(props: SheetProps) {
+  return (
+    <div>
+      <Pages {...props} screen />
+      <PrintCards {...props} />
     </div>
   );
 }
