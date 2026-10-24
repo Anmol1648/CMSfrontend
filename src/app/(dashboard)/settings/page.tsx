@@ -29,6 +29,7 @@ const ICONS: Record<string, string> = {
   Complaints: "support_agent",
   Discipline: "gavel",
   "Teacher feedback": "rate_review",
+  "Shared files": "folder_shared",
   AI: "smart_toy",
   "Question Bank": "quiz",
   "Online Tests": "assignment",
