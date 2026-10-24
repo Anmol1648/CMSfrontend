@@ -11,7 +11,7 @@ import { FormAlert } from "@/components/forms";
  * the camera; it works on https (or localhost). A USB / Bluetooth scanner needs none of this: it
  * types the code into the box and presses Enter.
  */
-function Reader({ onScan, onClose }: { onScan: (code: string) => void; onClose: () => void }) {
+function Reader({ onScan, onClose, square = false }: { onScan: (code: string) => void; onClose: () => void; square?: boolean }) {
   // The <video> element, once it is on the screen (the camera starts only then).
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const done = useRef(false);
@@ -101,7 +101,8 @@ function Reader({ onScan, onClose }: { onScan: (code: string) => void; onClose: 
         {error && <FormAlert>{error}</FormAlert>}
         <div className={error ? "hidden" : "relative rounded-2xl overflow-hidden bg-black"}>
           <video ref={setVideo} className="w-full aspect-[4/3] object-cover" muted playsInline autoPlay />
-          <div className="pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 h-24 border-2 border-white/80 rounded-xl" />
+          {/* A guide only: the whole picture is read. Square for QR codes, wide for barcodes. */}
+          <div className={square ? "pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-1/2 aspect-square border-2 border-white/80 rounded-xl" : "pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 h-24 border-2 border-white/80 rounded-xl"} />
           {!live && <p className="absolute inset-0 flex items-center justify-center text-sm text-white/80">Starting the camera… (allow it if the browser asks)</p>}
         </div>
         <p className="text-xs text-on-surface-variant/70">Hold the <b>QR code</b> (or the barcode) inside the box, 15–25 cm from the camera, flat and in good light. QR codes read best on laptop webcams.</p>
@@ -140,7 +141,7 @@ function Reader({ onScan, onClose }: { onScan: (code: string) => void; onClose: 
 }
 
 /** A camera button next to a scan box; gives the code read. */
-export function CameraScan({ onScan, label = "Scan with camera" }: { onScan: (code: string) => void; label?: string }) {
+export function CameraScan({ onScan, label = "Scan with camera", square = false }: { onScan: (code: string) => void; label?: string; square?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -150,6 +151,7 @@ export function CameraScan({ onScan, label = "Scan with camera" }: { onScan: (co
       </button>
       {open && (
         <Reader
+          square={square}
           onClose={() => setOpen(false)}
           onScan={(code) => {
             setOpen(false);

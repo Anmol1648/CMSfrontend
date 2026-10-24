@@ -26,6 +26,7 @@ const ICONS: Record<string, string> = {
   Library: "local_library",
   PTM: "groups",
   Visitors: "door_front",
+  Complaints: "support_agent",
   AI: "smart_toy",
   "Question Bank": "quiz",
   "Online Tests": "assignment",

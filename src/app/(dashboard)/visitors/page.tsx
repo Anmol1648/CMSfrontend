@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { FormAlert, Pill, Select } from "@/components/forms";
+import { Checkbox, FormAlert, Pill, Select } from "@/components/forms";
 import { MasterSelect } from "@/components/masters/MasterSelect";
 import { PageHeader } from "@/components/layout/AppShell";
 import { PageLoader } from "@/components/ui/PageLoader";
@@ -66,13 +66,14 @@ function HostPicker({ kind, value, onChange }: { kind: "staff" | "student"; valu
   );
 }
 
-function EntryForm({ expected, onDone }: { expected: Visit | null; onDone: (v: Visit) => void }) {
+function EntryForm({ expected, onDone }: { expected: Visit | null; onDone: (v: Visit, print: boolean) => void }) {
   const queryClient = useQueryClient();
   const setup = useQuery({ queryKey: ["visitors", "setup"], queryFn: visitorsApi.setup });
   const purposes = useQuery({ queryKey: ["master-options", "visit_purpose"], queryFn: () => mastersApi.options("visit_purpose"), staleTime: 5 * 60_000 });
   const [v, setV] = useState<EntryInput>(blank);
   const [host, setHost] = useState<{ id: string; label: string } | null>(null);
   const [known, setKnown] = useState<Known | null>(null);
+  const [print, setPrint] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
   const set = (p: Partial<EntryInput>) => setV((x) => ({ ...x, ...p }));
@@ -114,7 +115,7 @@ function EntryForm({ expected, onDone }: { expected: Visit | null; onDone: (v: V
       setV(blank);
       setHost(null);
       setKnown(null);
-      onDone(r);
+      onDone(r, print);
     } catch (err) {
       setError(errorMessage(err));
       setFields(err instanceof ApiError ? err.fieldErrors() : {});
@@ -159,14 +160,17 @@ function EntryForm({ expected, onDone }: { expected: Visit | null; onDone: (v: V
         {v.idTypeId && <Input label="ID number" value={v.idNumber ?? ""} onChange={(e) => set({ idNumber: e.target.value || null })} error={fields.idNumber} />}
         <Input label="Note" value={v.note ?? ""} onChange={(e) => set({ note: e.target.value || null })} />
         {error && <FormAlert>{error}</FormAlert>}
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <span className="mr-auto">
+            <Checkbox checked={print} onChange={setPrint} label="Print the pass" />
+          </span>
           {v.expectedVisitId && (
             <Button variant="secondary" onClick={() => setV(blank)}>
               Clear
             </Button>
           )}
           <Button onClick={save} disabled={!v.name.trim() || !!known?.blacklisted}>
-            {s?.approval && v.hostKind === "staff" && !v.expectedVisitId ? "Ask the staff member" : "Let in and print pass"}
+            {s?.approval && v.hostKind === "staff" && !v.expectedVisitId ? "Ask the staff member" : print ? "Let in and print pass" : "Let in"}
           </Button>
         </div>
       </div>
@@ -228,11 +232,11 @@ function Gate() {
       showToast(errorMessage(err), "error");
     }
   };
-  const done = (v: Visit) => {
+  const done = (v: Visit, print: boolean) => {
     setExpected(null);
     if (v.status === "in") {
       showToast(`${v.visitor.name} let in: pass ${v.passNo}`, "success");
-      window.open(`/visitors/pass/${v.id}`, "_blank", "noopener");
+      if (print) window.open(`/visitors/pass/${v.id}`, "_blank", "noopener");
     } else showToast(`Asked ${v.host}: wait for the answer below`, "success");
   };
   const t = q.data;
@@ -244,7 +248,7 @@ function Gate() {
           <p className={label}>Check out: scan the pass, or type its number</p>
           <div className="mt-2 flex items-end gap-2">
             <Input ref={outRef} value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void out(code)} placeholder="VP-261024-007" icon="qr_code_scanner" />
-            <CameraScan onScan={(c) => void out(c)} label="Scan the pass with the camera" />
+            <CameraScan onScan={(c) => void out(c)} label="Scan the pass with the camera" square />
             <Button onClick={() => out(code)} disabled={!code.trim()}>
               Out
             </Button>
