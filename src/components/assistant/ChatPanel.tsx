@@ -119,7 +119,10 @@ export function ChatPanel({ chatId, onChat, compact = false }: { chatId: string 
     return () => clearInterval(t);
   }, [pending]);
   const messages = chatId ? (chat.data?.messages ?? []) : [];
-  useEffect(() => end.current?.scrollIntoView({ behavior: "smooth", block: "end" }), [messages.length, pending]);
+  useEffect(() => {
+    // In braces: newer browsers return a Promise from scrollIntoView, and an effect may only return a clean-up function.
+    end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages.length, pending]);
 
   const send = async (text: string) => {
     const question = text.trim();
