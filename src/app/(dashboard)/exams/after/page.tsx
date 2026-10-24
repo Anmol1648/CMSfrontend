@@ -16,6 +16,7 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { errorMessage } from "@/lib/api/client";
 import { exams2Api, Recheck, RECHECK } from "@/lib/api/exams2";
+import { examsApi } from "@/lib/api/exams";
 
 function RecheckCard({ r }: { r: Recheck }) {
   const { can } = useAuth();
@@ -103,13 +104,17 @@ function Supplementary() {
   const [yearId, setYearId] = useState("");
   const [name, setName] = useState("Supplementary Exam");
   const [picked, setPicked] = useState<Record<string, string[]>>({});
-  const q = useQuery({ queryKey: ["exams2", "supplementary", yearId], queryFn: () => exams2Api.candidates(yearId), enabled: !!yearId });
+  const [classId, setClassId] = useState("");
+  const choices = useQuery({ queryKey: ["exams", "choices", yearId], queryFn: () => examsApi.choices(yearId), enabled: !!yearId });
+  const classes = Array.from(new Map((choices.data?.sections ?? []).map((s) => [s.classId, s.label.split("-")[0]])).entries());
+  const q = useQuery({ queryKey: ["exams2", "supplementary", yearId, classId], queryFn: () => exams2Api.candidates(yearId, classId === "all" ? undefined : classId), enabled: !!yearId && !!classId });
   const all = q.data?.sections.flatMap((s) => s.students) ?? [];
   return (
     <div className="space-y-4">
       <Card>
-        <div className="grid gap-3 sm:grid-cols-[1fr_1.5fr_auto] items-end">
-          <YearSelect value={yearId} onChange={setYearId} />
+        <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1.5fr_auto] items-end">
+          <YearSelect value={yearId} onChange={(y) => { setYearId(y); setClassId(""); setPicked({}); }} />
+          <Select label="Class" value={classId} onChange={setClassId} options={[{ value: "", label: "Choose…" }, ...classes.map(([id, n]) => ({ value: id, label: n })), { value: "all", label: "All classes (slower)" }]} />
           <Input label="Name of the exam" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
           <Button
             disabled={!Object.keys(picked).length}
@@ -138,7 +143,9 @@ function Supplementary() {
           ))}
         </div>
       ) : null}
-      {q.isLoading && yearId ? (
+      {!classId ? (
+        <FormAlert tone="info">Choose a class to see who needs a supplementary exam.</FormAlert>
+      ) : q.isLoading ? (
         <PageLoader />
       ) : q.error ? (
         <FormAlert>{errorMessage(q.error)}</FormAlert>
