@@ -21,6 +21,8 @@ import { FamilyMatch, LoginCreated, Student, studentsApi } from "@/lib/api/stude
 import { admissionsApi } from "@/lib/api/admissions";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { CustomFieldsForm, CustomFieldsView } from "@/components/forms/CustomFields";
+import { CustomValues, labelOf } from "@/lib/api/forms";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -51,6 +53,7 @@ function Admission() {
   const next = useQuery({ queryKey: ["next-admission-number", sectionId], queryFn: () => studentsApi.nextAdmissionNumber(sectionId || undefined) });
   const [admissionNo, setAdmissionNo] = useState("");
   const [admissionDate, setAdmissionDate] = useState(today());
+  const [custom, setCustom] = useState<CustomValues>({});
   const [admissionTypeId, setAdmissionTypeId] = useState("");
 
   // Student fields, family
@@ -108,7 +111,7 @@ function Admission() {
     try {
       const filled = guardians.filter((g) => g.name.trim());
       const r = await studentsApi.admit({
-        student: { ...toFields(fields), admissionDate, admissionTypeId: admissionTypeId || null, ...(admissionNo.trim() ? { admissionNo: admissionNo.trim() } : {}) },
+        student: { ...toFields(fields), admissionDate, admissionTypeId: admissionTypeId || null, ...(admissionNo.trim() ? { admissionNo: admissionNo.trim() } : {}), custom },
         ...(sibling ? { familyId: sibling.id } : { guardians: filled.map(toGuardianInput) }),
         enrolment: { academicYearId: year, sectionId, ...(roll.trim() ? { rollNumber: Number(roll) } : {}), houseId: houseId || null, optionalSubjectIds: optional },
         ...(config.data?.studentLogin === "on_request" ? { createLogin } : {}),
@@ -190,7 +193,7 @@ function Admission() {
         <Section title="Admission">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input
-              label={cfg.editable ? "Admission no" : "Admission no (given automatically)"}
+              label={cfg.editable ? labelOf(cfg, "admissionNo", "Admission no") : `${labelOf(cfg, "admissionNo", "Admission no")} (given automatically)`}
               value={admissionNo}
               onChange={(e) => setAdmissionNo(e.target.value)}
               placeholder={next.data ? `${next.data.next} (next)` : ""}
@@ -198,7 +201,7 @@ function Admission() {
               disabled={!cfg.editable}
               maxLength={40}
             />
-            <Input label="Admission date" type="date" value={admissionDate} onChange={(e) => setAdmissionDate(e.target.value)} error={fieldErrors.admissionDate} />
+            <Input label={labelOf(cfg, "admissionDate", "Admission date")} type="date" value={admissionDate} onChange={(e) => setAdmissionDate(e.target.value)} error={fieldErrors.admissionDate} />
             <MasterSelect master="admission_type" label="Admission type" value={admissionTypeId} onChange={setAdmissionTypeId} placeholder="Not given" />
           </div>
           <p className="text-xs text-on-surface-variant/60">
@@ -207,6 +210,7 @@ function Admission() {
         </Section>
 
         <StudentFieldsForm values={fields} onChange={setFields} config={cfg} errors={fieldErrors} disabled={busy} canSeeSensitive={sensitive} />
+        <CustomFieldsForm fields={cfg.custom} values={custom} onChange={setCustom} errors={fieldErrors} disabled={busy} />
 
         <Section title={cfg.required.includes("guardian") ? "Parents / guardians *" : "Parents / guardians"} description="A brother or sister already studies here? Link to their family, and the parents are shared.">
           {sibling ? (
@@ -289,7 +293,7 @@ function Admission() {
         <Modal isOpen onClose={() => router.push(`/students/${done.student.id}`)} title={`${done.student.name} is admitted`} width="max-w-lg">
           <div className="space-y-4">
             <p className="text-sm text-on-surface-variant">
-              Admission no <b className="font-mono text-on-surface">{done.student.admissionNo}</b> · {done.student.enrolments[0]?.section.label} · roll {done.student.enrolments[0]?.rollNumber ?? "—"}
+              {labelOf(cfg, "admissionNo", "Admission no")} <b className="font-mono text-on-surface">{done.student.admissionNo}</b> · {done.student.enrolments[0]?.section.label} · roll {done.student.enrolments[0]?.rollNumber ?? "—"}
             </p>
             {done.warning && <FormAlert tone="warning">{done.warning}</FormAlert>}
             {done.logins.map((l) => (

@@ -36,7 +36,7 @@ export function MyStaffDetails() {
           </div>
         )}
       </Section>
-      {selfEdit.length > 0 && <SelfEdit key={record.updatedAt} selfEdit={selfEdit} config={config.data ?? { required: [], hidden: [], editable: false, loginDefault: "teaching", selfEdit }} record={record} />}
+      {selfEdit.length > 0 && <SelfEdit key={record.updatedAt} selfEdit={selfEdit} config={config.data ?? { required: [], hidden: [], editable: false, loginDefault: "teaching", selfEdit, labels: {}, custom: [] }} record={record} />}
     </>
   );
 }

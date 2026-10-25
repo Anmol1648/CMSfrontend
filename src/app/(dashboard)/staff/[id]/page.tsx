@@ -28,6 +28,8 @@ import { resizeImage } from "@/lib/images";
 import { useToast } from "@/components/ui/ToastProvider";
 import { cn } from "@/lib/utils";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { CustomFieldsForm, CustomFieldsView } from "@/components/forms/CustomFields";
+import { CustomValues, labelOf } from "@/lib/api/forms";
 
 const showDate = (d: string | null) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—");
 
@@ -55,28 +57,35 @@ function useRun() {
 
 function Overview({ s }: { s: Staff }) {
   const subjects = useQuery({ queryKey: ["academic-subject-options"], queryFn: academicApi.subjectOptions });
+  const config = useQuery({ queryKey: ["staff-form-config"], queryFn: staffApi.formConfig });
+  // Fields the school doesn't use are left out; the rest carry the school's names (Setup → Form Builder).
+  const used = (k: string) => !config.data?.hidden.includes(k);
+  const L = (k: string, label: string) => labelOf(config.data, k, label);
   const place = [s.addressLine, s.city?.name, s.district?.name, s.state?.name, s.pinCode].filter(Boolean).join(", ");
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-      <Card className="space-y-4 xl:col-span-2">
+      <div className="space-y-6 xl:col-span-2">
+      <Card className="space-y-4">
         <h2 className="text-lg font-bold text-primary">About</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-          <Detail label="Designation" value={s.designation?.name ?? "—"} />
-          <Detail label="Department" value={s.department?.name ?? "—"} />
+          {used("designationId") && <Detail label={L("designationId", "Designation")} value={s.designation?.name ?? "—"} />}
+          {used("departmentId") && <Detail label={L("departmentId", "Department")} value={s.department?.name ?? "—"} />}
           <Detail label="Type" value={[s.staffType?.name, s.employmentType?.name].filter(Boolean).join(" · ") || "—"} />
           <Detail label="Teaching post" value={s.teachingPost?.name ?? "—"} />
-          <Detail label="Joined" value={showDate(s.joiningDate)} />
+          <Detail label={L("joiningDate", "Joined")} value={showDate(s.joiningDate)} />
           <Detail label="Reports to" value={s.reportsTo ? <Link href={`/staff/${s.reportsTo.id}`} className="font-bold text-primary hover:underline">{s.reportsTo.name}</Link> : "—"} />
-          <Detail label="Date of birth" value={showDate(s.dateOfBirth)} />
-          <Detail label="Gender" value={s.gender?.name ?? "—"} />
-          <Detail label="Mobile" value={s.mobile ?? "—"} />
-          <Detail label="Email" value={s.email ?? "—"} />
-          <Detail label="Bank" value={s.bank ? `${s.bank.name}${s.ifsc ? ` · ${s.ifsc}` : ""}` : "—"} />
-          <Detail label="Account no" value={s.bankAccountNo ?? "—"} />
+          {used("dateOfBirth") && <Detail label={L("dateOfBirth", "Date of birth")} value={showDate(s.dateOfBirth)} />}
+          {used("genderId") && <Detail label={L("genderId", "Gender")} value={s.gender?.name ?? "—"} />}
+          {used("mobile") && <Detail label={L("mobile", "Mobile")} value={s.mobile ?? "—"} />}
+          {used("email") && <Detail label={L("email", "Email")} value={s.email ?? "—"} />}
+          {used("bank") && <Detail label={L("bank", "Bank")} value={s.bank ? `${s.bank.name}${s.ifsc ? ` · ${s.ifsc}` : ""}` : "—"} />}
+          {used("bank") && <Detail label="Account no" value={s.bankAccountNo ?? "—"} />}
         </div>
-        <Detail label="Address" value={place || "—"} />
+        {used("address") && <Detail label={L("address", "Address")} value={place || "—"} />}
         {s.teachableSubjectIds.length > 0 && <Detail label="Can teach" value={s.teachableSubjectIds.map((id) => subjects.data?.find((x) => x.id === id)?.name ?? "…").join(", ")} />}
       </Card>
+      {config.data && <CustomFieldsView fields={config.data.custom} values={s.custom ?? {}} />}
+      </div>
       <Card className="space-y-3">
         <h2 className="text-lg font-bold text-primary">This year</h2>
         <Detail label="Class teacher of" value={s.thisYear.classTeacherOf.map((c) => c.label).join(", ") || "—"} />
@@ -109,6 +118,7 @@ function Details({ s, reload }: { s: Staff; reload: () => Promise<void> }) {
   const [code, setCode] = useState(s.employeeCode);
   const [teaches, setTeaches] = useState<string[]>(s.teachableSubjectIds);
   const [reportsTo, setReportsTo] = useState(s.reportsTo?.id ?? "");
+  const [custom, setCustom] = useState<CustomValues>(() => s.custom ?? {});
   const { busy, error, fieldErrors, run } = useRun();
   if (!config.data) return <PageLoader />;
   return (
@@ -118,7 +128,7 @@ function Details({ s, reload }: { s: Staff; reload: () => Promise<void> }) {
       onSubmit={(e) => {
         e.preventDefault();
         run(async () => {
-          await staffApi.update(s.id, { ...toStaffFields(values), ...(config.data!.editable ? { employeeCode: code } : {}), teachableSubjectIds: teaches, reportsToId: reportsTo || null });
+          await staffApi.update(s.id, { ...toStaffFields(values), ...(config.data!.editable ? { employeeCode: code } : {}), teachableSubjectIds: teaches, reportsToId: reportsTo || null, custom });
           await reload();
           return "Details saved";
         });
@@ -127,7 +137,7 @@ function Details({ s, reload }: { s: Staff; reload: () => Promise<void> }) {
       {error && <FormAlert>{error}</FormAlert>}
       <Section title="Employee">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Input label="Employee code" value={code} onChange={(e) => setCode(e.target.value)} error={fieldErrors.employeeCode} disabled={!config.data.editable || !canEdit} maxLength={40} />
+          <Input label={labelOf(config.data, "employeeCode", "Employee code")} value={code} onChange={(e) => setCode(e.target.value)} error={fieldErrors.employeeCode} disabled={!config.data.editable || !canEdit} maxLength={40} />
           <Select
             label="Reports to"
             value={reportsTo}
@@ -139,6 +149,7 @@ function Details({ s, reload }: { s: Staff; reload: () => Promise<void> }) {
         </div>
       </Section>
       <StaffFieldsForm values={values} onChange={setValues} config={config.data} errors={fieldErrors} disabled={busy || !canEdit} canSeeSensitive={s.sensitiveShown} />
+      <CustomFieldsForm fields={config.data.custom} values={custom} onChange={setCustom} errors={fieldErrors} disabled={busy || !canEdit} />
       <Section title="Can teach">
         <div className="flex flex-wrap gap-x-6 gap-y-2">
           {(subjects.data ?? []).map((x) => (

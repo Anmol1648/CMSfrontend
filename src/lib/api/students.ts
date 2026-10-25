@@ -1,5 +1,6 @@
 import { api, downloadFile, uploadFile } from './client';
 import type { Paged } from './admin';
+import type { CustomValues, FormExtras } from './forms';
 
 /** Students (cmsbackend/src/modules/students). */
 
@@ -92,6 +93,8 @@ export interface Student {
   medicalNotes: string | null;
   emergencyName: string | null;
   emergencyPhone: string | null;
+  /** Extra fields of the school (Setup → Form Builder). */
+  custom: CustomValues;
   photoUrl: string | null;
   status: StudentStatus;
   statusDate: string | null;
@@ -140,6 +143,7 @@ export type StudentFields = Partial<{
   medicalNotes: string | null;
   emergencyName: string | null;
   emergencyPhone: string | null;
+  custom: CustomValues;
 }>;
 
 export interface GuardianInput {
@@ -162,7 +166,7 @@ export interface EnrolmentInput {
   optionalSubjectIds?: string[];
 }
 
-export interface FormConfig {
+export interface FormConfig extends FormExtras {
   required: string[];
   hidden: string[];
   editable: boolean;

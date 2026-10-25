@@ -31,6 +31,8 @@ import { cn } from "@/lib/utils";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { cocurricularApi } from "@/lib/api/cocurricular";
 import { ActivitiesView } from "@/components/cocurricular/Parts";
+import { CustomFieldsForm, CustomFieldsView } from "@/components/forms/CustomFields";
+import { CustomValues, labelOf } from "@/lib/api/forms";
 
 const showDate = (d: string | null) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—");
 const age = (dob: string | null) => {
@@ -117,30 +119,37 @@ function OneTimeLogin({ login, onClose }: { login: { for: string; username: stri
 // ─── Overview ────────────────────────────────────────────────────────────────
 
 function Overview({ s }: { s: Student }) {
+  const config = useQuery({ queryKey: ["student-form-config"], queryFn: studentsApi.formConfig });
+  // Fields the school doesn't use are left out; the rest carry the school's names (Setup → Form Builder).
+  const used = (k: string) => !config.data?.hidden.includes(k);
+  const L = (k: string, label: string) => labelOf(config.data, k, label);
   const current = s.enrolments.find((e) => e.academicYear.isCurrent) ?? s.enrolments[0];
   const place = [s.addressLine, s.city?.name, s.district?.name, s.state?.name, s.pinCode].filter(Boolean).join(", ");
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-      <Card className="space-y-4 xl:col-span-2">
+      <div className="space-y-6 xl:col-span-2">
+      <Card className="space-y-4">
         <h2 className="text-lg font-bold text-primary">About</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-          <Detail label="Date of birth" value={s.dateOfBirth ? `${showDate(s.dateOfBirth)} (${age(s.dateOfBirth)} yrs)` : "—"} />
-          <Detail label="Gender" value={s.gender?.name ?? "—"} />
-          <Detail label="Blood group" value={s.bloodGroup?.name ?? "—"} />
-          <Detail label="Religion" value={s.religion?.name ?? "—"} />
-          <Detail label="Caste category" value={s.casteCategory?.name ?? "—"} />
-          <Detail label="Admission category" value={s.category?.name ?? "—"} />
-          <Detail label="Mother tongue" value={s.motherTongue?.name ?? "—"} />
-          <Detail label="Nationality" value={s.nationality?.name ?? "—"} />
-          <Detail label="Disability (CWSN)" value={s.disability?.name ?? "None"} />
-          <Detail label="Aadhaar" value={s.aadhaar ?? "—"} />
-          <Detail label="APAAR ID" value={s.apaarId ?? "—"} />
-          <Detail label="PEN" value={s.pen ?? "—"} />
+          {used("dateOfBirth") && <Detail label={L("dateOfBirth", "Date of birth")} value={s.dateOfBirth ? `${showDate(s.dateOfBirth)} (${age(s.dateOfBirth)} yrs)` : "—"} />}
+          {used("genderId") && <Detail label={L("genderId", "Gender")} value={s.gender?.name ?? "—"} />}
+          {used("bloodGroupId") && <Detail label={L("bloodGroupId", "Blood group")} value={s.bloodGroup?.name ?? "—"} />}
+          {used("religionId") && <Detail label={L("religionId", "Religion")} value={s.religion?.name ?? "—"} />}
+          {used("casteCategoryId") && <Detail label={L("casteCategoryId", "Caste category")} value={s.casteCategory?.name ?? "—"} />}
+          {used("categoryId") && <Detail label={L("categoryId", "Admission category")} value={s.category?.name ?? "—"} />}
+          {used("motherTongueId") && <Detail label={L("motherTongueId", "Mother tongue")} value={s.motherTongue?.name ?? "—"} />}
+          {used("nationalityId") && <Detail label={L("nationalityId", "Nationality")} value={s.nationality?.name ?? "—"} />}
+          {used("disabilityId") && <Detail label={L("disabilityId", "Disability (CWSN)")} value={s.disability?.name ?? "None"} />}
+          {used("aadhaar") && <Detail label={L("aadhaar", "Aadhaar")} value={s.aadhaar ?? "—"} />}
+          {used("apaarId") && <Detail label={L("apaarId", "APAAR ID")} value={s.apaarId ?? "—"} />}
+          {used("pen") && <Detail label={L("pen", "PEN")} value={s.pen ?? "—"} />}
         </div>
-        <Detail label="Address" value={place || "—"} />
-        {s.medicalNotes && <Detail label="Medical notes" value={s.medicalNotes} />}
-        {s.previousSchool && <Detail label="Previous school" value={[s.previousSchool, s.previousBoard?.name, s.previousClass && `class ${s.previousClass}`, s.tcNumber && `TC ${s.tcNumber}`].filter(Boolean).join(" · ")} />}
+        {used("address") && <Detail label={L("address", "Address")} value={place || "—"} />}
+        {used("medicalNotes") && s.medicalNotes && <Detail label={L("medicalNotes", "Medical notes")} value={s.medicalNotes} />}
+        {used("previousSchool") && s.previousSchool && <Detail label={L("previousSchool", "Previous school")} value={[s.previousSchool, s.previousBoard?.name, s.previousClass && `class ${s.previousClass}`, s.tcNumber && `TC ${s.tcNumber}`].filter(Boolean).join(" · ")} />}
       </Card>
+      {config.data && <CustomFieldsView fields={config.data.custom} values={s.custom ?? {}} />}
+      </div>
       <div className="space-y-6">
         <Card className="space-y-3">
           <h2 className="text-lg font-bold text-primary">This year</h2>
@@ -153,7 +162,7 @@ function Overview({ s }: { s: Student }) {
           ) : (
             <p className="text-sm text-on-surface-variant">Not placed in a section.</p>
           )}
-          <Detail label="Admitted" value={`${showDate(s.admissionDate)}${s.admissionType ? ` · ${s.admissionType.name}` : ""}`} />
+          <Detail label={L("admissionDate", "Admitted")} value={`${showDate(s.admissionDate)}${s.admissionType ? ` · ${s.admissionType.name}` : ""}`} />
         </Card>
         <Card className="space-y-3">
           <h2 className="text-lg font-bold text-primary">Family</h2>
@@ -193,6 +202,7 @@ function Details({ s, onSaved }: { s: Student; onSaved: () => Promise<void> }) {
   const [admissionNo, setAdmissionNo] = useState(s.admissionNo);
   const [admissionDate, setAdmissionDate] = useState(s.admissionDate);
   const [admissionTypeId, setAdmissionTypeId] = useState(s.admissionType?.id ?? "");
+  const [custom, setCustom] = useState<CustomValues>(() => s.custom ?? {});
   const { busy, error, fieldErrors, run } = useRun();
   const canEdit = can("student.update");
   if (!config.data) return <PageLoader />;
@@ -200,7 +210,7 @@ function Details({ s, onSaved }: { s: Student; onSaved: () => Promise<void> }) {
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     run(async () => {
-      await studentsApi.update(s.id, { ...toFields(values), admissionDate, admissionTypeId: admissionTypeId || null, ...(config.data!.editable ? { admissionNo } : {}) });
+      await studentsApi.update(s.id, { ...toFields(values), admissionDate, admissionTypeId: admissionTypeId || null, ...(config.data!.editable ? { admissionNo } : {}), custom });
       await onSaved();
       return "Details saved";
     });
@@ -211,15 +221,16 @@ function Details({ s, onSaved }: { s: Student; onSaved: () => Promise<void> }) {
       {error && <FormAlert>{error}</FormAlert>}
       <Section title="Admission">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Input label="Admission no" value={admissionNo} onChange={(e) => setAdmissionNo(e.target.value)} error={fieldErrors.admissionNo} disabled={!config.data.editable || !canEdit} maxLength={40} />
-          <Input label="Admission date" type="date" value={admissionDate} onChange={(e) => setAdmissionDate(e.target.value)} disabled={!canEdit} />
+          <Input label={labelOf(config.data, "admissionNo", "Admission no")} value={admissionNo} onChange={(e) => setAdmissionNo(e.target.value)} error={fieldErrors.admissionNo} disabled={!config.data.editable || !canEdit} maxLength={40} />
+          <Input label={labelOf(config.data, "admissionDate", "Admission date")} type="date" value={admissionDate} onChange={(e) => setAdmissionDate(e.target.value)} disabled={!canEdit} />
           <MasterSelect master="admission_type" label="Admission type" value={admissionTypeId} onChange={setAdmissionTypeId} placeholder="Not given" disabled={!canEdit} />
         </div>
       </Section>
       <StudentFieldsForm values={values} onChange={setValues} config={config.data} errors={fieldErrors} disabled={busy || !canEdit} canSeeSensitive={s.sensitiveShown} />
+      <CustomFieldsForm fields={config.data.custom} values={custom} onChange={setCustom} errors={fieldErrors} disabled={busy || !canEdit} />
       {canEdit && (
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="secondary" disabled={busy} onClick={() => setValues(toValues(s))}>
+          <Button type="button" variant="secondary" disabled={busy} onClick={() => (setValues(toValues(s)), setCustom(s.custom ?? {}))}>
             Discard changes
           </Button>
           <Button type="submit" disabled={busy}>
@@ -661,6 +672,7 @@ function StudentPage({ id }: { id: string }) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const student = useQuery({ queryKey: ["student", id], queryFn: () => studentsApi.get(id) });
+  const formConfig = useQuery({ queryKey: ["student-form-config"], queryFn: studentsApi.formConfig });
   const [tab, setTab] = useState<(typeof TABS)[number][0]>("overview");
   const photo = useRef<HTMLInputElement>(null);
   const [certificate, setCertificate] = useState<string | null>(null);
@@ -758,7 +770,7 @@ function StudentPage({ id }: { id: string }) {
               {current?.house && <Pill>{current.house.name} house</Pill>}
             </div>
             <p className="text-sm text-on-surface-variant">
-              Admission no <b className="font-mono">{s.admissionNo}</b> · admitted {showDate(s.admissionDate)}
+              {labelOf(formConfig.data, "admissionNo", "Admission no")} <b className="font-mono">{s.admissionNo}</b> · admitted {showDate(s.admissionDate)}
               {s.family?.guardians[0] && ` · ${s.family.guardians[0].relation?.name ?? "Contact"}: ${s.family.guardians[0].name}${s.family.guardians[0].mobile ? ` (${s.family.guardians[0].mobile})` : ""}`}
             </p>
             {canEdit && <p className="text-xs text-on-surface-variant/60">Click the photo to change it.</p>}

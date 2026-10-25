@@ -1,5 +1,6 @@
 import { api, downloadFile, uploadFile } from './client';
 import type { Paged } from './admin';
+import type { CustomValues, FormExtras } from './forms';
 
 /** Staff (cmsbackend/src/modules/staff). */
 
@@ -76,6 +77,8 @@ export interface Staff {
   uan: string | null;
   emergencyName: string | null;
   emergencyPhone: string | null;
+  /** Extra fields of the school (Setup → Form Builder). */
+  custom: CustomValues;
   photoUrl: string | null;
   status: StaffStatus;
   statusDate: string | null;
@@ -91,9 +94,9 @@ export interface Staff {
   updatedAt: string;
 }
 
-export type StaffFields = Record<string, string | string[] | null | undefined>;
+export type StaffFields = Record<string, string | string[] | CustomValues | null | undefined>;
 
-export interface StaffFormConfig {
+export interface StaffFormConfig extends FormExtras {
   required: string[];
   hidden: string[];
   editable: boolean;

@@ -20,6 +20,8 @@ import { academicApi } from "@/lib/api/academic";
 import { Staff, staffApi } from "@/lib/api/staff";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { CustomFieldsForm, CustomFieldsView } from "@/components/forms/CustomFields";
+import { CustomValues, labelOf } from "@/lib/api/forms";
 
 function AddStaff() {
   const router = useRouter();
@@ -33,6 +35,7 @@ function AddStaff() {
 
   const [values, setValues] = useState<StaffValues>({ firstName: "", joiningDate: new Date().toISOString().slice(0, 10) });
   const [code, setCode] = useState("");
+  const [custom, setCustom] = useState<CustomValues>({});
   const [quals, setQuals] = useState<QualRow[]>([]);
   const [exp, setExp] = useState<ExpRow[]>([]);
   const [teaches, setTeaches] = useState<string[]>([]);
@@ -56,7 +59,7 @@ function AddStaff() {
     setFieldErrors({});
     try {
       const r = await staffApi.create({
-        staff: { ...toStaffFields(values), ...(code.trim() ? { employeeCode: code.trim() } : {}), teachableSubjectIds: teaches },
+        staff: { ...toStaffFields(values), ...(code.trim() ? { employeeCode: code.trim() } : {}), teachableSubjectIds: teaches, custom },
         qualifications: toQualifications(quals),
         experience: toExperience(exp),
         login: { enabled: signIn, roleIds },
@@ -89,10 +92,10 @@ function AddStaff() {
       />
       <form onSubmit={submit} noValidate className="space-y-6 max-w-5xl">
         {error && <FormAlert>{error}</FormAlert>}
-        <Section title="Employee code">
+        <Section title={labelOf(config.data, "employeeCode", "Employee code")}>
           <div className="w-full sm:w-80">
             <Input
-              label={config.data.editable ? "Employee code" : "Employee code (given automatically)"}
+              label={config.data.editable ? labelOf(config.data, "employeeCode", "Employee code") : `${labelOf(config.data, "employeeCode", "Employee code")} (given automatically)`}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder={next.data ? `${next.data.next} (next)` : ""}
@@ -105,6 +108,7 @@ function AddStaff() {
         </Section>
 
         <StaffFieldsForm values={values} onChange={setValues} config={config.data} errors={fieldErrors} disabled={busy} canSeeSensitive={can("staff.view_sensitive")} />
+        <CustomFieldsForm fields={config.data.custom} values={custom} onChange={setCustom} errors={fieldErrors} disabled={busy} />
 
         <Section title="Can teach" description="Subjects this person is able to teach (helps when choosing subject teachers).">
           <div className="flex flex-wrap gap-x-6 gap-y-2">

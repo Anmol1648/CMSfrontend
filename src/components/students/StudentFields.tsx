@@ -59,7 +59,9 @@ export function StudentFieldsForm({
   canSeeSensitive?: boolean;
 }) {
   const shown = (field: string) => !config.hidden.includes(field);
-  const star = (field: string, label: string) => (config.required.includes(field) ? `${label} *` : label);
+  // The school's name for a field (Setup → Form Builder), with * when it is required.
+  const L = (field: string, label: string) => config.labels?.[field] ?? label;
+  const star = (field: string, label: string) => (config.required.includes(field) ? `${L(field, label)} *` : L(field, label));
   const set = (k: string) => (v: string) => onChange({ ...values, [k]: v });
   const input = (k: string, label: string, props: Partial<React.ComponentProps<typeof Input>> = {}) => (
     <Input label={label} value={values[k] ?? ""} onChange={(e) => set(k)(e.target.value)} error={errors[k]} disabled={disabled} {...props} />
@@ -73,7 +75,7 @@ export function StudentFieldsForm({
     <>
       <Section title="Student">
         <div className={grid}>
-          {input("firstName", "First name *", { maxLength: 80 })}
+          {input("firstName", `${L("firstName", "First name")} *`, { maxLength: 80 })}
           {shown("middleName") && input("middleName", star("middleName", "Middle name"), { maxLength: 80 })}
           {shown("lastName") && input("lastName", star("lastName", "Last name"), { maxLength: 80 })}
           {shown("dateOfBirth") && input("dateOfBirth", star("dateOfBirth", "Date of birth"), { type: "date" })}
@@ -102,7 +104,7 @@ export function StudentFieldsForm({
       )}
 
       {shown("address") && (
-        <Section title={config.required.includes("address") ? "Address *" : "Address"}>
+        <Section title={star("address", "Address")}>
           {input("addressLine", "House, street, locality", { maxLength: 200 })}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <MasterChainSelect

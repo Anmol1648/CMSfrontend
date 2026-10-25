@@ -46,7 +46,9 @@ export function StaffFieldsForm({
   only?: string[];
 }) {
   const shown = (field: string) => !config.hidden.includes(field) && (!only || only.includes(field));
-  const star = (field: string, label: string) => (config.required.includes(field) ? `${label} *` : label);
+  // The school's name for a field (Setup → Form Builder), with * when it is required.
+  const L = (field: string, label: string) => config.labels?.[field] ?? label;
+  const star = (field: string, label: string) => (config.required.includes(field) ? `${L(field, label)} *` : L(field, label));
   const set = (k: string) => (v: string) => onChange({ ...values, [k]: v });
   const input = (k: string, label: string, props: Partial<React.ComponentProps<typeof Input>> = {}) => (
     <Input label={label} value={values[k] ?? ""} onChange={(e) => set(k)(e.target.value)} error={errors[k]} disabled={disabled} {...props} />
@@ -62,7 +64,7 @@ export function StaffFieldsForm({
       {all && (
         <Section title="Personal">
           <div className={grid}>
-            {input("firstName", "First name *", { maxLength: 80 })}
+            {input("firstName", `${L("firstName", "First name")} *`, { maxLength: 80 })}
             {shown("middleName") && input("middleName", star("middleName", "Middle name"), { maxLength: 80 })}
             {shown("lastName") && input("lastName", star("lastName", "Last name"), { maxLength: 80 })}
             {shown("dateOfBirth") && input("dateOfBirth", star("dateOfBirth", "Date of birth"), { type: "date" })}
@@ -78,7 +80,7 @@ export function StaffFieldsForm({
       {all && (
         <Section title="Job">
           <div className={grid}>
-            {input("joiningDate", "Joining date", { type: "date" })}
+            {input("joiningDate", L("joiningDate", "Joining date"), { type: "date" })}
             {master("staffTypeId", "staff_type", "Staff type")}
             {shown("designationId") && master("designationId", "designation", star("designationId", "Designation"))}
             {shown("departmentId") && master("departmentId", "department", star("departmentId", "Department"))}
