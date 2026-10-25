@@ -126,6 +126,7 @@ function NewPassword({ onDone }: { onDone: () => void }) {
 
 const NAV = [
   { href: "/platform", label: "Schools", owner: false },
+  { href: "/platform/leads", label: "Leads", owner: false },
   { href: "/platform/plans", label: "Plans", owner: false },
   { href: "/platform/notices", label: "Notices", owner: false },
   { href: "/platform/staff", label: "Staff", owner: true },

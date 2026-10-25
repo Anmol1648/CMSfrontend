@@ -154,6 +154,24 @@ export interface MenuTemplate {
   updatedAt: string;
 }
 
+export type LeadStatus = 'new' | 'contacted' | 'demo' | 'won' | 'lost';
+export interface Lead {
+  id: string;
+  name: string;
+  school: string;
+  city: string | null;
+  phone: string;
+  email: string | null;
+  students: number | null;
+  board: string | null;
+  preferredTime: string | null;
+  message: string | null;
+  language: 'en' | 'hi';
+  status: LeadStatus;
+  notes: string | null;
+  createdAt: string;
+}
+
 export type SchoolUpdate = Pick<School, 'name' | 'domain' | 'city' | 'contactName' | 'contactEmail' | 'contactPhone' | 'notes' | 'planId' | 'modulesAll' | 'modules' | 'limits'>;
 
 export const platformApi = {
@@ -184,6 +202,8 @@ export const platformApi = {
       throw new ApiError('The export failed. Try again.', 0, 'ERROR');
     }
   },
+  leads: (status: LeadStatus | '') => call<{ rows: Lead[]; counts: Partial<Record<LeadStatus, number>> }>(http.get('/leads', { params: status ? { status } : {} })),
+  updateLead: (id: string, status: LeadStatus, notes: string | null) => call<{ ok: boolean }>(http.put(`/leads/${id}`, { status, notes })),
   menuTemplates: () => call<MenuTemplate[]>(http.get('/menu-templates')),
   saveMenuTemplate: (schoolId: string, name: string, description: string) => call<MenuTemplate[]>(http.post(`/schools/${schoolId}/menu-template`, { name, description })),
   applyMenu: (schoolId: string, templateId: string | null) => call<{ ok: boolean }>(http.post(`/schools/${schoolId}/menu`, { templateId })),
