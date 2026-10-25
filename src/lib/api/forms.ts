@@ -53,6 +53,9 @@ export const formsApi = {
   get: (key: string) => api.get<FormSetup>(`/forms/${key}`),
   /** A form's extra fields for the signed-in person (only those they may see). */
   extras: (key: string) => api.get<FormExtras>(`/forms/${key}/extras`),
+  /** The school's own words across the app ("Section" → "Division"). */
+  terms: () => api.get<Terms>('/forms/terms'),
+  saveTerms: (terms: Record<string, string>) => api.put<Terms>('/forms/terms', { terms }),
   save: (key: string, input: { builtIn: { key: string; label: string | null; hidden: boolean; required: boolean }[]; custom: CustomField[] }) => api.put<FormSetup>(`/forms/${key}`, input),
 };
 
@@ -71,3 +74,8 @@ export const FIELD_TYPES: { value: FieldType; label: string }[] = [
 
 /** The school's name for a built-in field, else the default. */
 export const labelOf = (extras: Partial<FormExtras> | undefined, key: string, fallback: string) => extras?.labels?.[key] ?? fallback;
+
+export interface Terms {
+  words: { key: string; plural: string | null }[];
+  terms: Record<string, string>;
+}

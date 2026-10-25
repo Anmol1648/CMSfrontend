@@ -259,24 +259,94 @@ function FormEditor({ setup, canEdit }: { setup: FormSetup; canEdit: boolean }) 
   );
 }
 
+function Words({ canEdit }: { canEdit: boolean }) {
+  const qc = useQueryClient();
+  const { showToast } = useToast();
+  const q = useQuery({ queryKey: ["terms"], queryFn: formsApi.terms });
+  const [v, setV] = useState<Record<string, string> | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (q.data && !v) setV(q.data.terms);
+  }, [q.data, v]);
+  if (!q.data || !v) return <PageLoader />;
+  const dirty = JSON.stringify(v) !== JSON.stringify(q.data.terms);
+  const save = async () => {
+    setBusy(true);
+    try {
+      const r = await formsApi.saveTerms(Object.fromEntries(Object.entries(v).map(([k, x]) => [k, x.trim()]).filter(([, x]) => x)));
+      qc.setQueryData(["terms"], r);
+      setV(r.terms);
+      showToast("Saved: every screen now uses these words", "success");
+    } catch (e) {
+      showToast(errorMessage(e), "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const box = (word: string) => (
+    <input value={v[word] ?? ""} onChange={(e) => setV({ ...v, [word]: e.target.value })} disabled={!canEdit} placeholder={word} maxLength={30} className="w-full rounded-lg bg-surface-container-low px-3 py-1.5 text-sm outline-none disabled:opacity-50" aria-label={`Word for ${word}`} data-raw />
+  );
+  return (
+    <Card className="space-y-4">
+      <div>
+        <h2 className="text-lg font-bold text-primary">The school’s words</h2>
+        <p className="text-sm text-on-surface-variant/70">Type the word the school uses instead (empty = keep it). Every screen shows it: menus, headings, tables, buttons and hints (“Section” → “Division”, “Class teacher” → “Grade teacher”). Whole words only, so “Classroom” stays. What people type is never changed; printed documents keep their own wording (Setup → Document Templates).</p>
+      </div>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-[10px] uppercase tracking-widest text-on-surface-variant/60">
+            <th className="py-2 pr-3">Word</th>
+            <th className="px-3 py-2">The school says</th>
+            <th className="px-3 py-2">Plural</th>
+            <th className="px-3 py-2">The school says</th>
+          </tr>
+        </thead>
+        <tbody>
+          {q.data.words.map((w) => (
+            <tr key={w.key} className="border-t border-outline-variant/10">
+              <td className="py-2 pr-3 font-semibold" data-raw>{w.key}</td>
+              <td className="px-3 py-2">{box(w.key)}</td>
+              <td className="px-3 py-2 text-on-surface-variant" data-raw>{w.plural ?? "—"}</td>
+              <td className="px-3 py-2">{w.plural && box(w.plural)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {canEdit && (
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" disabled={!dirty || busy} onClick={() => setV(q.data!.terms)}>
+            Discard
+          </Button>
+          <Button onClick={save} disabled={!dirty} loading={busy}>
+            Save words
+          </Button>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function Forms() {
   const { can } = useAuth();
   const list = useQuery({ queryKey: ["forms"], queryFn: formsApi.list });
   const [form, setForm] = useState("student");
-  const setup = useQuery({ queryKey: ["form-setup", form], queryFn: () => formsApi.get(form) });
+  const setup = useQuery({ queryKey: ["form-setup", form], queryFn: () => formsApi.get(form), enabled: form !== "words" });
   useEffect(() => {
-    if (list.data?.length && !list.data.some((f) => f.key === form)) setForm(list.data[0].key);
+    if (form !== "words" && list.data?.length && !list.data.some((f) => f.key === form)) setForm(list.data[0].key);
   }, [list.data, form]);
   return (
     <div className="max-w-5xl space-y-4">
       <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => setForm("words")} className={cn("rounded-xl px-4 py-2 text-sm font-bold", form === "words" ? "bg-primary text-white" : "bg-surface-container-low text-primary hover:bg-surface-container-high")}>
+          Words
+        </button>
         {(list.data ?? []).map((f) => (
           <button key={f.key} type="button" onClick={() => setForm(f.key)} className={cn("rounded-xl px-4 py-2 text-sm font-bold", form === f.key ? "bg-primary text-white" : "bg-surface-container-low text-primary hover:bg-surface-container-high")}>
             {f.label}
           </button>
         ))}
       </div>
-      {setup.isLoading ? <PageLoader /> : setup.error ? <FormAlert>{errorMessage(setup.error)}</FormAlert> : <FormEditor key={`${form}-${setup.dataUpdatedAt}`} setup={setup.data!} canEdit={can("forms.manage")} />}
+      {form === "words" ? <Words canEdit={can("forms.manage")} /> : setup.isLoading ? <PageLoader /> : setup.error ? <FormAlert>{errorMessage(setup.error)}</FormAlert> : <FormEditor key={`${form}-${setup.dataUpdatedAt}`} setup={setup.data!} canEdit={can("forms.manage")} />}
     </div>
   );
 }

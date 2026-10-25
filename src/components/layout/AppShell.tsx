@@ -21,6 +21,7 @@ import { FeedbackGate } from "@/components/feedback/FeedbackGate";
 import { AssistantLauncher } from "@/components/assistant/AssistantLauncher";
 import { PlatformNotices } from "@/components/platform/PlatformNotices";
 import { SidebarNav } from "@/components/layout/SidebarNav";
+import { TermsSwap } from "./TermsSwap";
 
 
 function UserMenu() {
@@ -136,6 +137,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
+      <TermsSwap />
       {navOpen && <div className="fixed inset-0 z-[55] bg-slate-900/40 lg:hidden" onClick={() => setNavOpen(false)} aria-hidden />}
       <aside
         id="main-nav"
