@@ -206,6 +206,21 @@ export const platformApi = {
       throw new ApiError('The export failed. Try again.', 0, 'ERROR');
     }
   },
+  /** The sales kit: 'prerequisites' (PDF) or 'demo-deck' (PowerPoint), saved to the computer. */
+  kit: async (which: 'prerequisites' | 'demo-deck') => {
+    try {
+      const res = await http.get<Blob>(`/kit/${which}`, { responseType: 'blob', timeout: 300_000 });
+      const name = /filename="([^"]+)"/.exec(String(res.headers['content-disposition'] ?? ''))?.[1] ?? which;
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch {
+      throw new ApiError('The download failed. Try again.', 0, 'ERROR');
+    }
+  },
   leads: (status: LeadStatus | '') => call<{ rows: Lead[]; counts: Partial<Record<LeadStatus, number>> }>(http.get('/leads', { params: status ? { status } : {} })),
   updateLead: (id: string, status: LeadStatus, notes: string | null) => call<{ ok: boolean }>(http.put(`/leads/${id}`, { status, notes })),
   menuTemplates: () => call<MenuTemplate[]>(http.get('/menu-templates')),
