@@ -29,6 +29,8 @@ import { resizeImage } from "@/lib/images";
 import { useToast } from "@/components/ui/ToastProvider";
 import { cn } from "@/lib/utils";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { cocurricularApi } from "@/lib/api/cocurricular";
+import { ActivitiesView } from "@/components/cocurricular/Parts";
 
 const showDate = (d: string | null) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—");
 const age = (dob: string | null) => {
@@ -634,12 +636,22 @@ function LoginAndStatus({ s, reload }: { s: Student; reload: () => Promise<void>
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
+/** House, clubs, competitions and achievements (Co-curricular). */
+function ActivitiesTab({ id }: { id: string }) {
+  const q = useQuery({ queryKey: ["cocurricular", "student", id], queryFn: () => cocurricularApi.student(id) });
+  if (q.isLoading) return <PageLoader />;
+  if (q.error) return <FormAlert>{errorMessage(q.error)}</FormAlert>;
+  return <ActivitiesView a={q.data!} />;
+}
+const ACTIVITY_PERMISSIONS = ["cocurricular.view", "house.manage", "club.manage", "competition.manage", "achievement.record"];
+
 const TABS = [
   ["overview", "Overview"],
   ["details", "Details"],
   ["family", "Family"],
   ["class", "Class"],
   ["documents", "Documents"],
+  ["activities", "Activities"],
   ["login", "Login & status"],
   ["history", "History"],
 ] as const;
@@ -754,7 +766,7 @@ function StudentPage({ id }: { id: string }) {
         </Card>
 
         <div className="flex flex-wrap gap-2">
-          {TABS.map(([key, label]) => (
+          {TABS.filter(([key]) => key !== "activities" || ACTIVITY_PERMISSIONS.some((p) => can(p))).map(([key, label]) => (
             <button key={key} type="button" onClick={() => setTab(key)} className={cn("px-4 py-2 rounded-xl text-sm font-bold", tab === key ? "bg-primary text-white" : "bg-surface-container-low text-primary hover:bg-surface-container-high")}>
               {label}
             </button>
@@ -766,6 +778,7 @@ function StudentPage({ id }: { id: string }) {
         {tab === "family" && <Family s={s} reload={reload} />}
         {tab === "class" && <ClassTab s={s} reload={reload} />}
         {tab === "documents" && <Documents s={s} reload={reload} />}
+        {tab === "activities" && <ActivitiesTab id={s.id} />}
         {tab === "login" && <LoginAndStatus key={s.updatedAt} s={s} reload={reload} />}
         {tab === "history" && <RecordHistory entity="student" id={s.id} />}
       </div>
