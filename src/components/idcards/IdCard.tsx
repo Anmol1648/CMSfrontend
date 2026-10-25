@@ -78,7 +78,7 @@ export function IdCardSide({ design, holder, school, side }: { design: CardDesig
       <tbody>
         {keys.map((k) => (
           <tr key={k}>
-            <td style={{ color: "#555", paddingRight: MM(1), whiteSpace: "nowrap", verticalAlign: "top", width: "1%" }}>{LABELS[k] ?? k}</td>
+            <td style={{ color: "#555", paddingRight: MM(1), whiteSpace: "nowrap", verticalAlign: "top", width: "1%" }}>{LABELS[k] ?? holder.labels?.[k] ?? k}</td>
             <td style={{ fontWeight: 600, color: "#111", wordBreak: "break-word" }}>{v(k)}</td>
           </tr>
         ))}

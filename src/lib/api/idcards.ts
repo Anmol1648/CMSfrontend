@@ -37,6 +37,8 @@ export interface Holder {
   photo: string | null;
   sub: string;
   values: Record<string, string>;
+  /** Names of the school's extra fields on the card (Setup → Form Builder). */
+  labels?: Record<string, string>;
   card: { id: string; cardNo: string; validUntil: string; status: string } | null;
 }
 export interface Options {

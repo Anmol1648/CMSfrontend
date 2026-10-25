@@ -176,7 +176,7 @@ function FormEditor({ setup, canEdit }: { setup: FormSetup; canEdit: boolean }) 
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-primary">The school’s own fields</h2>
-            <p className="text-sm text-on-surface-variant/70">Extra fields appear on the form under their section, on the profile and in the Excel export. Drag ⋮⋮ to change their order.</p>
+            <p className="text-sm text-on-surface-variant/70">Extra fields appear on the form under their section, on the profile, in the Excel export and import, in the Report Builder and on ID card designs. In document templates (TC, certificates) use <code>{"{{student.custom.key}}"}</code>. Drag ⋮⋮ to change their order.</p>
           </div>
           {canEdit && <Button onClick={() => setEditing("new")}>Add a field</Button>}
         </div>
@@ -193,6 +193,8 @@ function FormEditor({ setup, canEdit }: { setup: FormSetup; canEdit: boolean }) 
                   {FIELD_TYPES.find((t) => t.value === c.type)?.label}
                   {c.options.length ? `: ${c.options.slice(0, 4).join(", ")}${c.options.length > 4 ? "…" : ""}` : ""} · {c.section || "Other details"}
                   {c.used ? ` · ${c.used} with a value` : ""}
+                  {" · "}
+                  <span className="font-mono" title="Use in document templates as {{student.custom.KEY}}">key: {c.key}</span>
                   {c.visibleTo?.length ? ` · only ${c.visibleTo.map((id) => setup.roles.find((r) => r.id === id)?.name).filter(Boolean).join(", ")}` : ""}
                 </p>
               </div>
