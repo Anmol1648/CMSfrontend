@@ -30,8 +30,9 @@ export default function SiteHome({ params }: { params: { lang: string } }) {
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-white px-4 pb-16 pt-12 sm:px-6 sm:pt-20">
         <div className="pointer-events-none absolute -right-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-[#1A365D]/5 blur-3xl" />
-        <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.05fr_1fr]">
-          <div>
+        <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 lg:grid-cols-[1.05fr_1fr]">
+          {/* min-w-0: a grid column may otherwise grow to its widest content (the mock-up) and run off a phone. */}
+          <div className="min-w-0">
             <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-600">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
               {c.hero.badge}
@@ -61,7 +62,7 @@ export default function SiteHome({ params }: { params: { lang: string } }) {
               ))}
             </ul>
           </div>
-          <div className="relative">
+          <div className="relative min-w-0">
             <DashboardMock lang={lang} />
             <div className="absolute -bottom-10 -left-6 hidden sm:block">
               <PhoneMock lang={lang} />
