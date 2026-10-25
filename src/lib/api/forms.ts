@@ -16,6 +16,8 @@ export interface CustomField {
   active: boolean;
   /** Only these roles see and fill it (empty = everyone who sees the record). */
   visibleTo: string[];
+  /** Admission enquiry: also on the online form parents fill. */
+  onPublicForm?: boolean;
 }
 
 /** What a form needs from the builder: the school's names for built-in fields and its extra fields. */
@@ -37,8 +39,10 @@ export interface BuiltInField {
   required: boolean;
 }
 export interface FormSetup {
-  key: 'student' | 'staff';
+  key: string;
   label: string;
+  note: string | null;
+  publicForm: boolean;
   builtIn: BuiltInField[];
   custom: (CustomField & { used: number })[];
   roles: { id: string; name: string }[];
@@ -47,6 +51,8 @@ export interface FormSetup {
 export const formsApi = {
   list: () => api.get<{ key: string; label: string }[]>('/forms'),
   get: (key: string) => api.get<FormSetup>(`/forms/${key}`),
+  /** A form's extra fields for the signed-in person (only those they may see). */
+  extras: (key: string) => api.get<FormExtras>(`/forms/${key}/extras`),
   save: (key: string, input: { builtIn: { key: string; label: string | null; hidden: boolean; required: boolean }[]; custom: CustomField[] }) => api.put<FormSetup>(`/forms/${key}`, input),
 };
 

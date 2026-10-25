@@ -17,6 +17,7 @@ import { CameraScan } from "@/components/library/CameraScan";
 import { AuthedPhoto, PhotoCapture } from "@/components/visitors/Photo";
 import { clock, EntryInput, HostKind, Known, sinceMin, Visit, visitorsApi } from "@/lib/api/visitors";
 import { cn } from "@/lib/utils";
+import { CustomFieldsForm, useFormExtras } from "@/components/forms/CustomFields";
 
 const label = "text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest";
 const blank: EntryInput = { name: "", mobile: null, idTypeId: null, idNumber: null, address: null, photoFileId: null, purposeId: null, hostKind: "office", staffId: null, studentId: null, people: 1, vehicleNo: null, note: null };
@@ -71,6 +72,7 @@ function EntryForm({ expected, onDone }: { expected: Visit | null; onDone: (v: V
   const setup = useQuery({ queryKey: ["visitors", "setup"], queryFn: visitorsApi.setup });
   const purposes = useQuery({ queryKey: ["master-options", "visit_purpose"], queryFn: () => mastersApi.options("visit_purpose"), staleTime: 5 * 60_000 });
   const [v, setV] = useState<EntryInput>(blank);
+  const extras = useFormExtras("visitor");
   const [host, setHost] = useState<{ id: string; label: string } | null>(null);
   const [known, setKnown] = useState<Known | null>(null);
   const [print, setPrint] = useState(true);
@@ -159,6 +161,7 @@ function EntryForm({ expected, onDone }: { expected: Visit | null; onDone: (v: V
         </div>
         {v.idTypeId && <Input label="ID number" value={v.idNumber ?? ""} onChange={(e) => set({ idNumber: e.target.value || null })} error={fields.idNumber} />}
         <Input label="Note" value={v.note ?? ""} onChange={(e) => set({ note: e.target.value || null })} />
+        {!!extras.data?.custom.length && <CustomFieldsForm fields={extras.data.custom} values={v.custom ?? {}} onChange={(c) => set({ custom: c })} errors={fields} />}
         {error && <FormAlert>{error}</FormAlert>}
         <div className="flex flex-wrap items-center justify-end gap-2">
           <span className="mr-auto">

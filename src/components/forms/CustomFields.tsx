@@ -6,6 +6,7 @@ import { Checkbox, Detail, Select } from "@/components/forms";
 import { MasterSelect } from "@/components/masters/MasterSelect";
 import { useQuery } from "@tanstack/react-query";
 import { mastersApi } from "@/lib/api/masters";
+import { formsApi } from "@/lib/api/forms";
 import type { CustomField, CustomValues } from "@/lib/api/forms";
 
 /**
@@ -126,4 +127,16 @@ export function CustomFieldsView({ fields, values }: { fields: CustomField[]; va
       ))}
     </>
   );
+}
+
+/** A form's extra fields for the signed-in person (Setup → Form Builder). */
+export const useFormExtras = (key: string) => useQuery({ queryKey: ["form-extras", key], queryFn: () => formsApi.extras(key), staleTime: 60_000 });
+
+/** A record's extra fields on one line ("Bus pass no.: BP-12 · Stays as: Day scholar"), for lists. */
+export function CustomValuesInline({ formKey, values, className }: { formKey: string; values: CustomValues | undefined; className?: string }) {
+  const extras = useFormExtras(formKey);
+  const fields = (extras.data?.custom ?? []).filter((f) => values && values[f.key] !== undefined && values[f.key] !== null && values[f.key] !== "");
+  const name = useMasterNames(fields, values ?? {});
+  if (!fields.length) return null;
+  return <p className={className ?? "mt-1 text-xs text-on-surface-variant"}>{fields.map((f) => `${f.label}: ${customValueText(f, values![f.key], name)}`).join(" · ")}</p>;
 }

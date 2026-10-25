@@ -11,6 +11,8 @@ import { errorMessage } from "@/lib/api/client";
 import { todayIST } from "@/lib/api/attendance";
 import { staffApi } from "@/lib/api/staff";
 import { ApplyInput, dayCount, leaveApi } from "@/lib/api/leave";
+import { CustomFieldsForm, useFormExtras } from "@/components/forms/CustomFields";
+import type { CustomValues } from "@/lib/api/forms";
 
 interface TypeChoice {
   id: string;
@@ -33,6 +35,8 @@ export function ApplyLeave({ types, forSomeone = false, onClose, onDone }: { typ
   const [half, setHalf] = useState<"" | "first" | "second">("");
   const [reason, setReason] = useState("");
   const [attachment, setAttachment] = useState<{ id: string; name: string } | null>(null);
+  const [custom, setCustom] = useState<CustomValues>({});
+  const extras = useFormExtras("leave");
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -59,7 +63,7 @@ export function ApplyLeave({ types, forSomeone = false, onClose, onDone }: { typ
     setError(null);
     setBusy(true);
     try {
-      await leaveApi.apply({ ...input, reason: reason.trim() });
+      await leaveApi.apply({ ...input, reason: reason.trim(), custom });
       showToast(forSomeone ? "Leave recorded and approved" : "Leave asked for. You'll see here when it is approved.", "success");
       onDone();
       onClose();
@@ -101,6 +105,7 @@ export function ApplyLeave({ types, forSomeone = false, onClose, onDone }: { typ
           />
         )}
         <Input label="Reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} placeholder="e.g. Fever; family function" />
+        {!!extras.data?.custom.length && <CustomFieldsForm fields={extras.data.custom} values={custom} onChange={setCustom} />}
         <div>
           <span className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest ml-1">
             Certificate or letter {type?.certificateAfter != null ? `(needed for more than ${dayCount(type.certificateAfter)})` : "(optional)"}

@@ -13,6 +13,8 @@ import { GatewayCheckout } from "@/components/fees/GatewayCheckout";
 import { Button } from "@/components/ui/Button";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { CustomFieldsForm } from "@/components/forms/CustomFields";
+import type { CustomValues } from "@/lib/api/forms";
 
 /** The school website's admission enquiry form (no login). Switched on in System Settings → Admissions. */
 export default function EnquirePage() {
@@ -22,6 +24,7 @@ export default function EnquirePage() {
   const [paying, setPaying] = useState(false);
   const [paid, setPaid] = useState<PaymentResult | null>(null);
   const [v, setV] = useState({ classId: "", studentFirstName: "", studentLastName: "", dateOfBirth: "", parentName: "", mobile: "", email: "", area: "", message: "", website: "" });
+  const [custom, setCustom] = useState<CustomValues>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -35,7 +38,7 @@ export default function EnquirePage() {
     setErrors({});
     try {
       const body = Object.fromEntries(Object.entries(v).map(([k, val]) => [k, val.trim() || null]));
-      const r = await admissionsApi.submitPublic({ ...body, website: v.website });
+      const r = await admissionsApi.submitPublic({ ...body, website: v.website, custom });
       setSent(r.enquiryNo);
       setPayment(r.payment);
     } catch (err) {
@@ -123,6 +126,7 @@ export default function EnquirePage() {
         <Input label="Email" type="email" maxLength={120} {...text("email")} />
       </div>
       <Input label="Area / locality" maxLength={120} {...text("area")} />
+      {!!form.data?.fields?.length && <CustomFieldsForm fields={form.data.fields} values={custom} onChange={setCustom} errors={errors} />}
       <TextArea label="Anything you'd like to ask" rows={3} maxLength={1000} value={v.message} onChange={(e) => setV({ ...v, message: e.target.value })} error={errors.message} />
       {/* Hidden from people; bots fill it in. */}
       <input type="text" name="website" value={v.website} onChange={(e) => setV({ ...v, website: e.target.value })} tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />

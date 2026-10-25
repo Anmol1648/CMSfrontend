@@ -59,6 +59,8 @@ export interface Balance {
 export type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 
 export interface StaffLeave {
+  /** Extra fields of the school (Setup → Form Builder). */
+  custom?: Record<string, unknown>;
   id: string;
   staff: { id: string; name: string; employeeCode: string | null; designation: string | null; department: string | null };
   type: { id: string; code: string; name: string; paid: boolean };
@@ -108,6 +110,8 @@ export interface MyLeave {
 }
 
 export interface ApplyInput {
+  /** Extra fields of the school (Setup → Form Builder). */
+  custom?: Record<string, unknown>;
   staffId?: string;
   typeId: string;
   from: string;

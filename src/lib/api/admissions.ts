@@ -1,6 +1,7 @@
 import { api, downloadFile } from './client';
 import type { Paged } from './admin';
 import type { Checkout } from './fees';
+import type { CustomField } from './forms';
 
 /** Admission enquiries (cmsbackend/src/modules/admissions). */
 
@@ -51,6 +52,8 @@ export interface FollowUp {
 }
 
 export interface Enquiry extends EnquiryListItem {
+  /** Extra fields of the school (Setup → Form Builder). */
+  custom?: Record<string, unknown>;
   studentFirstName: string;
   studentLastName: string | null;
   dateOfBirth: string | null;
@@ -94,7 +97,7 @@ export interface EnquirySummary {
   stages: (Stage & { count: number })[];
 }
 
-export type EnquiryFields = Record<string, string | null | undefined>;
+export type EnquiryFields = Record<string, string | null | undefined | Record<string, unknown>>;
 
 export interface EnquiryListQuery {
   page?: number;
@@ -175,7 +178,7 @@ export const admissionsApi = {
   report: (q: { year?: string; from?: string; to?: string }) => api.get<AdmissionReport>('/admissions/reports', { params: Object.fromEntries(Object.entries(q).filter(([, v]) => v)) }),
 
   /** The website form (no login). */
-  publicForm: () => api.get<{ enabled: boolean; classes: Ref[]; academicYear: Ref | null; registrationFee: { amount: number; convenienceFee: number } | null }>('/public/enquiry'),
-  submitPublic: (input: Record<string, string | null>) => api.post<{ enquiryNo: string | null; payment: Checkout | null }>('/public/enquiry', input, { timeout: 60_000 }),
+  publicForm: () => api.get<{ enabled: boolean; classes: Ref[]; academicYear: Ref | null; registrationFee: { amount: number; convenienceFee: number } | null; fields?: CustomField[] }>('/public/enquiry'),
+  submitPublic: (input: Record<string, string | null | Record<string, unknown>>) => api.post<{ enquiryNo: string | null; payment: Checkout | null }>('/public/enquiry', input, { timeout: 60_000 }),
 };
 

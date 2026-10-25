@@ -10,6 +10,8 @@ import { Section } from "@/components/students/StudentFields";
 import { academicApi } from "@/lib/api/academic";
 import { staffApi } from "@/lib/api/staff";
 import type { Enquiry, EnquiryFields } from "@/lib/api/admissions";
+import { CustomFieldsForm, CustomFieldsView, useFormExtras } from "@/components/forms/CustomFields";
+import type { CustomValues } from "@/lib/api/forms";
 
 /** The enquiry's fields as form strings ("" = empty). */
 export type EnquiryValues = Record<
@@ -91,13 +93,19 @@ export function EnquiryForm({
   onChange,
   errors,
   showFollowUp = true,
+  custom,
+  onCustomChange,
 }: {
   values: EnquiryValues;
   onChange: (v: EnquiryValues) => void;
   errors: Record<string, string>;
   /** The next follow-up date (on a new enquiry; later it is set by the follow-ups). */
   showFollowUp?: boolean;
+  /** The school's extra fields (Setup → Form Builder). */
+  custom?: CustomValues;
+  onCustomChange?: (v: CustomValues) => void;
 }) {
+  const extras = useFormExtras("enquiry");
   const classes = useQuery({ queryKey: ["academic-class-options", values.academicYearId || null], queryFn: () => academicApi.classOptions(values.academicYearId || undefined) });
   const staff = useQuery({ queryKey: ["staff-options"], queryFn: () => staffApi.options() });
   const set = (k: keyof EnquiryValues) => (val: string) => onChange({ ...values, [k]: val });
@@ -159,6 +167,7 @@ export function EnquiryForm({
         </div>
         <TextArea label="Remarks" value={values.remarks} onChange={(e) => set("remarks")(e.target.value)} error={errors.remarks} rows={3} maxLength={1000} />
       </Section>
+      {onCustomChange && <CustomFieldsForm fields={extras.data?.custom ?? []} values={custom ?? {}} onChange={onCustomChange} errors={errors} />}
     </div>
   );
 }

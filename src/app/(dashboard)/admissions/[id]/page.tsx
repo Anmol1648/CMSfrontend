@@ -23,6 +23,8 @@ import { rupees } from "@/lib/api/fees";
 import { useCodedList, usePaymentModes } from "@/components/masters/useCodedList";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
+import { CustomFieldsView, useFormExtras } from "@/components/forms/CustomFields";
+import type { CustomValues } from "@/lib/api/forms";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -223,6 +225,8 @@ function EnquiryPage() {
   const enquiry = useQuery({ queryKey: ["enquiry", id], queryFn: () => admissionsApi.get(id) });
   const config = useQuery({ queryKey: ["enquiry-form-config"], queryFn: admissionsApi.formConfig });
   const [editing, setEditing] = useState<EnquiryValues | null>(null);
+  const [editCustom, setEditCustom] = useState<CustomValues>({});
+  const extras = useFormExtras("enquiry");
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
   const [editError, setEditError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -246,7 +250,7 @@ function EnquiryPage() {
     setEditErrors({});
     setEditError(null);
     try {
-      saved(await admissionsApi.update(e.id, toEnquiryInput(editing, { includeFollowUp: false })));
+      saved(await admissionsApi.update(e.id, { ...toEnquiryInput(editing, { includeFollowUp: false }), custom: editCustom }));
       setEditing(null);
       showToast("Saved", "success");
     } catch (err) {
@@ -268,7 +272,7 @@ function EnquiryPage() {
               All enquiries
             </Link>
             {canManage && !e.student && (
-              <Button variant="secondary" onClick={() => setEditing(fromEnquiry(e))}>
+              <Button variant="secondary" onClick={() => (setEditing(fromEnquiry(e)), setEditCustom(e.custom ?? {}))}>
                 Edit
               </Button>
             )}
@@ -420,6 +424,7 @@ function EnquiryPage() {
               </div>
             )}
           </Card>
+          {extras.data && <CustomFieldsView fields={extras.data.custom} values={e.custom ?? {}} />}
           <RegistrationCard e={e} config={cfg} canManage={canManage} onSaved={saved} />
           <TestCard key={`${e.testResult}-${e.testDate}-${e.testScore}`} e={e} config={cfg} canManage={canManage} onSaved={saved} />
           {canManage && !e.student && (
@@ -450,7 +455,7 @@ function EnquiryPage() {
         <Modal isOpen onClose={() => setEditing(null)} title={`Edit ${e.enquiryNo}`} width="max-w-5xl">
           <div className="space-y-5 max-h-[75vh] overflow-y-auto pr-1">
             {editError && <FormAlert>{editError}</FormAlert>}
-            <EnquiryForm values={editing} onChange={setEditing} errors={editErrors} showFollowUp={false} />
+            <EnquiryForm values={editing} onChange={setEditing} errors={editErrors} showFollowUp={false} custom={editCustom} onCustomChange={setEditCustom} />
             <div className="flex justify-end gap-3">
               <Button variant="secondary" onClick={() => setEditing(null)}>
                 Cancel

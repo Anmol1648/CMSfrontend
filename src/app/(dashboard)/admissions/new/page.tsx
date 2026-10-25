@@ -13,6 +13,7 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { admissionsApi } from "@/lib/api/admissions";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { PageLoader } from "@/components/ui/PageLoader";
+import type { CustomValues } from "@/lib/api/forms";
 
 function NewEnquiry() {
   const router = useRouter();
@@ -23,6 +24,7 @@ function NewEnquiry() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [custom, setCustom] = useState<CustomValues>({});
 
   useEffect(() => {
     if (config.data && !values) setValues(emptyEnquiry(config.data.followUpDays));
@@ -35,7 +37,7 @@ function NewEnquiry() {
     setError(null);
     setFieldErrors({});
     try {
-      const r = await admissionsApi.create(toEnquiryInput(values, { includeFollowUp: true }));
+      const r = await admissionsApi.create({ ...toEnquiryInput(values, { includeFollowUp: true }), custom });
       await queryClient.invalidateQueries({ queryKey: ["enquiries"] });
       await queryClient.invalidateQueries({ queryKey: ["enquiry-summary"] });
       showToast(r.warning ?? `Enquiry ${r.enquiry.enquiryNo} added`, r.warning ? "warning" : "success");
@@ -64,7 +66,7 @@ function NewEnquiry() {
       />
       <form onSubmit={submit} noValidate className="space-y-6 max-w-5xl">
         {error && <FormAlert>{error}</FormAlert>}
-        <EnquiryForm values={values} onChange={setValues} errors={fieldErrors} />
+        <EnquiryForm values={values} onChange={setValues} errors={fieldErrors} custom={custom} onCustomChange={setCustom} />
         <div className="flex justify-end gap-3">
           <Link href="/admissions" className="px-6 py-2.5 font-medium rounded-md bg-surface-high text-primary hover:bg-surface-highest">
             Cancel

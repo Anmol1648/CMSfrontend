@@ -13,6 +13,7 @@ import { ApiError, authedImageUrl, errorMessage } from "@/lib/api/client";
 import { mastersApi } from "@/lib/api/masters";
 import { Complaint, complaintsApi, PRIORITY, RaiseInput, STATUS, when } from "@/lib/api/complaints";
 import { cn } from "@/lib/utils";
+import { CustomFieldsForm, CustomValuesInline, useFormExtras } from "@/components/forms/CustomFields";
 
 const label = "text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest";
 
@@ -79,6 +80,7 @@ export function RaiseForm({ onClose, office = false }: { onClose: (id?: string) 
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const opts = useQuery({ queryKey: ["complaints", "options"], queryFn: complaintsApi.options });
+  const extras = useFormExtras("complaint");
   const [v, setV] = useState<RaiseInput>({ categoryId: "", subject: "", details: "", priority: "normal", anonymous: false, studentId: null, attachmentIds: [], contactName: null, contactMobile: null });
   const [files, setFiles] = useState<{ id: string; name: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -118,6 +120,7 @@ export function RaiseForm({ onClose, office = false }: { onClose: (id?: string) 
             <textarea value={v.details} onChange={(e) => set({ details: e.target.value })} rows={5} maxLength={4000} placeholder="What happened, when, where…" className="rounded-xl bg-surface-container-low px-4 py-3 text-sm outline-none" />
             {fields.details && <span className="text-xs text-error">{fields.details}</span>}
           </label>
+          {!!extras.data?.custom.length && <CustomFieldsForm fields={extras.data.custom} values={v.custom ?? {}} onChange={(c) => set({ custom: c })} errors={fields} />}
           <FilePicker files={files} onChange={setFiles} max={opts.data.maxFiles} />
           <div className="flex flex-wrap gap-6">
             {!cat?.urgent && <Checkbox checked={v.priority === "high"} onChange={(h) => set({ priority: h ? "high" : "normal" })} label="It is serious (high priority)" />}
@@ -215,6 +218,7 @@ export function ComplaintDetail({ id, onClose }: { id: string; onClose: () => vo
           </div>
           <div className="rounded-xl bg-surface-container-low px-4 py-3">
             <p className="text-sm whitespace-pre-line">{c.details}</p>
+            <CustomValuesInline formKey="complaint" values={c.custom} />
             <FileLinks complaintId={c.id} ids={c.attachmentIds} />
           </div>
           {c.resolution && <FormAlert tone="success">Resolution: {c.resolution}</FormAlert>}

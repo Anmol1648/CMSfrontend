@@ -42,6 +42,8 @@ export interface Known {
   visits: { day: string; purpose: string | null; met: string }[];
 }
 export interface EntryInput {
+  /** Extra fields of the school (Setup → Form Builder). */
+  custom?: Record<string, unknown>;
   expectedVisitId?: string | null;
   name: string;
   mobile: string | null;

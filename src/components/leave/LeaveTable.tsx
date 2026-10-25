@@ -5,6 +5,7 @@ import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { useToast } from "@/components/ui/ToastProvider";
 import { authedImageUrl, errorMessage } from "@/lib/api/client";
 import { dayCount, LEAVE_STATUS, leaveApi, leaveDates, StaffLeave } from "@/lib/api/leave";
+import { CustomValuesInline } from "@/components/forms/CustomFields";
 
 /** Opens a request's certificate in a new tab (fetched with the person's login). */
 export const openAttachment = async (id: string, onError: (m: string) => void) => {
@@ -87,6 +88,7 @@ export function LeaveTable({ leaves, showStaff = false, empty, onChanged }: { le
               </td>
               <td className="px-5 py-3 max-w-[280px]">
                 {l.reason}
+                <CustomValuesInline formKey="leave" values={l.custom} />
                 {l.hasAttachment && (
                   <button type="button" className="block mt-1 text-[11px] font-bold uppercase tracking-widest text-primary hover:opacity-70" onClick={() => openAttachment(l.id, (m) => showToast(m, "error"))}>
                     Certificate

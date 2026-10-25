@@ -22,6 +22,8 @@ export interface ComplaintRow {
   overdue: boolean;
 }
 export interface Complaint {
+  /** Extra fields of the school (Setup → Form Builder). */
+  custom?: Record<string, unknown>;
   id: string;
   ticketNo: string;
   category: string;
@@ -55,6 +57,8 @@ export interface Complaint {
   can: { reply: boolean; note: boolean; assign: boolean; work: boolean; close: boolean; accept: boolean; reopen: boolean; rate: boolean };
 }
 export interface RaiseInput {
+  /** Extra fields of the school (Setup → Form Builder). */
+  custom?: Record<string, unknown>;
   categoryId: string;
   subject: string;
   details: string;
