@@ -3,21 +3,25 @@ import { NextRequest, NextResponse } from "next/server";
 /**
  * The product website on its own domain (NEXT_PUBLIC_SITE_HOSTS, e.g. "klytos.in,www.klytos.in"):
  * "/" shows /site/en, "/hi" shows /site/hi, "/pricing" shows /site/en/pricing… (the address bar keeps
- * the short address). Every other address (schools, the console) is the ERP as usual.
+ * the short address). /login, the ERP and the console keep working on the same address. Other
+ * addresses (schools) are the ERP as usual.
  */
 const hosts = (process.env.NEXT_PUBLIC_SITE_HOSTS || "")
   .split(",")
   .map((h) => h.trim().toLowerCase())
   .filter(Boolean);
 
+const SITE_PAGES = ["/features", "/pricing", "/demo", "/about", "/privacy", "/terms", "/refund"];
+
 export function middleware(req: NextRequest) {
   if (!hosts.length) return NextResponse.next();
   const host = (req.headers.get("host") || "").split(":")[0].toLowerCase();
   if (!hosts.includes(host)) return NextResponse.next();
   const path = req.nextUrl.pathname;
-  if (path.startsWith("/site/") || path === "/site") return NextResponse.next();
   const hi = path === "/hi" || path.startsWith("/hi/");
   const rest = hi ? path.slice(3) : path;
+  // Only the website's own pages; /login, the ERP (home at /home) and /platform work as usual.
+  if (!(rest === "" || rest === "/" || SITE_PAGES.includes(rest))) return NextResponse.next();
   const url = req.nextUrl.clone();
   url.pathname = `/site/${hi ? "hi" : "en"}${rest === "/" || rest === "" ? "" : rest}`;
   const headers = new Headers(req.headers);

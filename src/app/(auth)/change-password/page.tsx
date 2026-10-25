@@ -7,6 +7,7 @@ import { FormAlert } from "@/components/forms";
 import { FullPageLoader } from "@/components/ui/FullPageLoader";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { useToast } from "@/components/ui/ToastProvider";
+import { APP_HOME } from "@/lib/auth/home";
 
 /** Shown right after signing in with a one-time (or expired) password. */
 export default function ChangePasswordPage() {
@@ -16,7 +17,7 @@ export default function ChangePasswordPage() {
 
   useEffect(() => {
     if (status === "signedOut") router.replace("/login");
-    else if (status === "signedIn" && !mustChangePassword) router.replace("/");
+    else if (status === "signedIn" && !mustChangePassword) router.replace(APP_HOME);
   }, [status, mustChangePassword, router]);
 
   if (status !== "signedIn" || !mustChangePassword) return <FullPageLoader />;
@@ -34,7 +35,7 @@ export default function ChangePasswordPage() {
         submitLabel="Save and continue"
         onDone={() => {
           showToast("Password saved", "success");
-          router.replace("/");
+          router.replace(APP_HOME);
         }}
       />
       <button

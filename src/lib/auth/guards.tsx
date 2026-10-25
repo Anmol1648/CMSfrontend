@@ -8,6 +8,7 @@
 import React, { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "./AuthProvider";
+import { APP_HOME } from "./home";
 import { FullPageLoader } from "@/components/ui/FullPageLoader";
 
 export function RequireSignedIn({ children }: { children: React.ReactNode }) {
@@ -29,7 +30,7 @@ export function RedirectIfSignedIn({ children }: { children: React.ReactNode }) 
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "signedIn") router.replace(mustChangePassword ? "/change-password" : "/");
+    if (status === "signedIn") router.replace(mustChangePassword ? "/change-password" : APP_HOME);
   }, [status, mustChangePassword, router]);
 
   if (status !== "signedOut") return <FullPageLoader />;
@@ -37,4 +38,4 @@ export function RedirectIfSignedIn({ children }: { children: React.ReactNode }) 
 }
 
 /** Returns the safe in-app path from ?next= (never another site). */
-export const safeNext = (next: string | null) => (next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
+export const safeNext = (next: string | null) => (next && next.startsWith("/") && !next.startsWith("//") && next !== "/" ? next : APP_HOME);

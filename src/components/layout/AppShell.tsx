@@ -112,7 +112,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const activeHref =
     menu
       .flatMap((g) => g.items.map((i) => i.href))
-      .filter((h) => (h === "/" ? pathname === "/" : pathname === h || pathname.startsWith(`${h}/`)))
+      .filter((h) => (h === "/home" ? pathname === "/" || pathname === h : pathname === h || pathname.startsWith(`${h}/`)))
       .sort((a, b) => b.length - a.length)[0] ?? null;
   // Notices not opened yet: the number next to "Notices" (checked every few minutes).
   const hasNotices = menu.some((g) => g.items.some((i) => i.key === "notices"));

@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { authApi, Me, SignedIn } from "@/lib/api/auth";
 import { restoreSession, setAccessToken, setSessionEndedHandler } from "@/lib/api/client";
 import { Access, accessApi } from "@/lib/api/admin";
+import { APP_HOME } from "./home";
 
 type Status = "loading" | "signedOut" | "signedIn";
 
@@ -38,7 +39,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<Status>("loading");
   const [me, setMe] = useState<Me | null>(null);
-  const [access, setAccess] = useState<Access | null>(null);
+  const [rawAccess, setAccess] = useState<Access | null>(null);
+  // The server's "Home" link is "/", which on the website address is the website: the ERP home is /home.
+  const access = useMemo<Access | null>(
+    () => rawAccess && { ...rawAccess, menu: rawAccess.menu.map((g) => ({ ...g, items: g.items.map((i) => (i.href === "/" ? { ...i, href: APP_HOME } : i)) })) },
+    [rawAccess]
+  );
   const [sessionExpired, setSessionExpired] = useState(false);
 
   const loadMe = useCallback(async () => {

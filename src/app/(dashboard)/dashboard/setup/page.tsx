@@ -16,6 +16,7 @@ import { errorMessage } from "@/lib/api/client";
 import { CatalogueWidget, dashboardApi, SIZE_LABEL, WidgetSize } from "@/lib/api/dashboard";
 import { cn } from "@/lib/utils";
 import { Widget } from "@/components/dashboard/Widget";
+import { APP_HOME } from "@/lib/auth/home";
 
 const TYPE_ICON: Record<CatalogueWidget["type"], string> = { stat: "looks_one", chart: "bar_chart", donut: "donut_large", list: "list" };
 const SPAN: Record<WidgetSize, string> = { sm: "col-span-1", md: "col-span-2", lg: "col-span-4" };
@@ -104,7 +105,7 @@ function Setup() {
         title="Dashboard Setup"
         description="Choose what each role sees on its home page. A person with several roles sees all of their widgets (each once), and a widget only shows to people whose permissions allow it."
         actions={
-          <Link href="/" className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
+          <Link href={APP_HOME} className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
             My dashboard
           </Link>
         }
