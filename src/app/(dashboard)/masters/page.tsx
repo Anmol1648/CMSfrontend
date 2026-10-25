@@ -403,46 +403,150 @@ function ValuesPanel({ info }: { info: MasterInfo }) {
   );
 }
 
+/** An icon per area of lists (others get a general one). */
+const ICONS: Record<string, string> = {
+  academic: "school",
+  admissions: "person_add",
+  students: "groups",
+  staff: "badge",
+  fees: "payments",
+  location: "location_on",
+  facilities: "meeting_room",
+  exams: "grading",
+  alerts: "notifications_active",
+  attendance: "how_to_reg",
+  communication: "campaign",
+  homework: "menu_book",
+  questions: "quiz",
+  transport: "directions_bus",
+  library: "local_library",
+  ptm: "forum",
+  personal: "person",
+  visitors: "door_front",
+  complaints: "support_agent",
+  discipline: "gavel",
+  shared: "folder_shared",
+  assets: "inventory_2",
+  cocurricular: "emoji_events",
+  inventory: "inventory",
+  payroll: "account_balance_wallet",
+  hostel: "bed",
+  mess: "restaurant",
+  family: "family_restroom",
+  finance: "account_balance",
+};
+const iconOf = (group: string) => ICONS[group] ?? "list_alt";
+
 function Masters() {
   const router = useRouter();
   const params = useSearchParams();
   const catalogue = useQuery({ queryKey: ["masters"], queryFn: mastersApi.catalogue });
-  const all = catalogue.data?.flatMap((g) => g.masters) ?? [];
-  const selected = all.find((m) => m.key === params.get("list")) ?? all[0];
+  const [search, setSearch] = useState("");
+  const groups = catalogue.data ?? [];
+  const all = groups.flatMap((g) => g.masters.map((m) => ({ ...m, group: g })));
+  // An area (?group=) or a list (?list=, also from links elsewhere: its area opens with it).
+  const listKey = params.get("list");
+  const group = groups.find((g) => g.key === params.get("group")) ?? all.find((m) => m.key === listKey)?.group ?? null;
+  const selected = group ? (group.masters.find((m) => m.key === listKey) ?? group.masters[0]) : null;
+  const go = (q: string | null) => router.replace(q ? `/masters?${q}` : "/masters", { scroll: false });
+  const t = search.trim().toLowerCase();
+  const found = t ? all.filter((m) => m.plural.toLowerCase().includes(t) || m.label.toLowerCase().includes(t) || m.group.label.toLowerCase().includes(t) || (m.description ?? "").toLowerCase().includes(t)) : [];
 
   return (
     <>
-      <PageHeader title="Masters" description="The lists the forms pick from: places, personal details, family and banks. More lists appear here as modules are added." />
+      <PageHeader title="Masters" description="The lists the forms pick from, by module: classes, places, personal details, fee heads, rooms… Open an area to see and change its lists." />
       {catalogue.isError && <FormAlert>{errorMessage(catalogue.error)}</FormAlert>}
-      <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-6 items-start">
-        <Card padding="none" className="overflow-hidden">
-          {catalogue.data?.map((g) => (
-            <div key={g.key}>
-              <p className="px-5 pt-4 pb-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50">{g.label}</p>
-              <ul>
-                {g.masters.map((m) => (
+      {catalogue.isLoading && <PageLoader />}
+
+      {catalogue.data && !group && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <div className="w-full sm:w-80">
+              <Input placeholder="Find a list" value={search} onChange={(e) => setSearch(e.target.value)} icon="search" />
+            </div>
+          </div>
+          {t ? (
+            <Card padding="none" className="overflow-hidden">
+              {found.map((m) => (
+                <button key={m.key} type="button" onClick={() => go(`list=${m.key}`)} className="flex w-full items-center gap-3 border-b border-outline-variant/10 px-5 py-3 text-left last:border-0 hover:bg-surface-container-low">
+                  <span className="material-symbols-outlined text-primary">{iconOf(m.group.key)}</span>
+                  <span className="flex-1">
+                    <span className="block text-sm font-bold">{m.plural}</span>
+                    <span className="block text-xs text-on-surface-variant/70">
+                      {m.group.label}
+                      {m.description ? ` · ${m.description}` : ""}
+                    </span>
+                  </span>
+                  <span className="text-xs text-on-surface-variant/60">{m.total}</span>
+                </button>
+              ))}
+              {!found.length && <p className="px-5 py-12 text-center text-sm text-on-surface-variant/70">No list matches that.</p>}
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {groups.map((g) => {
+                const values = g.masters.reduce((a, m) => a + m.total, 0);
+                const empty = g.masters.filter((m) => !m.total).length;
+                return (
+                  <button key={g.key} type="button" onClick={() => go(`group=${g.key}`)} className="group text-left">
+                    <Card className="h-full transition-shadow group-hover:shadow-md group-focus-visible:ring-2 group-focus-visible:ring-primary">
+                      <div className="flex items-start gap-4">
+                        <span className="material-symbols-outlined shrink-0 rounded-2xl bg-primary/10 p-3 text-primary">{iconOf(g.key)}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-base font-extrabold text-on-surface">{g.label}</p>
+                          <p className="mt-0.5 text-xs text-on-surface-variant/70">
+                            {g.masters.length} list{g.masters.length === 1 ? "" : "s"} · {values} option{values === 1 ? "" : "s"}
+                          </p>
+                          <p className="mt-2 line-clamp-2 text-xs text-on-surface-variant/60">{g.masters.slice(0, 4).map((m) => m.plural).join(" · ")}</p>
+                          {empty > 0 && (
+                            <div className="mt-2">
+                              <Pill tone="warning">{empty} empty</Pill>
+                            </div>
+                          )}
+                        </div>
+                        <span className="material-symbols-outlined text-on-surface-variant/40 group-hover:text-primary">chevron_right</span>
+                      </div>
+                    </Card>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {group && (
+        <div className="space-y-4">
+          <button type="button" onClick={() => go(null)} className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70">
+            <span className="material-symbols-outlined text-base">arrow_back</span>
+            All masters
+          </button>
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[250px_1fr]">
+            <Card padding="none" className="overflow-hidden">
+              <p className="flex items-center gap-2 px-5 pb-2 pt-4 text-sm font-bold text-primary">
+                <span className="material-symbols-outlined text-lg">{iconOf(group.key)}</span>
+                {group.label}
+              </p>
+              <ul className="pb-2">
+                {group.masters.map((m) => (
                   <li key={m.key}>
                     <button
                       type="button"
-                      onClick={() => router.replace(`/masters?list=${m.key}`, { scroll: false })}
-                      className={cn(
-                        "w-full flex items-center justify-between gap-2 text-left px-5 py-2.5 text-sm hover:bg-surface-container-low",
-                        m.key === selected?.key ? "bg-surface-container-high font-bold text-primary" : "text-on-surface"
-                      )}
+                      onClick={() => go(`group=${group.key}&list=${m.key}`)}
+                      className={cn("flex w-full items-center justify-between gap-2 px-5 py-2.5 text-left text-sm hover:bg-surface-container-low", m.key === selected?.key ? "bg-surface-container-high font-bold text-primary" : "text-on-surface")}
                     >
                       <span>{m.plural}</span>
-                      <span className="text-xs text-on-surface-variant/60 font-medium">{m.total}</span>
+                      <span className="text-xs font-medium text-on-surface-variant/60">{m.total}</span>
                     </button>
                   </li>
                 ))}
               </ul>
-            </div>
-          ))}
-          {catalogue.isLoading && <div className="p-5"><PageLoader compact /></div>}
-        </Card>
-        {/* key: a fresh panel (filters, page) for each list */}
-        {selected && <ValuesPanel key={selected.key} info={selected} />}
-      </div>
+            </Card>
+            {/* key: a fresh panel (filters, page) for each list */}
+            {selected && <ValuesPanel key={selected.key} info={selected} />}
+          </div>
+        </div>
+      )}
     </>
   );
 }
