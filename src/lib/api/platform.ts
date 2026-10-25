@@ -62,6 +62,8 @@ export interface Limits {
 export interface SchoolRow {
   id: string;
   code: string;
+  /** Codes it had before; they still lead to it until removed. */
+  oldCodes: string[];
   name: string;
   domain: string | null;
   status: 'active' | 'suspended';
@@ -183,6 +185,8 @@ export const platformApi = {
   school: (id: string) => call<School>(http.get(`/schools/${id}`)),
   createSchool: (b: Record<string, unknown>) => call<{ id: string; code: string; address: string | null; admin: { username: string; temporaryPassword: string }; emailed: boolean }>(http.post('/schools', b)),
   updateSchool: (id: string, b: SchoolUpdate) => call<School>(http.put(`/schools/${id}`, b)),
+  changeCode: (id: string, b: { code: string; keepOld: boolean; notify: boolean }) => call<School & { emailed: string | null }>(http.post(`/schools/${id}/code`, b)),
+  removeOldCode: (id: string, code: string) => call<School>(http.delete(`/schools/${id}/old-codes/${encodeURIComponent(code)}`)),
   setStatus: (id: string, status: 'active' | 'suspended', reason?: string) => call<School>(http.post(`/schools/${id}/status`, { status, reason })),
   resetAdmin: (id: string, userId: string) => call<{ username: string; password: string }>(http.post(`/schools/${id}/admins/${userId}/reset`)),
   setMail: (id: string, b: { host: string; port: number; user: string; password?: string; from?: string | null } | null) => call<School>(http.put(`/schools/${id}/mail`, b)),

@@ -209,6 +209,92 @@ function Mail({ s, onSaved }: { s: School; onSaved: (x: School) => void }) {
   );
 }
 
+function SchoolCode({ s, onSaved }: { s: School; onSaved: (x: School) => void }) {
+  const { showToast } = useToast();
+  const confirm = useConfirm();
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState({ code: "", keepOld: true, notify: true });
+  const [busy, setBusy] = useState(false);
+  const next = f.code.trim();
+  const valid = /^[a-z0-9][a-z0-9-]{1,39}$/.test(next) && next !== s.code;
+  return (
+    <Card className="space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="font-bold">School code</p>
+          <p className="text-sm text-on-surface-variant">
+            <b className="font-mono text-on-surface">{s.code}</b>: typed on the sign-in page{s.domain ? "" : " and part of the address"}. Changing it changes no data.
+          </p>
+        </div>
+        <Button variant="secondary" onClick={() => (setF({ code: "", keepOld: true, notify: !!s.contactEmail }), setOpen(true))}>
+          Change code…
+        </Button>
+      </div>
+      {s.oldCodes.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60">Old codes (still lead here)</p>
+          {s.oldCodes.map((c) => (
+            <div key={c} className="flex items-center justify-between gap-2 text-sm">
+              <span className="font-mono">{c}</span>
+              <Button
+                variant="tertiary"
+                onClick={async () => {
+                  if (!(await confirm({ title: `Stop "${c}" working?`, message: `The old code and its address will show "school not found", and another school may take "${c}".`, confirmLabel: "Remove", danger: true }))) return;
+                  try {
+                    onSaved(await platformApi.removeOldCode(s.id, c));
+                    showToast("Old code removed", "success");
+                  } catch (e) {
+                    showToast(errorMessage(e), "error");
+                  }
+                }}
+              >
+                Remove
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+      {open && (
+        <Modal isOpen onClose={() => setOpen(false)} title={`New code for ${s.name}`}>
+          <div className="space-y-3 text-sm">
+            <Input label="New code" value={f.code} onChange={(e) => setF({ ...f, code: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })} placeholder="e.g. kvjm" maxLength={40} autoFocus />
+            <ul className="list-disc space-y-1 pl-5 text-on-surface-variant">
+              <li>No data changes: students, fees, staff, users and passwords stay as they are. People already signed in carry on.</li>
+              {!s.domain && <li>The address becomes the new code&apos;s address{s.address && next ? ` (${s.address.replace(/^https:\/\//, "").replace(/^[^.]+/, next)})` : ""}.</li>}
+              <li>People who typed the old code on the sign-in page will use the new one.</li>
+            </ul>
+            <Checkbox checked={f.keepOld} onChange={(v) => setF({ ...f, keepOld: v })} label={`Keep "${s.code}" working`} hint="The old code and address lead to the new ones, so bookmarks, printed cards and messages keep working. You can remove it later." />
+            <Checkbox checked={f.notify} disabled={!s.contactEmail} onChange={(v) => setF({ ...f, notify: v })} label="Email the school contact" hint={s.contactEmail ?? "Add a contact email in Details first"} />
+            <div className="flex justify-end gap-2">
+              <Button variant="tertiary" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                disabled={!valid || busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    const r = await platformApi.changeCode(s.id, { code: next, keepOld: f.keepOld, notify: f.notify });
+                    onSaved(r);
+                    setOpen(false);
+                    showToast(r.emailed ? `Code changed; emailed ${r.emailed}` : "Code changed", "success");
+                  } catch (e) {
+                    showToast(errorMessage(e), "error");
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Change code
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </Card>
+  );
+}
+
 export default function SchoolPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = usePlatformUser();
@@ -346,6 +432,7 @@ export default function SchoolPage() {
         </div>
       </div>
 
+      {owner && <SchoolCode s={s} onSaved={saved} />}
       {owner && <MenuNames s={s} />}
       {owner && <Mail s={s} onSaved={saved} />}
 

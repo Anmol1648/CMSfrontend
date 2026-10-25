@@ -44,6 +44,8 @@ export interface PublicSchool {
   dateFormat: string;
   timeZone: string;
   login: LoginBranding;
+  /** Reached by a code the school had before: its new address (when the old one was in the address). */
+  moved: { from: string; address: string | null } | null;
 }
 
 export type LoginFocus = 'center' | 'top' | 'bottom' | 'left' | 'right';

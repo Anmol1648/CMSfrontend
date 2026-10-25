@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { logoSrc, PublicSchool, readCachedBranding, saveCachedBranding, schoolApi } from "@/lib/api/school";
 import { LoginBrandPanel } from "@/components/branding/LoginBrandPanel";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, SCHOOL_CODE_KEY, savedSchoolCode } from "@/lib/api/client";
 import { PoweredBy } from "@/components/branding/PoweredBy";
 import { ChangeSchoolLink, SchoolCodePicker } from "@/components/branding/SchoolCodePicker";
 
@@ -20,6 +20,19 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => setRemembered(readCachedBranding()), []);
   useEffect(() => {
     if (school.data) saveCachedBranding(school.data);
+    // The school's code has changed: go to its new address, or remember the new code.
+    const moved = school.data?.moved;
+    if (!moved) return;
+    if (moved.address) {
+      const to = new URL(moved.address);
+      if (to.host !== window.location.host) window.location.replace(`${to.origin}${window.location.pathname}${window.location.search}`);
+    } else if (savedSchoolCode() === moved.from) {
+      try {
+        localStorage.setItem(SCHOOL_CODE_KEY, school.data!.code);
+      } catch {
+        // storage blocked: the old code keeps working
+      }
+    }
   }, [school.data]);
   const branding = school.data ?? remembered;
   const name = branding?.name ?? (school.isError ? "School ERP" : "");
