@@ -17,6 +17,7 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { errorMessage } from "@/lib/api/client";
 import { mastersApi } from "@/lib/api/masters";
 import { leaveApi, LeaveType, LeaveTypeInput } from "@/lib/api/leave";
+import { SortableItem, SortableList, useSortableRows } from "@/components/ui/Sortable";
 
 const BLANK: LeaveTypeInput = {
   code: "",
@@ -221,6 +222,7 @@ function Setup() {
   const { showToast } = useToast();
   const confirm = useConfirm();
   const types = useQuery({ queryKey: ["leave-types"], queryFn: leaveApi.types });
+  const sorted = useSortableRows(types.data ?? [], (id, place) => leaveApi.moveType(id, place).then(() => queryClient.invalidateQueries({ queryKey: ["leave-types"] })));
   const [editing, setEditing] = useState<LeaveType | "new" | null>(null);
   const run = async (p: Promise<unknown>, done: string) => {
     try {
@@ -259,8 +261,9 @@ function Setup() {
           <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <tbody>
-              {types.data.map((t, i) => (
-                <tr key={t.id} className="border-t border-outline-variant/10 first:border-t-0">
+              <SortableList ids={sorted.ids} onDrop={sorted.onDrop}>
+              {sorted.rows.map((t, i) => (
+                <SortableItem as="tr" key={t.id} id={t.id} className="border-t border-outline-variant/10 first:border-t-0">
                   <td className="px-5 py-4 w-20 font-mono font-bold text-primary">{t.code}</td>
                   <td className="px-5 py-4">
                     <p className="font-semibold">
@@ -270,7 +273,7 @@ function Setup() {
                   </td>
                   <td className="px-5 py-4 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-4">
-                      <MoveButtons label={t.name} position={i + 1} first={i === 0} last={i === types.data.length - 1} onMove={(d) => run(leaveApi.moveType(t.id, d), "Moved")} />
+                      <MoveButtons label={t.name} position={i + 1} first={i === 0} last={i === sorted.rows.length - 1} onMove={(d) => run(leaveApi.moveType(t.id, d), "Moved")} />
                       <button type="button" className="text-xs font-bold uppercase tracking-widest text-primary hover:opacity-70" onClick={() => setEditing(t)}>
                         Edit
                       </button>
@@ -279,8 +282,9 @@ function Setup() {
                       </button>
                     </div>
                   </td>
-                </tr>
+                </SortableItem>
               ))}
+              </SortableList>
             </tbody>
           </table>
           </div>

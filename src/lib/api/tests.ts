@@ -1,5 +1,6 @@
 import { api } from './client';
 import type { QuestionType } from './questions';
+import type { Move } from '@/lib/order';
 
 /** Online tests (cmsbackend/src/modules/tests). */
 
@@ -178,7 +179,7 @@ export const testsApi = {
   bank: (id: string, q: { chapter?: string; type?: string; difficulty?: string; search?: string }) => api.get<BankItem[]>(`/tests/${id}/bank`, { params: Object.fromEntries(Object.entries(q).filter(([, v]) => v)) }),
   addQuestions: (id: string, ids: string[]) => api.post<TestFull>(`/tests/${id}/questions`, { ids }),
   auto: (id: string, rules: { count: number; type?: string | null; difficultyId?: string | null; chapterId?: string | null }[]) => api.post<{ added: number; short: string[]; test: TestFull }>(`/tests/${id}/auto`, { rules }),
-  editQuestion: (id: string, tqId: string, input: { marks?: number; move?: 'up' | 'down' }) => api.put<TestFull>(`/tests/${id}/questions/${tqId}`, input),
+  editQuestion: (id: string, tqId: string, input: { marks?: number; move?: Move }) => api.put<TestFull>(`/tests/${id}/questions/${tqId}`, input),
   removeQuestion: (id: string, tqId: string) => api.delete<TestFull>(`/tests/${id}/questions/${tqId}`),
   publish: (id: string, publish: boolean) => api.post<TestFull>(`/tests/${id}/publish`, { publish }),
   results: (id: string) => api.get<TestResults>(`/tests/${id}/results`),

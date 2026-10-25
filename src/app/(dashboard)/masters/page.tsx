@@ -13,6 +13,8 @@ import { PageHeader } from "@/components/layout/AppShell";
 import { RecordHistory } from "@/components/admin/RecordHistory";
 import { MasterChainSelect } from "@/components/masters/MasterSelect";
 import { MoveButtons, OrderHint } from "@/components/ui/MoveButtons";
+import { Drop, SortableItem, SortableList, useDropOrder } from "@/components/ui/Sortable";
+import type { Move } from "@/lib/order";
 import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { MasterInfo, mastersApi, MasterValue } from "@/lib/api/masters";
 import { ApiError, errorMessage } from "@/lib/api/client";
@@ -205,19 +207,27 @@ function ValuesPanel({ info }: { info: MasterInfo }) {
     await queryClient.invalidateQueries({ queryKey: ["masters"] });
   };
 
-  const move = async (v: MasterValue, direction: "up" | "down") => {
+  const move = async (v: MasterValue, how: Move) => {
     setMoving(v.id);
     try {
-      await mastersApi.move(info.key, v.id, direction);
+      await mastersApi.move(info.key, v.id, how);
       await refresh();
+      return true;
     } catch (err) {
       showToast(errorMessage(err), "error");
+      return false;
     } finally {
       setMoving(null);
     }
   };
 
-  const rows = values.data?.items ?? [];
+  const order = useDropOrder(values.data?.items ?? []);
+  const rows = order.rows;
+  const drop = async (d: Drop) => {
+    order.show(d.ids);
+    if (await move(rows.find((r) => r.id === d.id)!, d.place)) showToast("Order saved", "success");
+    else order.reset();
+  };
 
   return (
     <div className="space-y-4 min-w-0">
@@ -233,7 +243,7 @@ function ValuesPanel({ info }: { info: MasterInfo }) {
               <div className="pt-1">
                 <OrderHint>
                   {info.canManage
-                    ? "Use ↑ ↓ to set the order these options appear in forms. The number is each option's place."
+                    ? "Drag ⋮⋮ (or use ↑ ↓) to set the order these options appear in forms. The number is each option's place. Clear the search and status filter to reorder."
                     : "Forms list these options in this order."}
                 </OrderHint>
               </div>
@@ -295,9 +305,12 @@ function ValuesPanel({ info }: { info: MasterInfo }) {
               </tr>
             </thead>
             <tbody>
+              <SortableList ids={rows.map((r) => r.id)} onDrop={drop} disabled={!canMove || !!moving}>
               {rows.map((v, i) => (
-                <tr
+                <SortableItem
+                  as="tr"
                   key={v.id}
+                  id={v.id}
                   // The whole row opens the option (keyboard: Tab to it, Enter).
                   onClick={info.canManage ? () => setEditing(v) : undefined}
                   onKeyDown={info.canManage ? (e) => e.key === "Enter" && e.target === e.currentTarget && setEditing(v) : undefined}
@@ -341,8 +354,9 @@ function ValuesPanel({ info }: { info: MasterInfo }) {
                       </button>
                     </td>
                   )}
-                </tr>
+                </SortableItem>
               ))}
+              </SortableList>
               {values.data && rows.length === 0 && (
                 <tr>
                   <td colSpan={10} className="px-5 py-12 text-center text-on-surface-variant/70">

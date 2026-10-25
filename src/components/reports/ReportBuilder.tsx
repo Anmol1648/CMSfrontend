@@ -19,6 +19,7 @@ import { ReportTable } from "@/components/reports/ReportTable";
 import { academicApi } from "@/lib/api/academic";
 import { ApiError, errorMessage, saveBlob } from "@/lib/api/client";
 import { BuilderPreview, builderApi, DataField, DataSource, Definition, FilterOp } from "@/lib/api/reports";
+import { arrayMove, SortableItem, SortableList } from "@/components/ui/Sortable";
 
 const EMPTY: Definition = { source: "", params: {}, columns: [], filters: [], sort: [], groupBy: null, totals: [], orientation: "portrait" };
 const NO_VALUE: FilterOp[] = ["empty", "notEmpty", "yes", "no"];
@@ -326,11 +327,12 @@ export function ReportBuilder({ id }: { id?: string }) {
               <div>
                 {!def.columns.length && <p className="text-sm text-on-surface-variant/70 mt-2">No columns yet: tick some on the left.</p>}
                 <div className="space-y-2">
+                  <SortableList ids={def.columns.map((c) => c.field)} onDrop={(d) => set({ columns: arrayMove(def.columns, d.from, d.to) })}>
                   {def.columns.map((c, i) => {
                     const f = fieldOf.get(c.field);
                     if (!f) return null;
                     return (
-                      <div key={c.field} className="flex items-center gap-2 rounded-xl bg-surface-container-low px-2 py-1.5">
+                      <SortableItem key={c.field} id={c.field} className="flex items-center gap-2 rounded-xl bg-surface-container-low px-2 py-1.5">
                         <MoveButtons label={f.label} position={i + 1} first={i === 0} last={i === def.columns.length - 1} onMove={(d) => move(i, d)} />
                         <input
                           value={c.label ?? ""}
@@ -342,9 +344,10 @@ export function ReportBuilder({ id }: { id?: string }) {
                         <button type="button" aria-label={`Remove ${f.label}`} onClick={() => toggleColumn(f)} className="w-7 h-7 rounded-lg text-on-surface-variant hover:bg-surface-container-high">
                           <span className="material-symbols-outlined text-lg">close</span>
                         </button>
-                      </div>
+                      </SortableItem>
                     );
                   })}
+                  </SortableList>
                 </div>
                 {numericColumns.length > 0 && (
                   <div className="mt-4">

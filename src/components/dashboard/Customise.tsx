@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { errorMessage } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { CatalogueWidget, dashboardApi, Shortcut } from "@/lib/api/dashboard";
+import { arrayMove, DragHandle, SortableItem, SortableList } from "@/components/ui/Sortable";
 
 const TYPE_ICON: Record<CatalogueWidget["type"], string> = { stat: "looks_one", chart: "bar_chart", donut: "donut_large", list: "list" };
 
@@ -82,8 +83,10 @@ export function Shortcuts({ open, onClose, onSaved }: { open: boolean; onClose: 
         <div>
           <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">Chosen ({list.length}/12)</p>
           <div className="space-y-1">
+            <SortableList ids={list.map((l) => l.href)} onDrop={(d) => setLinks(arrayMove(list, d.from, d.to))}>
             {list.map((l, i) => (
-              <div key={l.href} className="flex items-center gap-1 rounded-lg bg-surface-container px-2 py-1.5 text-sm">
+              <SortableItem key={l.href} id={l.href} className="flex items-center gap-1 rounded-lg bg-surface-container px-2 py-1.5 text-sm">
+                <DragHandle label={l.label} />
                 <button type="button" className="material-symbols-outlined text-base text-on-surface-variant" onClick={() => move(i, -1)} aria-label="Up">
                   arrow_upward
                 </button>
@@ -94,8 +97,9 @@ export function Shortcuts({ open, onClose, onSaved }: { open: boolean; onClose: 
                 <button type="button" className="material-symbols-outlined text-base text-error" onClick={() => setLinks(list.filter((x) => x.href !== l.href))} aria-label={`Remove ${l.label}`}>
                   close
                 </button>
-              </div>
+              </SortableItem>
             ))}
+            </SortableList>
             {!list.length && <p className="text-sm text-on-surface-variant">Pick pages from the list.</p>}
           </div>
         </div>

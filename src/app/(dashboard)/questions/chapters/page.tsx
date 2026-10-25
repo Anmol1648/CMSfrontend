@@ -17,6 +17,7 @@ import { useConfirm } from "@/components/ui/ConfirmProvider";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { Chapter, questionsApi } from "@/lib/api/questions";
+import { DragHandle, SortableItem, SortableList, useSortableRows } from "@/components/ui/Sortable";
 
 function ChapterForm({ chapter, classId, subjectId, onClose }: { chapter: Chapter | null; classId: string; subjectId: string; onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -132,6 +133,7 @@ function Chapters() {
   const [many, setMany] = useState(false);
   const q = useQuery({ queryKey: ["chapters", sel.classId, sel.subjectId], queryFn: () => questionsApi.chapters(sel.classId, sel.subjectId), enabled: !!sel.classId && !!sel.subjectId });
   const pick = useCallback((classId: string, subjectId: string) => setSel({ classId, subjectId }), []);
+  const sorted = useSortableRows(q.data?.chapters ?? [], (id, place) => questionsApi.moveChapter(id, place).then(() => queryClient.invalidateQueries({ queryKey: ["chapters"] })));
   if (!opts.data) return <PageLoader />;
   if (!opts.data.classes.length) return <FormAlert tone="info">You have no subjects to set up (Staff → Subject Teachers).</FormAlert>;
   const move = async (c: Chapter, direction: "up" | "down") => {
@@ -168,8 +170,10 @@ function Chapters() {
       {sel.subjectId && !d && !q.isError && <PageLoader />}
       {d && (
         <Card padding="none" className="overflow-hidden">
-          {d.chapters.map((c, i) => (
-            <div key={c.id} className="flex items-start gap-3 px-5 py-3 border-b border-outline-variant/10">
+          <SortableList ids={sorted.ids} onDrop={sorted.onDrop} disabled={!d.canEdit}>
+          {sorted.rows.map((c, i) => (
+            <SortableItem key={c.id} id={c.id} className="flex items-start gap-3 px-5 py-3 border-b border-outline-variant/10">
+              <DragHandle label={c.name} />
               <span className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-black flex items-center justify-center shrink-0">{i + 1}</span>
               <div className="min-w-0 flex-1">
                 <p className="font-bold flex flex-wrap items-center gap-2">
@@ -186,7 +190,7 @@ function Chapters() {
                   <button type="button" onClick={() => move(c, "up")} disabled={i === 0} aria-label="Move up" className="p-1 rounded-full hover:bg-surface-container-high disabled:opacity-30">
                     <span className="material-symbols-outlined text-lg">arrow_upward</span>
                   </button>
-                  <button type="button" onClick={() => move(c, "down")} disabled={i === d.chapters.length - 1} aria-label="Move down" className="p-1 rounded-full hover:bg-surface-container-high disabled:opacity-30">
+                  <button type="button" onClick={() => move(c, "down")} disabled={i === sorted.rows.length - 1} aria-label="Move down" className="p-1 rounded-full hover:bg-surface-container-high disabled:opacity-30">
                     <span className="material-symbols-outlined text-lg">arrow_downward</span>
                   </button>
                   <button type="button" onClick={() => setEditing(c)} aria-label="Edit" className="p-1 rounded-full hover:bg-surface-container-high text-primary">
@@ -197,8 +201,9 @@ function Chapters() {
                   </button>
                 </div>
               )}
-            </div>
+            </SortableItem>
           ))}
+          </SortableList>
           {!d.chapters.length && <p className="px-5 py-10 text-center text-sm text-on-surface-variant/70">No chapters yet. {d.canEdit ? "Add them one by one, many at once, or from Excel." : ""}</p>}
           {!!d.noChapter && <p className="px-5 py-3 text-xs text-on-surface-variant/70">{d.noChapter} questions have no chapter.</p>}
         </Card>

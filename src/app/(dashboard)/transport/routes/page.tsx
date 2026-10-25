@@ -17,6 +17,7 @@ import { BusMap, MapLine, MapMarker } from "@/components/transport/BusMap";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { Route, RouteInput, Stop, StopInput, transportApi } from "@/lib/api/transport";
 import { cn } from "@/lib/utils";
+import { DragHandle, SortableItem, SortableList, useSortableRows } from "@/components/ui/Sortable";
 
 const COLORS = ["#2B6CB0", "#C05621", "#2F855A", "#6B46C1", "#B83280", "#2C7A7B", "#975A16", "#1A365D"];
 
@@ -140,6 +141,7 @@ function Routes() {
   const [stopForm, setStopForm] = useState<{ stop: Stop | null; at: { lat: number; lng: number } | null } | null>(null);
   const [placing, setPlacing] = useState<Stop | null | "new">(null);
   const route = q.data?.routes.find((r) => r.id === chosen) ?? q.data?.routes[0] ?? null;
+  const stops = useSortableRows(route?.stops ?? [], (id, place) => transportApi.moveStop(id, place).then(() => queryClient.invalidateQueries({ queryKey: ["transport"] })));
 
   const { lines, markers } = useMemo(() => {
     const lines: MapLine[] = [];
@@ -266,9 +268,11 @@ function Routes() {
             )}
             <ol className="mt-2 space-y-2">
               {!route.stops.length && !placing && <li className="text-xs text-on-surface-variant/70 px-3">No stops yet. Click “Add a stop”, then click the map where it is.</li>}
-              {route.stops.map((s, i) => (
-                <li key={s.id} className={cn("rounded-xl bg-surface-container-low px-3 py-2", !s.isActive && "opacity-60")}>
+              <SortableList ids={stops.ids} onDrop={stops.onDrop} disabled={!manage}>
+              {stops.rows.map((s, i) => (
+                <SortableItem as="li" key={s.id} id={s.id} className={cn("rounded-xl bg-surface-container-low px-3 py-2", !s.isActive && "opacity-60")}>
                   <div className="flex items-center gap-2">
+                    <DragHandle label={s.name} />
                     <span className="text-xs font-extrabold text-primary w-5">{i + 1}</span>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold text-on-surface truncate">{s.name}</p>
@@ -282,7 +286,7 @@ function Routes() {
                         <button type="button" disabled={i === 0} onClick={() => act(() => transportApi.moveStop(s.id, "up"), "Moved")} className="p-1 rounded hover:bg-surface-container-high disabled:opacity-30" aria-label="Up">
                           <span className="material-symbols-outlined text-base">arrow_upward</span>
                         </button>
-                        <button type="button" disabled={i === route.stops.length - 1} onClick={() => act(() => transportApi.moveStop(s.id, "down"), "Moved")} className="p-1 rounded hover:bg-surface-container-high disabled:opacity-30" aria-label="Down">
+                        <button type="button" disabled={i === stops.rows.length - 1} onClick={() => act(() => transportApi.moveStop(s.id, "down"), "Moved")} className="p-1 rounded hover:bg-surface-container-high disabled:opacity-30" aria-label="Down">
                           <span className="material-symbols-outlined text-base">arrow_downward</span>
                         </button>
                         <button type="button" onClick={() => setPlacing(s)} className="p-1 rounded hover:bg-surface-container-high" aria-label="Place on the map">
@@ -297,8 +301,9 @@ function Routes() {
                       </div>
                     )}
                   </div>
-                </li>
+                </SortableItem>
               ))}
+              </SortableList>
               <li className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-on-surface-variant">
                 <span className="material-symbols-outlined text-base">school</span> School
               </li>

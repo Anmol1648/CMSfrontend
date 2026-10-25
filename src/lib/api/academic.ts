@@ -1,4 +1,5 @@
 import { api, downloadFile } from './client';
+import { Move, moveBody } from '@/lib/order';
 
 /** Configuration → Academic (cmsbackend/src/modules/academic). */
 
@@ -130,8 +131,6 @@ export interface YearClasses {
   }[];
 }
 
-type Direction = 'up' | 'down';
-
 export const academicApi = {
   years: () => api.get<AcademicYear[]>('/academic/years'),
   yearOptions: () => api.get<YearOption[]>('/academic/years/options'),
@@ -155,12 +154,12 @@ export const academicApi = {
   createClass: (input: ClassInput) => api.post<SchoolClass>('/academic/classes', input),
   updateClass: (id: string, input: ClassInput) => api.patch<SchoolClass>(`/academic/classes/${id}`, input),
   deleteClass: (id: string) => api.delete<{ id: string }>(`/academic/classes/${id}`),
-  moveClass: (id: string, direction: Direction) => api.post<SchoolClass[]>(`/academic/classes/${id}/move`, { direction }),
+  moveClass: (id: string, move: Move) => api.post<SchoolClass[]>(`/academic/classes/${id}/move`, moveBody(move)),
 
   createSection: (input: SectionInput) => api.post<Section>('/academic/sections', input),
   updateSection: (id: string, input: SectionInput) => api.patch<Section>(`/academic/sections/${id}`, input),
   deleteSection: (id: string) => api.delete<{ id: string }>(`/academic/sections/${id}`),
-  moveSection: (id: string, direction: Direction) => api.post<Section>(`/academic/sections/${id}/move`, { direction }),
+  moveSection: (id: string, move: Move) => api.post<Section>(`/academic/sections/${id}/move`, moveBody(move)),
   exportSections: (yearId: string) => downloadFile('/academic/sections/export', { year: yearId }, 'sections.xlsx'),
   teacherOptions: () => api.get<{ id: string; name: string; code: string }[]>('/academic/teachers/options'),
 
@@ -169,7 +168,7 @@ export const academicApi = {
   createSubject: (input: SubjectInput) => api.post<Subject>('/academic/subjects', input),
   updateSubject: (id: string, input: SubjectInput) => api.patch<Subject>(`/academic/subjects/${id}`, input),
   deleteSubject: (id: string) => api.delete<{ id: string }>(`/academic/subjects/${id}`),
-  moveSubject: (id: string, direction: Direction) => api.post<Subject[]>(`/academic/subjects/${id}/move`, { direction }),
+  moveSubject: (id: string, move: Move) => api.post<Subject[]>(`/academic/subjects/${id}/move`, moveBody(move)),
   exportSubjects: () => downloadFile('/academic/subjects/export', undefined, 'subjects.xlsx'),
 
   classSubjects: (yearId: string, classId: string) => api.get<ClassSubject[]>('/academic/class-subjects', { params: { year: yearId, class: classId } }),

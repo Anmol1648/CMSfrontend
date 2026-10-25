@@ -1,4 +1,5 @@
 import { api, uploadFile } from './client';
+import { Move, moveBody } from '@/lib/order';
 
 /** Transport and live bus tracking (cmsbackend/src/modules/transport). */
 
@@ -211,7 +212,7 @@ export const transportApi = {
   addStop: (routeId: string, input: StopInput) => api.post<Stop>(`/transport/routes/${routeId}/stops`, input),
   updateStop: (id: string, input: StopInput) => api.put<Stop>(`/transport/stops/${id}`, input),
   deleteStop: (id: string) => api.delete(`/transport/stops/${id}`),
-  moveStop: (id: string, direction: 'up' | 'down') => api.post(`/transport/stops/${id}/move`, { direction }),
+  moveStop: (id: string, move: Move) => api.post(`/transport/stops/${id}/move`, moveBody(move)),
   staff: () => api.get<{ id: string; label: string; hasLogin: boolean }[]>('/transport/staff'),
 
   students: (q: { route?: string; search?: string; show?: string }) => api.get<{ rows: StudentRow[] }>('/transport/students', { params: clean(q) }),

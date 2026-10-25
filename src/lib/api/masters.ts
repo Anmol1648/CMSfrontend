@@ -1,5 +1,6 @@
 import { api, downloadFile } from './client';
 import type { Paged } from './admin';
+import { Move, moveBody } from '@/lib/order';
 
 /** Configuration → Masters (cmsbackend/src/modules/masters). */
 
@@ -94,7 +95,7 @@ export const mastersApi = {
     api.get<MasterOption[]>(`/masters/${key}/options`, { params: { ...(opts.parent ? { parent: opts.parent } : {}), ...(opts.include?.length ? { include: opts.include.join(',') } : {}) } }),
   create: (key: string, input: MasterValueInput) => api.post<MasterValue>(`/masters/${key}/values`, input),
   update: (key: string, id: string, input: MasterValueInput) => api.patch<MasterValue>(`/masters/${key}/values/${id}`, input),
-  move: (key: string, id: string, direction: 'up' | 'down') => api.post<MasterValue>(`/masters/${key}/values/${id}/move`, { direction }),
+  move: (key: string, id: string, move: Move) => api.post<MasterValue>(`/masters/${key}/values/${id}/move`, moveBody(move)),
   remove: (key: string, id: string) => api.delete<{ id: string }>(`/masters/${key}/values/${id}`),
   export: (key: string, q: MasterValueQuery) => downloadFile(`/masters/${key}/export`, params(q), `${key}.xlsx`),
 };

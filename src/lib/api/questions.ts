@@ -1,4 +1,5 @@
 import { api, uploadFile } from './client';
+import { Move, moveBody } from '@/lib/order';
 
 /** Chapters, the question bank and the AI layer (cmsbackend/src/modules/questions, /ai). */
 
@@ -103,7 +104,7 @@ export const questionsApi = {
   addChapters: (classId: string, subjectId: string, lines: string[]) => api.post<{ added: number }>('/questions/chapters/many', { classId, subjectId, lines }),
   suggestChapters: (classId: string, subjectId: string) => api.get<{ name: string; topics: string[] }[]>('/questions/chapters/suggest', { params: { class: classId, subject: subjectId }, timeout: 320_000 }),
   updateChapter: (id: string, input: { name: string; topics: string[]; description?: string | null; isActive: boolean }) => api.put<Chapter>(`/questions/chapters/${id}`, input),
-  moveChapter: (id: string, direction: 'up' | 'down') => api.post<{ moved: boolean }>(`/questions/chapters/${id}/move`, { direction }),
+  moveChapter: (id: string, move: Move) => api.post<{ moved: boolean }>(`/questions/chapters/${id}/move`, moveBody(move)),
   deleteChapter: (id: string) => api.delete<{ id: string }>(`/questions/chapters/${id}`),
 
   list: (q: QuestionQuery) => api.get<{ rows: Question[]; total: number; page: number; pages: number; counts: Record<string, number> }>('/questions', { params: clean(q) }),

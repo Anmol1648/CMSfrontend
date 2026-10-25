@@ -15,6 +15,7 @@ import { RequirePermission } from "@/lib/auth/RequirePermission";
 import { authedImageUrl, errorMessage } from "@/lib/api/client";
 import { exams2Api, fmtDay, PaperLine, PaperRow } from "@/lib/api/exams2";
 import { ExamPicker } from "@/components/exams/ExamPicker";
+import { arrayMove, DragHandle, SortableItem, SortableList } from "@/components/ui/Sortable";
 
 const TYPES: Record<string, string> = { mcq: "MCQ", multi: "Multiple answers", true_false: "True / false", fill: "Fill in", short: "Short answer", long: "Long answer" };
 
@@ -78,8 +79,10 @@ function Editor({ examId, row, onClose }: { examId: string; row: PaperRow; onClo
               </p>
             </div>
             <ol className="space-y-1.5 max-h-[45vh] overflow-auto">
+              <SortableList ids={lines.map((l, i) => `${l.questionId}-${i}`)} onDrop={(d) => setLines((x) => arrayMove(x, d.from, d.to))}>
               {lines.map((l, i) => (
-                <li key={`${l.questionId}-${i}`} className="flex items-start gap-2 rounded-lg bg-surface-container-low px-3 py-2 text-sm">
+                <SortableItem as="li" key={`${l.questionId}-${i}`} id={`${l.questionId}-${i}`} className="flex items-start gap-2 rounded-lg bg-surface-container-low px-3 py-2 text-sm">
+                  <DragHandle label={`question ${i + 1}`} />
                   <input value={l.section} onChange={(e) => setLines((x) => x.map((y, k) => (k === i ? { ...y, section: e.target.value } : y)))} className="w-10 rounded bg-white px-1 py-0.5 text-xs text-center" aria-label="Section" />
                   <span className="flex-1">
                     <b>{i + 1}.</b> {l.text}
@@ -97,8 +100,9 @@ function Editor({ examId, row, onClose }: { examId: string; row: PaperRow; onClo
                   <button type="button" onClick={() => setLines((x) => x.filter((_, k) => k !== i))} className="text-error" aria-label="Remove">
                     <span className="material-symbols-outlined text-base">close</span>
                   </button>
-                </li>
+                </SortableItem>
               ))}
+              </SortableList>
               {!lines.length && <li className="text-sm text-on-surface-variant">No questions yet: add from the bank, fill automatically, or upload a paper file.</li>}
             </ol>
             <div className="flex flex-wrap items-center gap-2">

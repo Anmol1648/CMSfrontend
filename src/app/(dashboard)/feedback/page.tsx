@@ -17,6 +17,7 @@ import { ApiError, errorMessage } from "@/lib/api/client";
 import { academicApi } from "@/lib/api/academic";
 import { AUDIENCE, Audience, feedbackApi, Form, Question, QuestionKind, ROUND_STATUS, RoundInput, RoundRow } from "@/lib/api/feedback";
 import { cn } from "@/lib/utils";
+import { arrayMove, DragHandle, SortableItem, SortableList } from "@/components/ui/Sortable";
 
 const label = "text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest";
 const today = () => new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
@@ -120,8 +121,10 @@ function FormEditor({ form, onClose }: { form: Form | null; onClose: () => void 
         </div>
         {form && form.rounds > 0 && <FormAlert tone="info">This set has been used: you can add questions or reword them, but not remove them.</FormAlert>}
         <ol className="space-y-2">
+          <SortableList ids={qs.map((q) => q.id)} onDrop={(d) => setQs((x) => arrayMove(x, d.from, d.to))}>
           {qs.map((q, i) => (
-            <li key={q.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-surface-container-low px-3 py-2">
+            <SortableItem as="li" key={q.id} id={q.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-surface-container-low px-3 py-2">
+              <DragHandle label={`question ${i + 1}`} />
               <span className="w-6 text-xs font-bold text-primary">{i + 1}</span>
               <input value={q.text} onChange={(e) => upd(i, { text: e.target.value })} placeholder="The question" className="flex-1 min-w-[12rem] rounded-lg bg-white px-3 py-2 text-sm outline-none" aria-label={`Question ${i + 1}`} />
               <select value={q.kind} onChange={(e) => upd(i, { kind: e.target.value as QuestionKind })} className="rounded-lg bg-white px-2 py-2 text-xs" aria-label="Kind">
@@ -138,8 +141,9 @@ function FormEditor({ form, onClose }: { form: Form | null; onClose: () => void 
               <button type="button" onClick={() => setQs((x) => x.filter((_, j) => j !== i))} className="p-1 text-error" aria-label="Remove">
                 <span className="material-symbols-outlined text-base">delete</span>
               </button>
-            </li>
+            </SortableItem>
           ))}
+          </SortableList>
         </ol>
         <Button variant="tertiary" onClick={() => setQs((x) => [...x, { id: nextId(), kind: "rating", text: "", required: true }])}>
           Add a question

@@ -20,6 +20,7 @@ import { mastersApi } from "@/lib/api/masters";
 import { questionsApi, QUESTION_TYPES, TYPE_SHORT } from "@/lib/api/questions";
 import { AttemptFull, showAnswer, STATE, TestFull, TestInput, testsApi, toLocalInput, when } from "@/lib/api/tests";
 import { cn } from "@/lib/utils";
+import { DragHandle, SortableItem, SortableList, useSortableRows } from "@/components/ui/Sortable";
 
 const label = "text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest";
 const toggle = <T,>(list: T[], x: T, on: boolean) => (on ? (list.includes(x) ? list : [...list, x]) : list.filter((y) => y !== x));
@@ -511,6 +512,7 @@ function Detail({ id, onBack }: { id: string; onBack: () => void }) {
   const [editing, setEditing] = useState(false);
   const [bank, setBank] = useState(false);
   const [auto, setAuto] = useState(false);
+  const sortedQs = useSortableRows(q.data?.questions ?? [], (tqId, place) => testsApi.editQuestion(id, tqId, { move: place }).then((x) => queryClient.setQueryData(["test", id], x)));
   const t = q.data;
   if (q.isError) return <FormAlert>{errorMessage(q.error)}</FormAlert>;
   if (!t) return <PageLoader />;
@@ -597,8 +599,11 @@ function Detail({ id, onBack }: { id: string; onBack: () => void }) {
               <Button onClick={() => setBank(true)}>Add from the bank</Button>
             </div>
           )}
-          {t.questions.map((x, i) => (
-            <Card key={x.id} className="flex gap-3">
+          <SortableList ids={sortedQs.ids} onDrop={sortedQs.onDrop} disabled={!editable}>
+          {sortedQs.rows.map((x, i) => (
+            <SortableItem key={x.id} id={x.id}>
+            <Card className="flex gap-3">
+              <DragHandle label={`question ${i + 1}`} />
               <span className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-black flex items-center justify-center shrink-0">{i + 1}</span>
               <div className="min-w-0 flex-1 space-y-1.5">
                 <p className="text-sm font-semibold whitespace-pre-line">{x.text}</p>
@@ -624,7 +629,7 @@ function Detail({ id, onBack }: { id: string; onBack: () => void }) {
                     <button type="button" onClick={() => act(() => testsApi.editQuestion(id, x.id, { move: "up" }))} disabled={i === 0} aria-label="Up" className="p-1 rounded-full hover:bg-surface-container-high disabled:opacity-30">
                       <span className="material-symbols-outlined text-lg">arrow_upward</span>
                     </button>
-                    <button type="button" onClick={() => act(() => testsApi.editQuestion(id, x.id, { move: "down" }))} disabled={i === t.questions.length - 1} aria-label="Down" className="p-1 rounded-full hover:bg-surface-container-high disabled:opacity-30">
+                    <button type="button" onClick={() => act(() => testsApi.editQuestion(id, x.id, { move: "down" }))} disabled={i === sortedQs.rows.length - 1} aria-label="Down" className="p-1 rounded-full hover:bg-surface-container-high disabled:opacity-30">
                       <span className="material-symbols-outlined text-lg">arrow_downward</span>
                     </button>
                     <button type="button" onClick={() => act(() => testsApi.removeQuestion(id, x.id))} aria-label="Remove" className="p-1 rounded-full hover:bg-surface-container-high text-error">
@@ -636,7 +641,9 @@ function Detail({ id, onBack }: { id: string; onBack: () => void }) {
                 )}
               </div>
             </Card>
+            </SortableItem>
           ))}
+          </SortableList>
           {!t.questions.length && <Card className="text-center text-sm text-on-surface-variant/70">No questions yet. Add them from the bank, or draw them by rules.</Card>}
         </div>
       )}

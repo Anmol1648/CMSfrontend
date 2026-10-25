@@ -1,4 +1,5 @@
 import { api, uploadFile } from './client';
+import { Move, moveBody } from '@/lib/order';
 
 /** Staff leave (cmsbackend/src/modules/leave): types and rules, asking, approving, balances, year end. */
 
@@ -149,7 +150,7 @@ export const leaveApi = {
   types: () => api.get<LeaveType[]>('/leave/types'),
   addType: (input: LeaveTypeInput) => api.post<LeaveType[]>('/leave/types', input),
   saveType: (id: string, input: LeaveTypeInput) => api.put<LeaveType[]>(`/leave/types/${id}`, input),
-  moveType: (id: string, direction: 'up' | 'down') => api.post<LeaveType[]>(`/leave/types/${id}/move`, { direction }),
+  moveType: (id: string, move: Move) => api.post<LeaveType[]>(`/leave/types/${id}/move`, moveBody(move)),
   removeType: (id: string) => api.delete<LeaveType[]>(`/leave/types/${id}`),
 
   mine: (year?: string) => api.get<MyLeave>('/leave/mine', { params: year ? { year } : {} }),

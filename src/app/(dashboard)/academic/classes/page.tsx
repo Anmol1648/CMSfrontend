@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { MoveButtons, OrderHint } from "@/components/ui/MoveButtons";
+import { SortableItem, SortableList, useSortableRows } from "@/components/ui/Sortable";
 import { Checkbox, FormAlert, Select, SubmitButton } from "@/components/forms";
 import { PageHeader } from "@/components/layout/AppShell";
 import { RecordHistory } from "@/components/admin/RecordHistory";
@@ -238,6 +239,7 @@ function Classes() {
       showToast(errorMessage(err), "error");
     }
   };
+  const sorted = useSortableRows(list, (id, place) => academicApi.moveClass(id, place).then(refresh));
   const moveClass = async (id: string, direction: "up" | "down") => {
     setMoving(true);
     try {
@@ -290,10 +292,11 @@ function Classes() {
         </Card>
 
         {classes.isError && <FormAlert>{errorMessage(classes.error)}</FormAlert>}
-        {canManage && showOthers && list.length > 1 && <OrderHint>Use ↑ ↓ to set the order classes appear in lists, forms and reports.</OrderHint>}
+        {canManage && showOthers && list.length > 1 && <OrderHint>Drag ⋮⋮ (or use ↑ ↓) to set the order classes appear in lists, forms and reports.</OrderHint>}
         <Card padding="none" className="overflow-hidden">
-          {list.map((c, i) => (
-            <div key={c.id} className={cn("flex flex-col md:flex-row md:items-center gap-3 px-5 py-4 border-t first:border-t-0 border-outline-variant/10", c.inYear === null && "bg-surface-container-low/50")}>
+          <SortableList ids={sorted.ids} onDrop={sorted.onDrop} disabled={!(canManage && showOthers) || moving}>
+          {sorted.rows.map((c, i) => (
+            <SortableItem key={c.id} id={c.id} className={cn("flex flex-col md:flex-row md:items-center gap-3 px-5 py-4 border-t first:border-t-0 border-outline-variant/10", c.inYear === null && "bg-surface-container-low/50")}>
               <div className="flex items-center gap-3 md:w-80 shrink-0">
                 {canManage && showOthers && <MoveButtons label={c.name} position={i + 1} first={i === 0} last={i === list.length - 1} disabled={moving} onMove={(d) => moveClass(c.id, d)} />}
                 <button type="button" disabled={!canManage} onClick={() => setEditingClass(c)} className="text-left disabled:cursor-default">
@@ -336,8 +339,9 @@ function Classes() {
                   </button>
                 )}
               </div>
-            </div>
+            </SortableItem>
           ))}
+          </SortableList>
           {classes.data && !list.length && <p className="px-5 py-12 text-center text-on-surface-variant/70">No classes yet.</p>}
           {classes.isLoading && <div className="px-5 py-6"><PageLoader compact /></div>}
         </Card>

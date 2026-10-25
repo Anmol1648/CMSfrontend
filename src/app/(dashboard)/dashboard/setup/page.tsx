@@ -17,6 +17,7 @@ import { CatalogueWidget, dashboardApi, SIZE_LABEL, WidgetSize } from "@/lib/api
 import { cn } from "@/lib/utils";
 import { Widget } from "@/components/dashboard/Widget";
 import { APP_HOME } from "@/lib/auth/home";
+import { arrayMove, SortableItem, SortableList } from "@/components/ui/Sortable";
 
 const TYPE_ICON: Record<CatalogueWidget["type"], string> = { stat: "looks_one", chart: "bar_chart", donut: "donut_large", list: "list" };
 const SPAN: Record<WidgetSize, string> = { sm: "col-span-1", md: "col-span-2", lg: "col-span-4" };
@@ -138,11 +139,12 @@ function Setup() {
                 {dirty && <Pill tone="warning">Not saved</Pill>}
               </div>
               <div className="divide-y divide-outline-variant/10 mt-3">
+                <SortableList ids={items.map((it) => it.key)} onDrop={(d) => setItems((xs) => arrayMove(xs!, d.from, d.to))}>
                 {items.map((it, i) => {
                   const w = byKey.get(it.key);
                   const hidden = hiddenFor.get(it.key);
                   return (
-                    <div key={it.key} className="flex flex-wrap items-center gap-3 px-5 py-3">
+                    <SortableItem key={it.key} id={it.key} className="flex flex-wrap items-center gap-3 px-5 py-3">
                       <MoveButtons label={w?.label ?? it.key} position={i + 1} first={i === 0} last={i === items.length - 1} onMove={(d) => move(i, d)} />
                       <span className="material-symbols-outlined text-on-surface-variant/60">{w ? TYPE_ICON[w.type] : "widgets"}</span>
                       <div className="min-w-0 flex-1">
@@ -154,9 +156,10 @@ function Setup() {
                       <button type="button" onClick={() => setItems((xs) => xs!.filter((_, k) => k !== i))} className="text-xs font-bold uppercase tracking-widest text-error hover:opacity-70">
                         Remove
                       </button>
-                    </div>
+                    </SortableItem>
                   );
                 })}
+                </SortableList>
                 {!items.length && <p className="px-5 py-10 text-center text-sm text-on-surface-variant/70">No widgets. Add some from the list.</p>}
               </div>
             </Card>

@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import { errorMessage } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import { menuApi, MenuGroupSetup, MenuItemSetup, MenuSetup } from "@/lib/api/settings";
+import { arrayMove, Drop, DragHandle, SortableItem, SortableList } from "@/components/ui/Sortable";
 
 type G = MenuGroupSetup & { name: string; order: number };
 type I = MenuItemSetup & { name: string; ico: string; group: string; order: number };
@@ -100,6 +101,13 @@ function Setup() {
     setItems(items.map((x) => (re.has(x.key) ? { ...x, order: re.get(x.key)! } : x)));
     change();
   };
+  // Drag and drop (off while searching: the list shown is then only part of a group).
+  const dropGroup = (d: Drop) => (setGroups(renumber(arrayMove(groups, d.from, d.to))), change());
+  const dropItem = (d: Drop) => {
+    const re = new Map(renumber(d.ids.map((k) => items.find((x) => x.key === k)!)).map((x) => [x.key, x.order]));
+    setItems(items.map((x) => (re.has(x.key) ? { ...x, order: re.get(x.key)! } : x)));
+    change();
+  };
   const setItem = (key: string, v: Partial<I>) => {
     setItems(items.map((x) => {
       if (x.key !== key) return x;
@@ -148,12 +156,15 @@ function Setup() {
             Save
           </Button>
         </div>
+        <SortableList ids={groups.map((g) => g.key)} onDrop={dropGroup} disabled={!!find}>
         {groups.map((g, gi) => {
           const list = byGroup(g.key);
           if (find && !list.length) return null;
           return (
-            <Card key={g.key} padding="none" className={cn(g.hidden && "opacity-60")}>
+            <SortableItem key={g.key} id={g.key}>
+            <Card padding="none" className={cn(g.hidden && "opacity-60")}>
               <div className="flex flex-wrap items-center gap-2 border-b border-outline-variant/15 px-4 py-3">
+                <DragHandle label={`group ${g.name || g.defaultLabel}`} />
                 <div className="flex flex-col">
                   <button type="button" disabled={gi === 0} onClick={() => moveGroup(g.key, -1)} className="material-symbols-outlined text-base text-on-surface-variant disabled:opacity-30" aria-label="Group up">
                     keyboard_arrow_up
@@ -176,8 +187,10 @@ function Setup() {
                 </label>
               </div>
               <div className="divide-y divide-outline-variant/10">
+                <SortableList ids={list.map((i) => i.key)} onDrop={dropItem} disabled={!!find}>
                 {list.map((i, n) => (
-                  <div key={i.key} className={cn("flex flex-wrap items-center gap-2 px-4 py-2", i.hidden && "opacity-50")}>
+                  <SortableItem key={i.key} id={i.key} className={cn("flex flex-wrap items-center gap-2 px-4 py-2", i.hidden && "opacity-50")}>
+                    <DragHandle label={i.name || i.defaultLabel} />
                     <div className="flex flex-col">
                       <button type="button" disabled={n === 0} onClick={() => moveItem(i.key, -1)} className="material-symbols-outlined text-sm text-on-surface-variant disabled:opacity-30" aria-label="Up">
                         keyboard_arrow_up
@@ -213,13 +226,16 @@ function Setup() {
                         Reset
                       </button>
                     )}
-                  </div>
+                  </SortableItem>
                 ))}
+                </SortableList>
                 {!list.length && <p className="px-4 py-3 text-xs text-on-surface-variant">No items in this group.</p>}
               </div>
             </Card>
+            </SortableItem>
           );
         })}
+        </SortableList>
       </div>
       <div className="space-y-4 xl:sticky xl:top-20 h-fit">
         <Preview roles={q.data!.roles} />

@@ -20,6 +20,7 @@ import { mastersApi } from "@/lib/api/masters";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { useToast } from "@/components/ui/ToastProvider";
 import { cn } from "@/lib/utils";
+import { arrayMove, SortableItem, SortableList, useSortableRows } from "@/components/ui/Sortable";
 
 const ASSESSMENT = { scholastic: "Scholastic", co_scholastic: "Co-scholastic" } as const;
 
@@ -134,6 +135,7 @@ function SubjectList({ canManage }: { canManage: boolean }) {
     await queryClient.invalidateQueries({ queryKey: ["academic-subjects"] });
     await queryClient.invalidateQueries({ queryKey: ["academic-subject-options"] });
   };
+  const sorted = useSortableRows(list, (id, place) => academicApi.moveSubject(id, place).then(refresh));
   const move = async (id: string, d: "up" | "down") => {
     setMoving(true);
     try {
@@ -152,7 +154,7 @@ function SubjectList({ canManage }: { canManage: boolean }) {
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-outline-variant/20">
           <div className="space-y-1">
             <p className="text-sm text-on-surface-variant/70">Every subject the school teaches.</p>
-            {canManage && <OrderHint>Use ↑ ↓ to set the order subjects appear in lists and on report cards.</OrderHint>}
+            {canManage && <OrderHint>Drag ⋮⋮ (or use ↑ ↓) to set the order subjects appear in lists and on report cards.</OrderHint>}
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => academicApi.exportSubjects().catch((err) => showToast(errorMessage(err), "error"))}>
@@ -185,8 +187,9 @@ function SubjectList({ canManage }: { canManage: boolean }) {
               </tr>
             </thead>
             <tbody>
-              {list.map((s, i) => (
-                <tr key={s.id} onClick={canManage ? () => setEditing(s) : undefined} className={cn("border-t border-outline-variant/10 hover:bg-surface-container-low/60", canManage && "cursor-pointer")}>
+              <SortableList ids={sorted.ids} onDrop={sorted.onDrop} disabled={!canManage || moving}>
+              {sorted.rows.map((s, i) => (
+                <SortableItem as="tr" key={s.id} id={s.id} onClick={canManage ? () => setEditing(s) : undefined} className={cn("border-t border-outline-variant/10 hover:bg-surface-container-low/60", canManage && "cursor-pointer")}>
                   {canManage && (
                     <td className="pl-5 py-2">
                       <MoveButtons label={s.name} position={i + 1} first={i === 0} last={i === list.length - 1} disabled={moving} onMove={(d) => move(s.id, d)} />
@@ -198,8 +201,9 @@ function SubjectList({ canManage }: { canManage: boolean }) {
                   <td className="px-5 py-3 text-on-surface-variant">{ASSESSMENT[s.assessment]}</td>
                   <td className="px-5 py-3 text-on-surface-variant">{s.usedBy ? `${s.usedBy} class${s.usedBy === 1 ? "" : "es"}` : "—"}</td>
                   <td className="px-5 py-3">{s.isActive ? <Pill tone="success">Active</Pill> : <Pill>Inactive</Pill>}</td>
-                </tr>
+                </SortableItem>
               ))}
+              </SortableList>
               {subjects.data && !list.length && (
                 <tr>
                   <td colSpan={7} className="px-5 py-12 text-center text-on-surface-variant/70">
@@ -322,11 +326,12 @@ function ClassSubjects({ canManage }: { canManage: boolean }) {
         </div>
         {error && <FormAlert>{error}</FormAlert>}
         {year && year.status === "closed" && <FormAlert tone="info">{year.name} is closed: its subjects can be seen but not changed.</FormAlert>}
-        {editable && chosen.length > 1 && <OrderHint>Use ↑ ↓ to set the order of this class&apos;s subjects (timetable, marks entry, report card), then Save.</OrderHint>}
+        {editable && chosen.length > 1 && <OrderHint>Drag ⋮⋮ (or use ↑ ↓) to set the order of this class&apos;s subjects (timetable, marks entry, report card), then Save.</OrderHint>}
 
         <ol className="divide-y divide-outline-variant/10 border border-outline-variant/20 rounded-xl">
+          <SortableList ids={chosen.map((c) => c.subjectId)} onDrop={(d) => setChosen((list) => arrayMove(list, d.from, d.to))} disabled={!editable}>
           {chosen.map((c, i) => (
-            <li key={c.subjectId} className="flex items-center gap-3 px-4 py-2.5">
+            <SortableItem as="li" key={c.subjectId} id={c.subjectId} className="flex items-center gap-3 px-4 py-2.5">
               {editable && <MoveButtons label={nameOf(c.subjectId)} position={i + 1} first={i === 0} last={i === chosen.length - 1} onMove={(d) => move(i, d)} />}
               <span className="flex-1 font-semibold text-on-surface">{nameOf(c.subjectId)}</span>
               {editable ? (
@@ -339,8 +344,9 @@ function ClassSubjects({ canManage }: { canManage: boolean }) {
               ) : (
                 c.isOptional && <Pill>Optional</Pill>
               )}
-            </li>
+            </SortableItem>
           ))}
+          </SortableList>
           {!chosen.length && <li className="px-4 py-6 text-center text-sm text-on-surface-variant/70">{current.isLoading ? "Loading…" : "No subjects yet."}</li>}
         </ol>
 
