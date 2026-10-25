@@ -14,6 +14,8 @@ export interface CustomField {
   help: string | null;
   section: string | null;
   active: boolean;
+  /** Only these roles see and fill it (empty = everyone who sees the record). */
+  visibleTo: string[];
 }
 
 /** What a form needs from the builder: the school's names for built-in fields and its extra fields. */
@@ -39,6 +41,7 @@ export interface FormSetup {
   label: string;
   builtIn: BuiltInField[];
   custom: (CustomField & { used: number })[];
+  roles: { id: string; name: string }[];
 }
 
 export const formsApi = {

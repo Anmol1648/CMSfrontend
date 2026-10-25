@@ -7,9 +7,11 @@ import { Detail, FormAlert } from "@/components/forms";
 import { Section } from "@/components/students/StudentFields";
 import { StaffFieldsForm, staffValues, StaffValues, toStaffFields } from "@/components/staff/StaffFields";
 import { expRows, ExperienceEditor, qualRows, QualificationsEditor, toExperience, toQualifications } from "@/components/staff/HistoryEditors";
-import { staffApi } from "@/lib/api/staff";
+import { staffApi, StaffFields } from "@/lib/api/staff";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import { useToast } from "@/components/ui/ToastProvider";
+import { CustomFieldsForm, CustomFieldsView } from "@/components/forms/CustomFields";
+import type { CustomValues } from "@/lib/api/forms";
 
 /** My account → my staff record (what System Settings → Staff lets me change) and my classes. */
 export function MyStaffDetails() {
@@ -36,6 +38,7 @@ export function MyStaffDetails() {
           </div>
         )}
       </Section>
+      {config.data && !selfEdit.includes("custom") && <CustomFieldsView fields={config.data.custom} values={record.custom ?? {}} />}
       {selfEdit.length > 0 && <SelfEdit key={record.updatedAt} selfEdit={selfEdit} config={config.data ?? { required: [], hidden: [], editable: false, loginDefault: "teaching", selfEdit, labels: {}, custom: [] }} record={record} />}
     </>
   );
@@ -47,10 +50,11 @@ function SelfEdit({ selfEdit, config, record }: { selfEdit: string[]; config: im
   const [values, setValues] = useState<StaffValues>(() => staffValues({ ...record, sensitiveShown: true }));
   const [quals, setQuals] = useState(() => qualRows(record));
   const [exp, setExp] = useState(() => expRows(record));
+  const [custom, setCustom] = useState<CustomValues>(() => record.custom ?? {});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const groups = selfEdit.filter((g) => g !== "qualifications");
+  const groups = selfEdit.filter((g) => g !== "qualifications" && g !== "custom");
   const cols: Record<string, string[]> = { mobile: ["mobile"], email: ["email"], address: ["addressLine", "stateId", "districtId", "cityId", "pinCode"], emergency: ["emergencyName", "emergencyPhone"], bank: ["bankId", "bankAccountNo", "ifsc"] };
 
   const save = async () => {
@@ -59,7 +63,8 @@ function SelfEdit({ selfEdit, config, record }: { selfEdit: string[]; config: im
     setFieldErrors({});
     try {
       const all = toStaffFields(values);
-      const fields = Object.fromEntries(groups.flatMap((g) => cols[g] ?? []).map((k) => [k, all[k] ?? null]));
+      const fields: StaffFields = Object.fromEntries(groups.flatMap((g) => cols[g] ?? []).map((k) => [k, all[k] ?? null]));
+      if (selfEdit.includes("custom")) fields.custom = custom;
       await staffApi.updateMe({ fields, ...(selfEdit.includes("qualifications") ? { qualifications: toQualifications(quals), experience: toExperience(exp) } : {}) });
       await queryClient.invalidateQueries({ queryKey: ["staff-me"] });
       showToast("Saved", "success");
@@ -75,6 +80,7 @@ function SelfEdit({ selfEdit, config, record }: { selfEdit: string[]; config: im
     <>
       {error && <FormAlert>{error}</FormAlert>}
       {groups.length > 0 && <StaffFieldsForm values={values} onChange={setValues} config={{ ...config, hidden: [] }} errors={fieldErrors} disabled={busy} only={groups} />}
+      {selfEdit.includes("custom") && <CustomFieldsForm fields={config.custom} values={custom} onChange={setCustom} errors={fieldErrors} disabled={busy} />}
       {selfEdit.includes("qualifications") && (
         <>
           <Section title="My qualifications">

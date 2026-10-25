@@ -18,6 +18,7 @@ import { errorMessage } from "@/lib/api/client";
 import { mastersApi } from "@/lib/api/masters";
 import { BuiltInField, CustomField, FIELD_TYPES, FormSetup, formsApi } from "@/lib/api/forms";
 import { cn } from "@/lib/utils";
+import { MultiSelect } from "@/components/ui/MultiSelect";
 
 /**
  * Setup → Form Builder: for the student and staff forms, hide the built-in fields the school
@@ -34,9 +35,9 @@ const slug = (s: string) =>
     .replace(/^(\d)/, "f_$1")
     .slice(0, 40) || "field";
 
-function FieldEditor({ field, taken, sections, onSave, onClose }: { field: Extra | null; taken: string[]; sections: string[]; onSave: (f: Extra) => void; onClose: () => void }) {
+function FieldEditor({ field, taken, sections, roles, onSave, onClose }: { field: Extra | null; taken: string[]; sections: string[]; roles: FormSetup["roles"]; onSave: (f: Extra) => void; onClose: () => void }) {
   const catalogue = useQuery({ queryKey: ["masters"], queryFn: mastersApi.catalogue });
-  const [f, setF] = useState<Extra>(field ?? { key: "", label: "", type: "text", options: [], master: null, required: false, help: null, section: null, active: true, used: 0 });
+  const [f, setF] = useState<Extra>(field ?? { key: "", label: "", type: "text", options: [], master: null, required: false, help: null, section: null, active: true, visibleTo: [], used: 0 });
   const [options, setOptions] = useState((field?.options ?? []).join("\n"));
   const [error, setError] = useState<string | null>(null);
   const set = <K extends keyof Extra>(k: K, v: Extra[K]) => setF((x) => ({ ...x, [k]: v }));
@@ -82,7 +83,8 @@ function FieldEditor({ field, taken, sections, onSave, onClose }: { field: Extra
           />
         )}
         <Input label="Hint under the field (optional)" value={f.help ?? ""} onChange={(e) => set("help", e.target.value || null)} maxLength={200} />
-        <Checkbox checked={f.required} onChange={(v) => set("required", v)} label="Required" hint="The form can't be saved without it." />
+        <MultiSelect label="Who can see and fill it (none chosen = everyone who sees the record)" options={roles.map((r) => ({ value: r.id, label: r.name }))} defaultValues={f.visibleTo} onChange={(v) => set("visibleTo", v)} />
+        <Checkbox checked={f.required} onChange={(v) => set("required", v)} label="Required" hint="The form can't be saved without it (only for those who see it)." />
         {field && f.used > 0 && <FormAlert tone="info">{f.used} record{f.used === 1 ? " has" : "s have"} a value in this field. Changing its type may make old values look wrong.</FormAlert>}
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
@@ -191,6 +193,7 @@ function FormEditor({ setup, canEdit }: { setup: FormSetup; canEdit: boolean }) 
                   {FIELD_TYPES.find((t) => t.value === c.type)?.label}
                   {c.options.length ? `: ${c.options.slice(0, 4).join(", ")}${c.options.length > 4 ? "…" : ""}` : ""} · {c.section || "Other details"}
                   {c.used ? ` · ${c.used} with a value` : ""}
+                  {c.visibleTo?.length ? ` · only ${c.visibleTo.map((id) => setup.roles.find((r) => r.id === id)?.name).filter(Boolean).join(", ")}` : ""}
                 </p>
               </div>
               {!c.active && <Pill>Switched off</Pill>}
@@ -236,6 +239,7 @@ function FormEditor({ setup, canEdit }: { setup: FormSetup; canEdit: boolean }) 
           field={editing === "new" ? null : editing}
           taken={[...custom.map((c) => c.key), ...builtIn.map((b) => b.key)]}
           sections={sections}
+          roles={setup.roles}
           onClose={() => setEditing(null)}
           onSave={(f) => {
             setCustom((x) => (editing === "new" ? [...x, f] : x.map((y) => (y.key === f.key ? f : y))));
