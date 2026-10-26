@@ -44,6 +44,9 @@ export interface MenuItemSetup {
   groupKey: string | null;
   sortOrder: number | null;
   hidden: boolean;
+  /** Shown in the mobile app: the page's default, and the school's choice (null = the default). */
+  defaultInApp: boolean;
+  inApp: boolean | null;
   needs: string;
 }
 export type MenuPreview = { key: string; label: string; items: { key: string; label: string; icon: string; href: string }[] }[];
@@ -55,7 +58,7 @@ export interface MenuSetup {
 
 export const menuApi = {
   get: () => api.get<MenuSetup>('/settings/menu'),
-  save: (b: { groups: { key: string; label: string | null; sortOrder: number | null; hidden: boolean }[]; items: { key: string; label: string | null; icon: string | null; groupKey: string | null; sortOrder: number | null; hidden: boolean }[] }) => api.put<MenuSetup>('/settings/menu', b),
+  save: (b: { groups: { key: string; label: string | null; sortOrder: number | null; hidden: boolean }[]; items: { key: string; label: string | null; icon: string | null; groupKey: string | null; sortOrder: number | null; hidden: boolean; inApp: boolean | null }[] }) => api.put<MenuSetup>('/settings/menu', b),
   reset: () => api.delete<MenuSetup>('/settings/menu'),
   preview: (roleId: string) => api.get<MenuPreview>(`/settings/menu/preview/${roleId}`),
 };

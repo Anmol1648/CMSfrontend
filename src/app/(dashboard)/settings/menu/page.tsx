@@ -17,11 +17,11 @@ import { menuApi, MenuGroupSetup, MenuItemSetup, MenuSetup } from "@/lib/api/set
 import { arrayMove, Drop, DragHandle, SortableItem, SortableList } from "@/components/ui/Sortable";
 
 type G = MenuGroupSetup & { name: string; order: number };
-type I = MenuItemSetup & { name: string; ico: string; group: string; order: number };
+type I = MenuItemSetup & { name: string; ico: string; group: string; order: number; app: boolean };
 
 const toState = (d: MenuSetup) => ({
   groups: d.groups.map((g) => ({ ...g, name: g.label ?? g.defaultLabel, order: g.sortOrder ?? g.defaultOrder })).sort((a, b) => a.order - b.order) as G[],
-  items: d.items.map((i) => ({ ...i, name: i.label ?? i.defaultLabel, ico: i.icon ?? i.defaultIcon, group: i.groupKey ?? i.defaultGroup, order: i.sortOrder ?? i.defaultOrder })) as I[],
+  items: d.items.map((i) => ({ ...i, name: i.label ?? i.defaultLabel, ico: i.icon ?? i.defaultIcon, group: i.groupKey ?? i.defaultGroup, order: i.sortOrder ?? i.defaultOrder, app: i.inApp ?? i.defaultInApp })) as I[],
 });
 
 /** Renumbers a list 10, 20, 30… in its current order (so moves are saved as positions). */
@@ -122,7 +122,7 @@ function Setup() {
     try {
       const data = await menuApi.save({
         groups: groups.map((g) => ({ key: g.key, label: g.name.trim() && g.name.trim() !== g.defaultLabel ? g.name.trim() : null, sortOrder: g.order !== g.defaultOrder ? g.order : null, hidden: g.hidden })),
-        items: items.map((i) => ({ key: i.key, label: i.name.trim() && i.name.trim() !== i.defaultLabel ? i.name.trim() : null, icon: i.ico.trim() && i.ico.trim() !== i.defaultIcon ? i.ico.trim() : null, groupKey: i.group !== i.defaultGroup ? i.group : null, sortOrder: i.order !== i.defaultOrder ? i.order : null, hidden: i.hidden })),
+        items: items.map((i) => ({ key: i.key, label: i.name.trim() && i.name.trim() !== i.defaultLabel ? i.name.trim() : null, icon: i.ico.trim() && i.ico.trim() !== i.defaultIcon ? i.ico.trim() : null, groupKey: i.group !== i.defaultGroup ? i.group : null, sortOrder: i.order !== i.defaultOrder ? i.order : null, hidden: i.hidden, inApp: i.app !== i.defaultInApp ? i.app : null })),
       });
       qc.setQueryData(["menu-setup"], data);
       qc.invalidateQueries({ queryKey: ["menu-preview"] });
@@ -145,7 +145,7 @@ function Setup() {
           <Button
             variant="tertiary"
             onClick={async () => {
-              if (!(await confirm({ title: "Back to the built-in menu?", message: "Every name, order, group, icon and hidden item set here is removed.", confirmLabel: "Reset" }))) return;
+              if (!(await confirm({ title: "Back to the built-in menu?", message: "Every name, order, group, icon, hidden item and app choice set here is removed.", confirmLabel: "Reset" }))) return;
               qc.setQueryData(["menu-setup"], await menuApi.reset());
               await reloadAccess();
             }}
@@ -217,12 +217,17 @@ function Setup() {
                         </option>
                       ))}
                     </select>
+                    <label className="flex items-center gap-1 text-xs text-on-surface-variant" title={i.defaultInApp ? "Shown in the mobile app unless you turn it off" : "A desk page: off in the mobile app unless you turn it on"}>
+                      <input type="checkbox" checked={i.app} onChange={(e) => setItem(i.key, { app: e.target.checked })} />
+                      <span className="material-symbols-outlined text-sm">smartphone</span>
+                      In app
+                    </label>
                     <label className="flex items-center gap-1 text-xs text-on-surface-variant">
                       <input type="checkbox" checked={i.hidden} onChange={(e) => setItem(i.key, { hidden: e.target.checked })} />
                       Hide
                     </label>
-                    {(i.name !== i.defaultLabel || i.ico !== i.defaultIcon || i.group !== i.defaultGroup || i.hidden) && (
-                      <button type="button" className="text-xs font-semibold text-primary" onClick={() => setItem(i.key, { name: i.defaultLabel, ico: i.defaultIcon, group: i.defaultGroup, hidden: false })}>
+                    {(i.name !== i.defaultLabel || i.ico !== i.defaultIcon || i.group !== i.defaultGroup || i.hidden || i.app !== i.defaultInApp) && (
+                      <button type="button" className="text-xs font-semibold text-primary" onClick={() => setItem(i.key, { name: i.defaultLabel, ico: i.defaultIcon, group: i.defaultGroup, hidden: false, app: i.defaultInApp })}>
                         Reset
                       </button>
                     )}
@@ -239,7 +244,7 @@ function Setup() {
       </div>
       <div className="space-y-4 xl:sticky xl:top-20 h-fit">
         <Preview roles={q.data!.roles} />
-        <FormAlert tone="info">Names, order, groups and icons change for everyone in the school. Hiding an item removes it from the menu; who may open each page is still set in Roles &amp; Permissions. Icons are names from fonts.google.com/icons (e.g. bed, restaurant, school).</FormAlert>
+        <FormAlert tone="info">Names, order, groups and icons change for everyone in the school. Hiding an item removes it from the menu; who may open each page is still set in Roles &amp; Permissions. “In app” decides whether the mobile app shows the page: desk pages (set-up, accounts, payroll…) start off and can be turned on. Icons are names from fonts.google.com/icons (e.g. bed, restaurant, school).</FormAlert>
       </div>
     </div>
   );
@@ -248,7 +253,7 @@ function Setup() {
 export default function MenuSetupPage() {
   return (
     <RequirePermission permission="menu.customize">
-      <PageHeader title="Menu Setup" description="Your school’s own names, order, groups and icons for the menu. Rename a group or item, move an item to another group, or hide what the school doesn’t use." />
+      <PageHeader title="Menu Setup" description="Your school’s own names, order, groups and icons for the menu. Rename a group or item, move an item to another group, hide what the school doesn’t use, and choose which pages the mobile app shows." />
       <Setup />
     </RequirePermission>
   );
