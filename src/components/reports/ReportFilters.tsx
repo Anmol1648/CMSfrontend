@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/forms";
 import { YearSelect } from "@/components/academic/YearSelect";
 import { academicApi } from "@/lib/api/academic";
-import { ReportFilter } from "@/lib/api/reports";
+import { ReportFilter, ReportLimits } from "@/lib/api/reports";
 import { useCodedList } from "@/components/masters/useCodedList";
 import { ExamPicker } from "./ExamPicker";
 import { PtmPicker } from "./PtmPicker";
@@ -16,8 +16,11 @@ function MasterFilter({ label, master, value, onChange }: { label: string; maste
   return <Select label={label} value={value} onChange={onChange} options={[{ value: "", label: "All" }, ...options]} />;
 }
 
-/** The filters of a report, drawn from its definition (dates, session, class, section, choices). */
-export function ReportFilters({ filters, values, onChange }: { filters: ReportFilter[]; values: Record<string, string>; onChange: (v: Record<string, string>) => void }) {
+/**
+ * The filters of a report, drawn from its definition (dates, session, class, section, choices).
+ * `limits`: the only classes / sections this person may pick (a class teacher's own sections).
+ */
+export function ReportFilters({ filters, values, onChange, limits }: { filters: ReportFilter[]; values: Record<string, string>; onChange: (v: Record<string, string>) => void; limits?: ReportLimits | null }) {
   const hasClass = filters.some((f) => f.type === "class");
   const hasSection = filters.some((f) => f.type === "section");
   const yearKey = filters.find((f) => f.type === "year")?.key;
@@ -35,6 +38,10 @@ export function ReportFilters({ filters, values, onChange }: { filters: ReportFi
   }, [sections.data, sectionKey, values, onChange]);
 
   const set = (key: string, v: string) => onChange({ ...values, [key]: v });
+  const classList = (classes.data ?? []).filter((c) => !limits || limits.classIds.includes(c.id));
+  // Sections are per session: in another session, the class's sections (the class is limited already).
+  const mine = (sections.data ?? []).filter((s) => limits?.sectionIds.includes(s.id));
+  const sectionList = limits && mine.length ? mine : (sections.data ?? []);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
@@ -47,7 +54,7 @@ export function ReportFilters({ filters, values, onChange }: { filters: ReportFi
           case "year":
             return <YearSelect key={f.key} label={label} value={v} onChange={(id) => set(f.key, id)} />;
           case "class":
-            return <Select key={f.key} label={label} value={v} onChange={(x) => set(f.key, x)} options={[{ value: "", label: "All classes" }, ...(classes.data ?? []).map((c) => ({ value: c.id, label: c.name }))]} />;
+            return <Select key={f.key} label={label} value={v} onChange={(x) => set(f.key, x)} options={[...(limits && classList.length === 1 ? [] : [{ value: "", label: limits ? "All my classes" : "All classes" }]), ...classList.map((c) => ({ value: c.id, label: c.name }))]} />;
           case "section":
             return (
               <Select
@@ -56,7 +63,7 @@ export function ReportFilters({ filters, values, onChange }: { filters: ReportFi
                 value={v}
                 disabled={!cls}
                 onChange={(x) => set(f.key, x)}
-                options={[{ value: "", label: cls ? "All sections" : "Choose a class first" }, ...(sections.data ?? []).map((s) => ({ value: s.id, label: s.label }))]}
+                options={[...(limits && mine.length === 1 ? [] : [{ value: "", label: cls ? (limits ? "All my sections" : "All sections") : "Choose a class first" }]), ...sectionList.map((s) => ({ value: s.id, label: s.label }))]}
               />
             );
           case "ptm":

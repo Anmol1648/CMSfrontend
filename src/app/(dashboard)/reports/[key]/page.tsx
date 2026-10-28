@@ -104,7 +104,7 @@ function Report() {
         </div>
       )}
       <Card className="mb-6">
-        <ReportFilters filters={r.filters} values={values} onChange={onFilters} />
+        <ReportFilters filters={r.filters} values={values} onChange={onFilters} limits={r.limits} />
         <div className="flex flex-wrap items-center gap-2 mt-5">
           <Button onClick={show} disabled={running}>
             <span className="material-symbols-outlined text-lg align-middle mr-1">table_view</span>

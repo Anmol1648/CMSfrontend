@@ -38,6 +38,12 @@ export interface ReportColumn {
   total?: boolean;
 }
 
+/** The classes / sections a person may pick in a report (null = any). */
+export interface ReportLimits {
+  classIds: string[];
+  sectionIds: string[];
+}
+
 export interface ReportInfo {
   key: string;
   category: string;
@@ -45,6 +51,7 @@ export interface ReportInfo {
   description: string;
   orientation: 'portrait' | 'landscape';
   filters: ReportFilter[];
+  limits: ReportLimits | null;
   columns: ReportColumn[];
   /** How its files are made for this school. */
   engine: string;
