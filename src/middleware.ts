@@ -11,7 +11,7 @@ const hosts = (process.env.NEXT_PUBLIC_SITE_HOSTS || "")
   .map((h) => h.trim().toLowerCase())
   .filter(Boolean);
 
-const SITE_PAGES = ["/features", "/pricing", "/demo", "/about", "/privacy", "/terms", "/refund"];
+const SITE_PAGES = ["/features", "/pricing", "/demo", "/about", "/privacy", "/terms", "/refund", "/delete-account"];
 
 export function middleware(req: NextRequest) {
   if (!hosts.length) return NextResponse.next();
